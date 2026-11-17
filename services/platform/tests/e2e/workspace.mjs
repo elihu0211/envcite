@@ -25,7 +25,7 @@ const browser = await chromium.launch({ executablePath: process.env.E2E_CHROMIUM
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
 const page = await context.newPage();
 const problems = [];
-page.on("pageerror", (error) => problems.push(`pageerror: ${error.message}`));
+page.on("pageerror", (error) => problems.push(`pageerror: ${error.message} @ ${(error.stack ?? "").split("\n").slice(1, 5).map((line) => line.trim().replace(/^at /, "").replace(/https?:\/\/[^/]+/, "")).join(" ← ")}`));
 page.on("console", (message) => {
     if (message.type() === "error") problems.push(`console: ${message.text().slice(0, 200)}`);
 });
@@ -661,7 +661,7 @@ const scenarios = {
     },
 
     // 授權知識圖譜的檢視面板：浮在畫布上、不占版面（開關不改變畫布寬度，圖才不會重新適應而跳動）；
-    // 預設收起，點節點打開並把被選的節點讓到面板左邊；Esc、✕、「法學檢視」都能收起，焦點不掉到 body。
+    // 預設收起，點節點打開並把被選的節點讓到面板左邊；Esc、✕、「節點詳情」都能收起，焦點不掉到 body。
     async "law-graph-inspector"() {
         const state = () => page.evaluate(() => {
             const canvas = document.querySelector(".ep-graph-canvas");
@@ -730,7 +730,7 @@ const scenarios = {
             if ((await state()).canvasW !== closed.canvasW) throw new Error("換選節點不該改變畫布寬度");
         });
 
-        await step("Esc 收起；「法學檢視」開關；✕ 收起並把焦點還給「法學檢視」", async () => {
+        await step("Esc 收起；「節點詳情」開關；✕ 收起並把焦點還給「節點詳情」", async () => {
             await page.keyboard.press("Escape");
             await until("Esc 應收起面板", async () => (await state()).open === "false");
             await page.waitForTimeout(400);
@@ -744,7 +744,7 @@ const scenarios = {
             await page.click("[data-inspector-close]");
             await until("✕ 應收起面板", async () => (await state()).open === "false");
             const afterClose = await state();
-            if (!String(afterClose.focus).includes("ep-inspector-reopen")) throw new Error(`收起後焦點應回到「法學檢視」：${afterClose.focus}`);
+            if (!String(afterClose.focus).includes("ep-inspector-reopen")) throw new Error(`收起後焦點應回到「節點詳情」：${afterClose.focus}`);
             if (afterClose.canvasW !== closed.canvasW) throw new Error("✕ 不該改變畫布寬度");
         });
 
@@ -839,6 +839,149 @@ const scenarios = {
                 const s = await legend();
                 return !s.invalidOn && s.dimmed === 0;
             });
+        });
+    },
+
+    // 授權知識圖譜的分層揭露：領域圖節點多時先只畫法律層，每部法律旁一顆「授權 N 部子法規」膠囊，點了才展開下一層；
+    // 搜尋被收起的法規會自己展開路徑；「怎麼讀這張圖」常駐、關掉後記住；排版與全螢幕收在「檢視選項」。
+    // 測試用的假 canon 只有三個節點（不分層），所以載入前把圖譜資料換成合成的 14 部法律。
+    async "law-graph-disclosure"() {
+        await page.addInitScript(() => {
+            document.addEventListener("DOMContentLoaded", () => {
+                const el = document.querySelector("[data-canon-graph]");
+                if (!el) return;
+                const payload = JSON.parse(el.dataset.canonGraph);
+                const node = (id, title, tier, documentType = "") => ({
+                    id, jurisdiction: "TW-CENTRAL", idScheme: "synthetic", localId: id, title, uri: "", normKind: "", documentType,
+                    dateDocument: "", hierarchyTier: tier, totalChildren: 0, truncatedChildren: 0, articleCount: 1,
+                    invalidationCount: 0, guidanceCount: 0, focus: false, focusHref: null, structureHref: null, expandHref: null,
+                });
+                const nodes = [];
+                const edges = [];
+                for (let i = 0; i < 14; i += 1) {
+                    nodes.push(node(`L${i}`, `合成法律 ${i}`, 1));
+                    // 法律 0：兩部「辦法」成組、一部「施行細則」單件；法律 5：兩種各一部（併進「其他」組）；其餘一部。
+                    const kids = i === 0 ? [["a", "辦法"], ["b", "辦法"], ["c", "施行細則"]] : i === 5 ? [["a", "辦法"], ["b", "標準"]] : [["a", "辦法"]];
+                    kids.forEach(([key, type]) => {
+                        nodes.push(node(`C${i}${key}`, `合成命令 ${i}${key}`, 2, type));
+                        edges.push({ source: `L${i}`, target: `C${i}${key}`, kind: "delegation", anchorArticles: [], allRooted: false });
+                    });
+                }
+                payload.nodes = nodes;
+                payload.edges = edges;
+                el.dataset.canonGraph = JSON.stringify(payload);
+            });
+        });
+
+        const graphState = () => page.evaluate(() => {
+            const canvas = document.querySelector(".ep-graph-canvas");
+            const graph = canvas?._g6Instance;
+            if (!graph) return null;
+            const all = graph.getNodeData();
+            const capsules = all.filter((n) => n.data?.isGroupCapsule === "yes");
+            return {
+                state: canvas.dataset.graphState,
+                // 展開／收合重排期間節點還在換位置（data-graph-busy）；這時點下去會點到空白處。
+                busy: canvas.hasAttribute("data-graph-busy"),
+                laws: all.filter((n) => n.data?.raw?.hierarchyTier === 1).length,
+                commands: all.filter((n) => (n.data?.raw?.hierarchyTier ?? 0) >= 2).length,
+                capsules: capsules.map((n) => n.id),
+                labels: Object.fromEntries(capsules.map((n) => [n.id, n.data.cardLabel])),
+                selected: all.filter((n) => (graph.getElementState(n.id) || []).includes("selected")).map((n) => n.id),
+            };
+        });
+        const settled = async (what, probe) => {
+            let last;
+            try {
+                await until(what, async () => {
+                    last = await graphState();
+                    return last?.state === "ready" && !last.busy && probe(last);
+                });
+            } catch (error) {
+                throw new Error(`${error.message}；圖的狀態：${JSON.stringify(last)}`);
+            }
+        };
+        // 把節點帶進視野再用真的滑鼠點它：圖很大時有些節點一開始在畫布外。
+        const clickNode = async (id) => {
+            await settled(`點 ${id} 之前圖應停止重排`, () => true);
+            await page.evaluate(() => document.querySelector(".ep-graph-canvas-wrap").scrollIntoView({ block: "center" }));
+            const at = await page.evaluate(async (wanted) => {
+                const canvas = document.querySelector(".ep-graph-canvas");
+                const graph = canvas._g6Instance;
+                if (!graph.hasNode(wanted)) return null;
+                await graph.focusElement(wanted, false);
+                const box = canvas.getBoundingClientRect();
+                const [x, y] = graph.getViewportByCanvas(graph.getElementPosition(wanted));
+                return { x: box.left + x, y: box.top + y };
+            }, id);
+            if (!at) throw new Error(`圖上找不到 ${id}`);
+            await page.mouse.click(at.x, at.y);
+        };
+
+        await step("載入 14 部法律：只畫法律層、每部旁一顆膠囊，說明常駐、進階控制收起來", async () => {
+            await signIn();
+            await page.setViewportSize({ width: 1700, height: 900 });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await settled("圖譜應建好並顯示", (s) => s.laws > 0);
+            const s = await graphState();
+            if (s.laws !== 14 || s.commands !== 0) throw new Error(`首屏應只有 14 部法律：${JSON.stringify(s)}`);
+            if (s.capsules.length !== 14 || !s.capsules.every((id) => id.startsWith("dsc__"))) throw new Error(`每部法律旁應有一顆膠囊：${JSON.stringify(s.capsules)}`);
+            if (!s.labels.dsc__L0.includes("授權 3 部子法規") || !s.labels.dsc__L0.includes("點擊展開")) throw new Error(`膠囊要寫數量與動作：${s.labels.dsc__L0}`);
+            if (!(await page.locator("[data-graph-guide]").isVisible())) throw new Error("「怎麼讀這張圖」第一次看到時應該在畫布上方");
+            if ((await page.locator("[data-graph-guide-toggle]").getAttribute("aria-expanded")) !== "true") throw new Error("說明開著時「怎麼讀」應是展開狀態");
+            if (await page.locator(".ep-graph-options-panel").isVisible()) throw new Error("「檢視選項」預設應收起");
+            if (await page.locator("[data-graph-action='layout-stufenbau']").isVisible()) throw new Error("排版切換應收在「檢視選項」裡，首屏看不到");
+            if (shots) await page.locator(".ep-graph-stage").screenshot({ path: `${shots}/law-disclosure-first.png` });
+        });
+
+        await step("點法律 0 的膠囊：先出現依種類分的膠囊，再點才看到命令", async () => {
+            await clickNode("dsc__L0");
+            await settled("法律 0 應展開", (s) => s.capsules.includes("grp__L0__辦法"));
+            let s = await graphState();
+            if (!s.labels.dsc__L0.includes("收合")) throw new Error(`展開後膠囊應改成「收合」：${s.labels.dsc__L0}`);
+            if (s.commands !== 1) throw new Error(`只有單件的「施行細則」該直接可見：${JSON.stringify(s)}`);
+            await clickNode("grp__L0__辦法");
+            await settled("辦法分組應展開", (x) => x.commands === 3);
+            await clickNode("dsc__L0");
+            await settled("再點一次應收回法律 0", (x) => x.commands === 0 && x.labels.dsc__L0?.includes("點擊展開"));
+            s = await graphState();
+            if (s.laws !== 14) throw new Error(`收回後仍應有 14 部法律：${JSON.stringify(s)}`);
+        });
+
+        await step("搜尋被收起的法規：路徑上的膠囊與分組自己展開，節點被選取", async () => {
+            await page.fill("[data-graph-search]", "合成命令 5b");
+            await settled("應展開到「合成命令 5b」並選取它", (s) => s.selected.includes("C5b"));
+        });
+
+        await step("「怎麼讀這張圖」：關掉後重新整理仍收著，工具列的「怎麼讀」叫得回來", async () => {
+            await page.click("[data-graph-guide-close]");
+            await until("說明應收起", async () => !(await page.locator("[data-graph-guide]").isVisible()));
+            if ((await page.locator("[data-graph-guide-toggle]").getAttribute("aria-expanded")) !== "false") throw new Error("說明收起後「怎麼讀」應是收合狀態");
+            const focused = await page.evaluate(() => document.activeElement?.hasAttribute("data-graph-guide-toggle"));
+            if (!focused) throw new Error("關掉說明後焦點應落在「怎麼讀」，不能掉到 body");
+            await page.reload();
+            await settled("重新整理後圖譜應建好", (s) => s.laws > 0);
+            if (await page.locator("[data-graph-guide]").isVisible()) throw new Error("關掉過的說明重新整理後不該又出現");
+            await page.click("[data-graph-guide-toggle]");
+            await until("「怎麼讀」應叫回說明", async () => await page.locator("[data-graph-guide]").isVisible());
+        });
+
+        await step("檢視選項：點開看得到排版與全螢幕；Esc 收起並把焦點還給標題；選了排版就收起", async () => {
+            await page.click(".ep-graph-options > summary");
+            await until("面板應打開", async () => await page.locator(".ep-graph-options-panel").isVisible());
+            for (const action of ["layout-stufenbau", "layout-indented", "layout-concentric", "toggle-edge-labels", "fullscreen"]) {
+                if (!(await page.locator(`.ep-graph-options-panel [data-graph-action='${action}']`).isVisible())) throw new Error(`「檢視選項」裡應有 ${action}`);
+            }
+            if (shots) await page.locator(".ep-graph-stage").screenshot({ path: `${shots}/law-disclosure-options.png` });
+            await page.keyboard.press("Escape");
+            await until("Esc 應收起面板", async () => !(await page.locator(".ep-graph-options-panel").isVisible()));
+            const focus = await page.evaluate(() => document.activeElement?.tagName);
+            if (focus !== "SUMMARY") throw new Error(`收起後焦點應回到「檢視選項」：${focus}`);
+
+            await page.click(".ep-graph-options > summary");
+            await page.click(".ep-graph-options-panel [data-graph-action='layout-indented']");
+            await until("選了排版應收起面板", async () => !(await page.locator(".ep-graph-options-panel").isVisible()));
+            await until("法律樹結構應生效", async () => (await page.locator("[data-graph-action='layout-indented']").getAttribute("aria-pressed")) === "true");
         });
     },
 
@@ -1005,6 +1148,8 @@ try {
 } catch (error) {
     exitCode = 1;
     console.log(`FAIL ${current} :: ${error.message}`);
+    // 失敗常常是頁面上先丟了例外；只在成功收尾時才檢查的話，這條線索會不見。
+    if (problems.length > 0) console.log(`瀏覽器在失敗前出現：${problems.join(" | ").slice(0, 600)}`);
     if (shots) {
         await page.screenshot({ path: `${shots}/${scenario}-failed.png` }).catch(() => {});
     }

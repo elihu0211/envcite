@@ -185,17 +185,49 @@ else
 
                                 <div class="ep-graph-host" data-graph-host="true" data-inspector-open="false">
                                     <div class="ep-graph-stage">
+                                        @* 怎麼讀這張圖：第一次看到就在畫布上方，不藏在要點了節點才會開的面板裡；關掉後記在瀏覽器，用「怎麼讀」叫回來。
+                                           沒有 JS 時它一直在。 *@
+                                        <div id="ep-graph-guide" class="ep-graph-guide" data-graph-guide="true" role="note" aria-label="@L["怎麼讀這張圖"]">
+                                            <strong class="ep-graph-guide-title">@L["怎麼讀這張圖"]</strong>
+                                            <ol class="ep-graph-guide-steps">
+                                                <li>@L["由左至右依位階排列：法律 → 法規命令 → 細則／辦法。"]</li>
+                                                <li>@L["點「▶ 授權 N 部子法規」逐層展開，不必一次看全部。"]</li>
+                                                <li>@L["點節點看授權條文依據；雙擊以它為中心重建圖譜。"]</li>
+                                            </ol>
+                                            <button type="button" class="ep-drawer-close" data-graph-guide-close="true" aria-label="@L["關閉說明"]">
+                                                <svg class="ep-drawer-close-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                                    <path d="M4 4L12 12M12 4L4 12" stroke-linecap="round" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        @* 首屏只留搜尋與三個入口；排版、授權條號、全螢幕收進「檢視選項」。 *@
                                         <div class="ep-graph-toolbar">
-                                            <div class="ep-chip-row">
-                                                <button type="button" class="ep-preset-chip" data-graph-action="layout-stufenbau" aria-pressed="true">@L["位階分層（Stufenbau）"]</button>
-                                                <button type="button" class="ep-preset-chip" data-graph-action="layout-indented" aria-pressed="false">@L["法律樹結構"]</button>
-                                                <button type="button" class="ep-preset-chip" data-graph-action="layout-concentric" aria-pressed="false">@L["焦點星系（同心圓）"]</button>
-                                            </div>
+                                            <input type="search" class="ep-input ep-graph-search" data-graph-search="true"
+                                                   placeholder="@L["篩選法規"]" aria-label="@L["篩選法規"]" />
                                             <div class="ep-graph-toolbar-end">
-                                                <input type="search" class="ep-input ep-graph-search" data-graph-search="true"
-                                                       placeholder="@L["篩選法規"]" aria-label="@L["篩選法規"]" />
+                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-guide-toggle="true"
+                                                        aria-controls="ep-graph-guide" aria-expanded="true">@L["怎麼讀"]</button>
+                                                <details class="ep-graph-options" data-graph-options="true">
+                                                    <summary class="ep-btn ep-btn-quiet">@L["檢視選項"]</summary>
+                                                    <div class="ep-graph-options-panel">
+                                                        <div class="ep-graph-options-group" role="group" aria-label="@L["圖譜排版"]">
+                                                            <span class="ep-hint">@L["排版："]</span>
+                                                            <div class="ep-chip-row">
+                                                                <button type="button" class="ep-preset-chip" data-graph-action="layout-stufenbau" aria-pressed="true">@L["位階分層（Stufenbau）"]</button>
+                                                                <button type="button" class="ep-preset-chip" data-graph-action="layout-indented" aria-pressed="false">@L["法律樹結構"]</button>
+                                                                <button type="button" class="ep-preset-chip" data-graph-action="layout-concentric" aria-pressed="false">@L["焦點星系（同心圓）"]</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="ep-chip-row">
+                                                            <button type="button" class="ep-preset-chip" data-graph-action="toggle-edge-labels" aria-pressed="false">@L["顯示授權條號"]</button>
+                                                            <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fullscreen">@L["全螢幕"]</button>
+                                                        </div>
+                                                        <p class="ep-hint">@L["Ctrl / ⌘ + 滾輪縮放 · 一般滾輪捲動頁面"]</p>
+                                                    </div>
+                                                </details>
                                                 <button type="button" class="ep-btn ep-btn-quiet ep-inspector-reopen" data-inspector-open-btn="true"
-                                                        aria-controls="ep-graph-inspector" aria-expanded="false">@L["法學檢視"]</button>
+                                                        aria-controls="ep-graph-inspector" aria-expanded="false">@L["節點詳情"]</button>
                                             </div>
                                         </div>
 
@@ -205,19 +237,16 @@ else
                                             <div class="ep-graph-canvas" data-canon-graph="@BuildGraphJson(graph)"
                                                  role="region" aria-label="@L["法律授權知識圖譜"]"></div>
                                             <div class="ep-graph-floating-controls" role="toolbar" aria-label="@L["圖譜視角控制"]">
-                                                <button type="button" class="ep-preset-chip" data-graph-action="toggle-edge-labels" aria-pressed="false">@L["顯示授權條號"]</button>
                                                 <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-in" aria-label="@L["放大圖譜"]">+</button>
                                                 <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="zoom-out" aria-label="@L["縮小圖譜"]">-</button>
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["適應視窗"]</button>
-                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fullscreen">@L["全螢幕"]</button>
-                                                <span class="ep-graph-wheel-hint">@L["Ctrl / ⌘ + 滾輪縮放 · 一般滾輪捲動頁面"]</span>
+                                                <button type="button" class="ep-btn ep-btn-quiet" data-graph-action="fit">@L["重設視角"]</button>
                                             </div>
 
                                             @* 檢視面板浮在畫布上（見樣式表），不是並排的欄位：開關不改變畫布寬度，圖不會因此重新適應。 *@
-                                            <section id="ep-graph-inspector" class="ep-graph-inspector" tabindex="-1" aria-label="@L["節點法學檢視"]">
+                                            <section id="ep-graph-inspector" class="ep-graph-inspector" tabindex="-1" aria-label="@L["節點詳情面板"]">
                                                 <div class="ep-inspector-sheet-bar">
                                                     <span class="ep-inspector-sheet-handle" aria-hidden="true"></span>
-                                                    <h3 class="ep-inspector-sheet-title">@L["法學檢視"]</h3>
+                                                    <h3 class="ep-inspector-sheet-title">@L["節點詳情"]</h3>
                                                     <button type="button" class="ep-drawer-close ep-inspector-close"
                                                             data-inspector-close="true" aria-label="@L["關閉"]">
                                                         <svg class="ep-drawer-close-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">

@@ -30,6 +30,16 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("data-graph-inspector=", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-graph-action=\"layout-stufenbau\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-graph-action=\"layout-concentric\"", page.Html, StringComparison.Ordinal);
+        // 怎麼讀這張圖常駐在畫布上方（不藏在要點了節點才開的面板裡）；排版、授權條號、全螢幕收進「檢視選項」，首屏只留搜尋與三個入口。
+        Assert.Contains("data-graph-guide=\"true\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-graph-guide-toggle=\"true\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-graph-guide-close=\"true\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-graph-options=\"true\"", page.Html, StringComparison.Ordinal);
+        Assert.True(
+            page.Html.IndexOf("data-graph-options=\"true\"", StringComparison.Ordinal)
+                < page.Html.IndexOf("data-graph-action=\"layout-stufenbau\"", StringComparison.Ordinal),
+            "排版切換要在「檢視選項」裡面");
+        Assert.DoesNotContain("法學檢視", page.Html, StringComparison.Ordinal);
         Assert.Contains("id=\"ep-tab-graph\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("id=\"ep-tab-structure\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("id=\"ep-tab-reasoning\"", page.Html, StringComparison.Ordinal);
@@ -45,6 +55,10 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("computeStufenbauPositions", script.Html, StringComparison.Ordinal);
         Assert.Contains("renderInspector", script.Html, StringComparison.Ordinal);
         Assert.Contains("buildVisibleGraphModel", script.Html, StringComparison.Ordinal);
+        // 分層揭露：節點多、沒有焦點時只先畫根，下一層藏在「授權 N 部子法規」膠囊後面；搜尋靠 revealPath 展開路徑。
+        Assert.Contains("DISCLOSURE_PREFIX", script.Html, StringComparison.Ordinal);
+        Assert.Contains("revealPath", script.Html, StringComparison.Ordinal);
+        Assert.Contains("setGuideOpen", script.Html, StringComparison.Ordinal);
         Assert.Contains("collectLineage", script.Html, StringComparison.Ordinal);
         Assert.Contains("labelAutoRotate: false", script.Html, StringComparison.Ordinal);
         Assert.Contains("palantir-law-node", script.Html, StringComparison.Ordinal);
@@ -82,6 +96,9 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.DoesNotContain("grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem)", stylesheet.Html, StringComparison.Ordinal);
         Assert.Contains(".ep-swimlane-pill[data-tier][aria-pressed=\"false\"]", stylesheet.Html, StringComparison.Ordinal); // 關掉的層級有自己的樣子
         Assert.Contains(".ep-legend-edges", stylesheet.Html, StringComparison.Ordinal);
+        // 說明用 display: flex，會蓋掉 hidden 屬性，所以收起時要有自己的規則。
+        Assert.Contains(".ep-graph-guide[hidden]", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Contains(".ep-graph-options-panel", stylesheet.Html, StringComparison.Ordinal);
     }
 
     [Fact]
