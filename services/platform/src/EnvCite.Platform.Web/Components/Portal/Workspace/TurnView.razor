@@ -1,0 +1,138 @@
+@* 一個回合：你的問題與它的結果（等待、失敗、拒答、回答或條文清單），以及複製與法源的動作。
+   只收資料與回呼，不認識 ChatSession 或條文抽屜；點到法源時回報 SourceRequest，由上層決定怎麼開。 *@
+<div class="ep-turn">
+    <p class="ep-bubble">@Turn.Question</p>
+
+    <div class="ep-answer" aria-live="polite">
+        <div class="ep-answer-head">
+            <span class="ep-answer-badge" aria-hidden="true"><BrandMark /></span>
+            <span class="ep-answer-brand">@Brand.Name</span>
+            @if (Turn.State != TurnState.Pending && !string.IsNullOrEmpty(Turn.AsOfLabel))
+            {
+                <span class="ep-answer-asof">@Turn.AsOfLabel</span>
+            }
+        </div>
+
+        @switch (Turn.State)
+        {
+            case TurnState.Pending:
+                <div class="ep-turn-pending">
+                    <p class="ep-status" role="status">@PendingText</p>
+                    <div class="ep-turn-skeleton" aria-hidden="true">
+                        <span class="ep-skeleton-block ep-skeleton-line"></span>
+                        <span class="ep-skeleton-block ep-skeleton-line"></span>
+                    </div>
+                </div>
+                break;
+            case TurnState.Failed:
+                <FormAlert Message="@Turn.Error" />
+                break;
+            case TurnState.Refused:
+                <FormAlert Kind="AlertKind.Info">@RefusalText</FormAlert>
+                @* 找到法源但不足以回答時帶著法條名稱清單：點擊後於右側抽屜依索引 API 載入全文。 *@
+                <SourceCards Sources="_sources" AsOfLabel="@Turn.AsOfLabel" OnSelect="OpenAsync" />
+                break;
+            case TurnState.Answered:
+                <FormattedAnswerView Document="@Turn.Document" Sources="_sources" OnCitationSelect="OpenAsync" />
+                <p class="ep-hint">@L["這段回答由 AI 只根據下列法條產生，請核對出處再引用。"]</p>
+                <SourceCards Sources="_sources" AsOfLabel="@Turn.AsOfLabel" OnSelect="OpenAsync" />
+                break;
+            case TurnState.Listed:
+                @if (Turn.Hits is not null)
+                {
+                    <p class="ep-status" role="status">
+                        @(Turn.Hits.Count == 0 ? L["沒有符合的條文。試試其他說法。"] : L["找到 {0} 條（相關度高的在前）。", Turn.Hits.Count])
+                    </p>
+                    @foreach (var hit in Turn.Hits)
+                    {
+                        <article class="ep-card ep-hit" aria-label="@L["《{0}》第 {1} 條", hit.LawTitle, hit.Number]">
+                            <h2 class="ep-section-title">@L["《{0}》第 {1} 條", hit.LawTitle, hit.Number]</h2>
+                            <p class="ep-hit-body">@hit.Content</p>
+                            @if (hit.GuidanceDocuments > 0)
+                            {
+                                <p class="ep-hint">@L["{0} 件函釋提到這個詞並解釋這一條；函釋不是依據，請以條文為準。", hit.GuidanceDocuments]</p>
+                            }
+                            @* 可直接複製的引用：法規名、條號、查的是哪一天、條文網址。 *@
+                            <p class="ep-hint">@L["引用：《{0}》第 {1} 條（{2}）", hit.LawTitle, hit.Number, Turn.AsOfLabel!]<code class="ep-mono">@hit.Uri</code></p>
+                        </article>
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(Turn.StoredText))
+                {
+                    @foreach (var line in Turn.StoredText.Split('\n'))
+                    {
+                        <p class="ep-hint">@line</p>
+                    }
+                }
+
+                break;
+        }
+
+        @if (_copyText is not null || _sources.Count > 0)
+        {
+            <div class="ep-answer-actions">
+                @if (_copyText is not null)
+                {
+                    <button type="button"
+                            class="ep-answer-action ep-js-only"
+                            data-copy-target="@CopyId"
+                            data-copy-status="@CopyStatusId"
+                            data-done="@L["已複製"]"
+                            data-failed="@L["無法自動複製，已選取文字，請按 Ctrl+C（Mac 按 ⌘C）。"]">
+                        <NavIcon Path="@Icons.Material.Outlined.ContentCopy" />
+                        <span>@L["複製回答"]</span>
+                    </button>
+                    <span id="@CopyId" class="ep-visually-hidden">@_copyText</span>
+                    <span id="@CopyStatusId" class="ep-visually-hidden" role="status" aria-live="polite"></span>
+                }
+                @if (_sources.Count > 0)
+                {
+                    <button type="button" class="ep-answer-action" @onclick="() => OpenAsync(_sources[0])">
+                        <NavIcon Path="@Icons.Material.Outlined.MenuBook" />
+                        <span>@L["法源依據（{0}）", _sources.Count]</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ChatTurn Turn { get; set; } = null!;
+
+    /// <summary>這個回合在對話裡的順位；複製鈕與它的隱藏文字靠它配對，同一頁不能撞號。</summary>
+    [Parameter, EditorRequired]
+    public int Index { get; set; }
+
+    /// <summary>拒答時對使用者說的話（即時回答與歷史還原的來源不同，由上層決定）。</summary>
+    [Parameter]
+    public string? RefusalText { get; set; }
+
+    [Parameter]
+    public EventCallback<SourceRequest> OnOpenSource { get; set; }
+
+    private IReadOnlyList<AnswerSource> _sources = [];
+    private string? _copyText;
+
+    private string CopyId => $"ep-turn-copy-{Index}";
+
+    private string CopyStatusId => $"ep-turn-copy-status-{Index}";
+
+    protected override void OnParametersSet()
+    {
+        _sources = Turn.Sources;
+        _copyText = string.IsNullOrWhiteSpace(Turn.CopyText) ? null : Turn.CopyText;
+    }
+
+    private Task OpenAsync(AnswerSource source) => OnOpenSource.InvokeAsync(new SourceRequest(source, Turn.AsOfLabel, _sources));
+
+    /// <summary>等結果時說明進行到哪一步：找到幾條法源、正在寫、正在核對出處。搜尋沒有步驟，維持「正在查找法源」。</summary>
+    private string PendingText => Turn.Progress switch
+    {
+        { Stage: AnswerStage.Rewriting } => L["正在理解你的追問…"],
+        { Stage: AnswerStage.Writing } progress => L["找到 {0} 條法源，正在撰寫回答…", progress.Sources],
+        { Stage: AnswerStage.Verifying } => L["正在核對出處…"],
+        _ => L["正在查找法源…"],
+    };
+}

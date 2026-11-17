@@ -1,0 +1,26 @@
+<div class="ep-ans-checklist-wrap">
+    <AnswerHeading Text="@Block.Title" />
+    @if (Block.Ordered)
+    {
+        <ol class="ep-ans-list">
+            @foreach (var item in Block.Items)
+            {
+                <ChecklistItemView Item="item" />
+            }
+        </ol>
+    }
+    else
+    {
+        <ul class="ep-ans-list">
+            @foreach (var item in Block.Items)
+            {
+                <ChecklistItemView Item="item" />
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ChecklistBlock Block { get; set; } = null!;
+}
