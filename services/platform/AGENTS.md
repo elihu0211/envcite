@@ -111,7 +111,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 |------|------------|------|
 | 基底（`Components/Bases/`） | `PlatformComponentBase`、`NavigableComponentBase`、`PlatformLayoutBase`、`PortalLayoutBase` | 集中 `L`、`Brand`、`Navigation` 與入口雙版面導覽 |
 | 頁面／對話框基底 | `PageBase`、`StaticPageBase<TService>`、`FormPageBase<TForm>`、`PortalPageBase<TService>`、`AdminPageBase`、`FormDialogBase`、`SecretDialogBase` | 狀態管理、`LoadingAsync`、`ConfirmAsync`、只顯一次機密鎖定 |
-| 版面模板（`Components/Shared/`） | `DocumentTitle`、`PageHeading`、`FormAlert`、`PostForm`、`FormField`、`SubmitButton`、`DialogError`、`DialogSubmitActions`、`SectionCard`、`StatGrid`、`DataTable<TItem>`、`LoadedView`、`SelectField`、`OptionSelect`、`CheckboxField`、`SecretReveal`、`SourceCards`、`PageTabs`／`TabPanel`、`AskComposer` | 封裝 CSS 類別與無障礙標記，頁面禁止手寫原始 `ep-*` 類別或呼叫 `ShowMessageBoxAsync` |
+| 版面模板（`Components/Shared/`） | `DocumentTitle`、`PageHeading`、`FormAlert`、`PostForm`、`FormField`、`SubmitButton`、`DialogError`、`DialogSubmitActions`、`SectionCard`、`StatGrid`、`DataTable<TItem>`、`LoadedView`、`SelectField`、`OptionSelect`、`CheckboxField`、`SecretReveal`、`SourceCards`、`TaskMarker`、`PageTabs`／`TabPanel`、`AskComposer` | 封裝 CSS 類別與無障礙標記，頁面禁止手寫原始 `ep-*` 類別或呼叫 `ShowMessageBoxAsync` |
 | 共用認證流程（`Components/Shared/`） | `LoginFlow`、`TwoFactorSignInFlow`、`TwoFactorSetupFlow`、`ChangePasswordFlow`、`ActivationFlow` | 僅依賴 `IAccountLifecycle`、`ITwoFactor` 與 `SignInRoutes`（含 `SafeReturnUrl`）；表單模型共用 `Bases/Forms.cs` |
 | 密碼欄位 | `Shared/NewPasswordField`、`Shared/PasswordField` | 自動綁定 `PasswordPolicy` 與漸進增強（`forms.js`）；禁止頁面手寫 `type="password"`（`PasswordFieldTests` 守門） |
 

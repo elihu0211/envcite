@@ -69,38 +69,7 @@
                         {
                             <h2 class="ep-ans-heading">@table.Title</h2>
                         }
-                        <div class="ep-legal-table-wrap" role="region" aria-label="@L["資料表格"]" tabindex="0">
-                            <table class="ep-legal-table ep-ans-table">
-                                <thead>
-                                    <tr>
-                                        @foreach (var col in table.Columns)
-                                        {
-                                            <th scope="col">@col</th>
-                                        }
-                                        <th scope="col">@L["依據"]</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var row in table.Rows)
-                                    {
-                                        <tr>
-                                            @for (var c = 0; c < row.Cells.Count; c++)
-                                            {
-                                                if (c == 0 && row.Cells.Count > 1)
-                                                {
-                                                    <th scope="row">@row.Cells[c]</th>
-                                                }
-                                                else
-                                                {
-                                                    <td data-label="@(c < table.Columns.Count ? table.Columns[c] : null)">@row.Cells[c]</td>
-                                                }
-                                            }
-                                            <td class="ep-ans-table-citations" data-label="@L["依據"]">@RenderCitations(row.CitationCodes)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+                        <DataTable Items="table.Rows" Columns="ColumnsOf(table)" Label="@(table.Title ?? L["資料表格"])" Plain="true" />
                     </div>
                     break;
 
@@ -140,10 +109,7 @@
         <li class="@(item.Checked is not null ? "ep-ans-task" : null)">
             @if (item.Checked is bool checkedState)
             {
-                <span class="ep-ans-task-marker"
-                      data-state="@(checkedState ? "done" : "todo")"
-                      role="img"
-                      aria-label="@(checkedState ? L["已完成"] : L["未完成"])"></span>
+                <TaskMarker Checked="checkedState" />
             }
             <span class="ep-ans-item-text">
                 <strong class="ep-ans-item-label">@item.Label</strong>
