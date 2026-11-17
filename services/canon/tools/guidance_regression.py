@@ -1,8 +1,10 @@
 """函釋入口的回歸檢查：用函釋自己的詞問，看條文有沒有出現在最後的名單裡（唯讀）。
 
-    uv run python tools/guidance_regression.py build  --out eval/guidance-regression-<日期>.json
-    uv run python tools/guidance_regression.py measure eval/guidance-regression-<日期>.json \\
-        --address localhost:50051 --out eval/guidance-regression-<日期>.run.json
+    # 題庫在 eval/datasets/guidance-regression-<日期>.json，量測結果在 eval/results/
+    uv run python tools/guidance_regression.py build  --out <題庫>
+    uv run python tools/guidance_regression.py verify <題庫>
+    uv run python tools/guidance_regression.py measure <題庫> --address localhost:50051 \\
+        --out <結果>.run.json
     uv run python tools/guidance_regression.py compare <之前>.run.json <之後>.run.json
 
 條文寫「燃燒」、函釋寫「露天燃燒」：查詢的詞常是函釋的，條文裡沒有，字面與語意兩臂都撈不到，只有函釋入口
@@ -13,8 +15,16 @@
 
 - 查詢詞：函釋主旨裡的 4 字詞，且出現在 3 到 30 件函釋的主旨（夠有鑑別力、又不是只有一件的巧合），
   並且條文全文沒有這個詞（字面臂撈得到就不算函釋入口的題）。
-- 預期條文：這些函釋錨定的條文中，至少 60%（且至少 2 件）的函釋共同指向的。錨定是由公文內文的引用
-  規則抽出的（`law/guidance_anchor.py`），不是被測的檢索。
+- 預期條文：這些函釋錨定的條文中，至少 60%（且至少 2 件）的函釋共同指向的，加上本體論
+  （`annotation.current_violation`）沿罰則往下走到的條文：處罰它的罰則條，與處罰這些罰則的條
+  （最多 3 層）。錨定由公文內文的引用規則抽出（`law/guidance_anchor.py`），罰則邊由條文的引用規則
+  抽出（`violation.py`），都不是被測的檢索；鏈在這裡用 Python 重算，不呼叫
+  `retrieval.sanction_chain`，所以展開的 SQL 改壞時這裡看得出來。
+
+**題目只由上述規則從資料產生，沒有任何人工指定的題目、詞或答案，也沒有可以填人工內容的欄位。**
+三道守門擋掉手寫與作弊：`shape_errors` 固定欄位並驗題號是詞的雜湊（`measure` 先過這關）；`verify`
+把每題用規則對資料重算，與題庫不同就是被改過或手加的；`tests/test_guidance_regression.py` 掃本檔，
+不准有寫死的 4 字詞。
 
 **這量的是管線，不是相關性。** 預期條文就是入口該帶出的，所以入口正常時幾乎全中；它的用處是回歸：
 改了展開、融合、截斷、錨定之後，之前找得到的題現在找不到，`compare` 會列出來。不要拿它的命中率當
@@ -51,6 +61,10 @@ NGRAM = 4
 MIN_DOCS = 3
 MAX_DOCS = 30
 CONSENSUS = 0.6
+#: 罰則鏈的層數上限，與 `retrieval.sanction_chain` 一致。
+CHAIN_DEPTH = 3
+#: 題目的欄位，只有這些，且都由規則推導；沒有人工填寫的欄位（`shape_errors` 擋）。
+CASE_FIELDS = ("id", "query", "documents", "anchored", "expected")
 #: 題數與抽樣種子；規則固定時，同一份資料產生同一份題庫。
 CASES = 150
 SEED = 0
@@ -98,6 +112,18 @@ def candidates(subjects: Mapping[int, str]) -> dict[str, list[int]]:
         for phrase in ngrams(subject):
             found[phrase].append(document)
     return {p: ds for p, ds in found.items() if MIN_DOCS <= len(ds) <= MAX_DOCS}
+
+
+def closure(
+    edges: Mapping[Article, set[Article]], start: Iterable[Article], depth: int = CHAIN_DEPTH
+) -> list[Article]:
+    """沿罰則邊往下走：`edges[條]` 是處罰該條的罰則條；回傳 `start` 加上 `depth` 層內到得了的條。"""
+    reached = set(start)
+    frontier = set(reached)
+    for _ in range(depth):
+        frontier = {p for article in frontier for p in edges.get(article, ())} - reached
+        reached |= frontier
+    return sorted(reached)
 
 
 def case_id(phrase: str) -> str:
@@ -148,6 +174,32 @@ _ANCHORS = """
 """
 
 
+#: 本體論的罰則邊：（被罰的義務條）→（處罰它的罰則條），只取現行的條文。
+_PENALTIES = """
+    SELECT cr.local_id AS duty_pcode, corpus.article_number(cp.path) AS duty_number,
+           pr.local_id AS penalty_pcode, corpus.article_number(pp.path) AS penalty_number
+      FROM annotation.current_violation AS vi
+      JOIN corpus.provision AS cp ON cp.id = vi.cited_provision_id
+      JOIN corpus.legal_resource AS cr ON cr.id = cp.resource_id
+      JOIN corpus.provision AS pp ON pp.id = vi.provision_id
+      JOIN corpus.legal_resource AS pr ON pr.id = pp.resource_id
+      JOIN corpus.provision_version AS v
+        ON v.provision_id = vi.provision_id AND v.content_sha256 = vi.content_sha256
+     WHERE v.superseded_at IS NULL AND v.force_period @> current_date
+"""
+
+
+class _Penalty(NamedTuple):
+    duty_pcode: str
+    duty_number: str
+    penalty_pcode: str
+    penalty_number: str
+
+
+def _literal_probe(store: CanonStore) -> Callable[[str], bool]:
+    return lambda phrase: _literal(store, phrase)
+
+
 def _literal(store: CanonStore, phrase: str) -> bool:
     """這個詞是否逐字出現在現行條文：字面臂搜它，前 `LITERAL_PROBE` 條有沒有哪一條含有它。"""
     current = vocabulary.serving(store.retrieval)
@@ -161,32 +213,63 @@ def _literal(store: CanonStore, phrase: str) -> bool:
     return any(phrase in hit.content for hit in hits)
 
 
-def build_cases(
-    conn: Conn, store: CanonStore, count: int = CASES, seed: int = SEED
-) -> list[dict[str, Any]]:
-    """依規則從資料產生題目；規則與門檻見模組說明。"""
+class Derivation(NamedTuple):
+    """題目只由這三樣資料推導：函釋主旨、函釋錨定的條文、本體論的罰則邊。"""
+
+    subjects: Mapping[int, str]
+    anchors: Mapping[int, set[Article]]
+    edges: Mapping[Article, set[Article]]
+
+
+def derive(conn: Conn) -> Derivation:
     subjects = {row.id: row.subject for row in fetch(conn, _DOCUMENTS, None, _Subject)}
     anchors: dict[int, set[Article]] = defaultdict(set)
     for row in fetch(conn, _ANCHORS, None, _Anchor):
         anchors[row.document_id].add((row.pcode, row.number))
-    pool = sorted(candidates(subjects))
+    edges: dict[Article, set[Article]] = defaultdict(set)
+    for edge in fetch(conn, _PENALTIES, None, _Penalty):
+        penalty = (edge.penalty_pcode, edge.penalty_number)
+        if penalty != (edge.duty_pcode, edge.duty_number):
+            edges[(edge.duty_pcode, edge.duty_number)].add(penalty)
+    return Derivation(subjects, anchors, edges)
+
+
+def derive_case(
+    phrase: str, source: Derivation, literal: Callable[[str], bool]
+) -> dict[str, Any] | None:
+    """規則對一個詞的判定：成題就回傳整題，不成題回傳 `None`。題只能從這裡來。
+
+    `literal(詞)` 是這個詞是否逐字出現在現行條文；出現就不算函釋入口的題。
+    """
+    if len(phrase) != NGRAM or not _HAN_RUN.fullmatch(phrase):
+        return None
+    documents = candidates_documents(source.subjects, phrase)
+    if not MIN_DOCS <= len(documents) <= MAX_DOCS:
+        return None
+    anchored = consensus(source.anchors, documents)
+    if not anchored or literal(phrase):
+        return None
+    return {
+        "id": case_id(phrase),
+        "query": phrase,
+        "documents": len(documents),
+        "anchored": [list(a) for a in anchored],
+        "expected": [list(a) for a in closure(source.edges, anchored)],
+    }
+
+
+def build_cases(
+    source: Derivation, literal: Callable[[str], bool], count: int = CASES, seed: int = SEED
+) -> list[dict[str, Any]]:
+    """依規則從資料產生題目：候選詞依種子洗牌，逐個交給 `derive_case`，取前 `count` 個。"""
+    pool = sorted(candidates(source.subjects))
     random.Random(seed).shuffle(pool)
     cases: list[dict[str, Any]] = []
     for phrase in pool:
-        documents = candidates_documents(subjects, phrase)
-        expected = consensus(anchors, documents)
-        if not expected or _literal(store, phrase):
-            continue
-        cases.append(
-            {
-                "id": case_id(phrase),
-                "query": phrase,
-                "documents": len(documents),
-                "expected": [list(a) for a in expected],
-            }
-        )
-        if len(cases) == count:
-            break
+        if case := derive_case(phrase, source, literal):
+            cases.append(case)
+            if len(cases) == count:
+                break
     return sorted(cases, key=lambda c: c["id"])
 
 
@@ -195,17 +278,71 @@ def candidates_documents(subjects: Mapping[int, str], phrase: str) -> list[int]:
     return [d for d, s in sorted(subjects.items()) if phrase in s]
 
 
+def shape_errors(cases: Sequence[Mapping[str, Any]]) -> list[str]:
+    """題目的形狀（不連資料庫）：欄位固定，題號、詞、錨定與預期條文彼此要對得上。
+
+    題目沒有人工填寫的欄位：多一個欄位、題號不是詞的雜湊、詞不是 4 個漢字，都不收。
+    """
+    errors: list[str] = []
+    seen: set[str] = set()
+    for case in cases:
+        name = str(case.get("id"))
+        if set(case) != set(CASE_FIELDS):
+            odd = sorted(set(case) ^ set(CASE_FIELDS))
+            errors.append(f"{name}：欄位要剛好是 {sorted(CASE_FIELDS)}，多了或少了 {odd}")
+            continue
+        query = case["query"]
+        if len(query) != NGRAM or not _HAN_RUN.fullmatch(query):
+            errors.append(f"{name}：詞要是 {NGRAM} 個漢字：{query!r}")
+        if case["id"] != case_id(query):
+            errors.append(f"{name}：題號不是詞的雜湊")
+        if case["id"] in seen:
+            errors.append(f"{name}：題號重複")
+        seen.add(case["id"])
+        if not MIN_DOCS <= case["documents"] <= MAX_DOCS:
+            errors.append(f"{name}：函釋件數 {case['documents']} 不在 {MIN_DOCS} 到 {MAX_DOCS}")
+        anchored, expected = case["anchored"], case["expected"]
+        if not anchored or any(len(a) != 2 for a in anchored + expected):
+            errors.append(f"{name}：錨定與預期條文要是（法規代碼，條號）、且錨定不為空")
+        elif not {tuple(a) for a in anchored} <= {tuple(e) for e in expected}:
+            errors.append(f"{name}：預期條文要含錨定的條文")
+    return errors
+
+
+def verify_cases(
+    cases: Sequence[Mapping[str, Any]], source: Derivation, literal: Callable[[str], bool]
+) -> list[str]:
+    """逐題用規則對資料重算：題庫裡的每一題都要與規則產出的完全相同，否則是被改過或手加的。"""
+    errors = shape_errors(cases)
+    for case in cases:
+        derived = derive_case(str(case.get("query")), source, literal)
+        if derived is None:
+            errors.append(f"{case.get('id')}：資料與規則產不出這一題（{case.get('query')!r}）")
+        elif derived != dict(case):
+            errors.append(f"{case.get('id')}：與規則重算的結果不同")
+    return errors
+
+
+def read_cases(path: Path) -> dict[str, Any]:
+    """讀題庫（驗雜湊與形狀）；形狀不合的題庫不量。"""
+    doc = gs.read(path)
+    if errors := shape_errors(doc["cases"]):
+        raise SystemExit("題庫形狀不合：\n  " + "\n  ".join(errors))
+    return doc
+
+
 def cmd_build(args: argparse.Namespace) -> None:
     db = load(DatabaseSettings)
     with CanonStore.from_dsn(db.dsn) as store, store.connections.connection() as conn:
-        cases = build_cases(conn, store, args.cases, args.seed)
+        cases = build_cases(derive(conn), _literal_probe(store), args.cases, args.seed)
     doc = gs.write(
         args.out,
         {
             "schema": SCHEMA,
             "rule": (
                 f"主旨 {NGRAM} 字詞、出現在 {MIN_DOCS} 到 {MAX_DOCS} 件函釋、條文全文沒有；"
-                f"預期＝至少 {CONSENSUS:.0%}（且至少 2 件）的函釋共同錨定的條文"
+                f"預期＝至少 {CONSENSUS:.0%}（且至少 2 件）的函釋共同錨定的條文，"
+                f"加上處罰它們的罰則鏈（{CHAIN_DEPTH} 層內）"
             ),
             "as_of": date.today().isoformat(),
             "seed": args.seed,
@@ -214,6 +351,18 @@ def cmd_build(args: argparse.Namespace) -> None:
         },
     )
     print(f"{doc['counts']}；{args.out}：sha256 {doc['sha256']}")
+
+
+def cmd_verify(args: argparse.Namespace) -> None:
+    doc = read_cases(args.cases)
+    db = load(DatabaseSettings)
+    with CanonStore.from_dsn(db.dsn) as store, store.connections.connection() as conn:
+        errors = verify_cases(doc["cases"], derive(conn), _literal_probe(store))
+    for error in errors:
+        print(f"  {error}")
+    if errors:
+        raise SystemExit(f"{len(errors)} 題對不上規則")
+    print(f"{len(doc['cases'])} 題都與規則對資料重算的結果相同")
 
 
 # --- measure ------------------------------------------------------------------------------------
@@ -262,7 +411,7 @@ def summary(run: Mapping[str, Any]) -> dict[str, float]:
 
 
 def cmd_measure(args: argparse.Namespace) -> None:
-    doc = gs.read(args.cases)
+    doc = read_cases(args.cases)
     stub = canon_pb2_grpc.CanonServiceStub(grpc.insecure_channel(args.address))
     cases = measure(doc["cases"], lambda q: _search(stub, q, args.rerank))
     run = {
@@ -304,11 +453,15 @@ def main() -> None:
     m.add_argument("--address", default="localhost:50051")
     m.add_argument("--rerank", action="store_true")
     m.add_argument("--out", type=Path, required=True)
+    v = sub.add_parser("verify", help="逐題用規則對資料重算，不同的題就是被改過或手加的")
+    v.add_argument("cases", type=Path)
     c = sub.add_parser("compare", help="比兩份 run；有題退步就以 1 結束")
     c.add_argument("before", type=Path)
     c.add_argument("after", type=Path)
     args = parser.parse_args()
-    {"build": cmd_build, "measure": cmd_measure, "compare": cmd_compare}[args.command](args)
+    commands = {"build": cmd_build, "verify": cmd_verify, "measure": cmd_measure}
+    commands["compare"] = cmd_compare
+    commands[args.command](args)
 
 
 if __name__ == "__main__":

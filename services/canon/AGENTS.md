@@ -121,6 +121,7 @@ uv run --env-file .env canon serve
 - **精排（`reranking.py`、`service._rerank`）**：帶 `rerank` 且已設定 `[reranker]` 時，取 `ENVCITE_CANON_RERANK_CANDIDATES` 條候選送 `/rerank` 重排（依 `index` 還原次序、不送空清單、每批上限 `MAX_BATCH = 30` 共用時間預算）。
   - **降級契約**：精排為加強而非成功條件。`RERANK_SLOTS` 滿、逾時、端點錯誤或回應缺漏重複時，整份退回精排前次序且不設 `rerank_score`，不重試、不回錯誤；函釋帶出被擠出的條文仍依 `fuse` 契約補回。
   - **指標**：僅記錄 `canon.rerank.outcomes`（`reranked`、`busy`、`error`、`unconfigured`）與 `canon.rerank.duration`（`ok`、`error`），成功時不寫日誌。
+- **函釋入口回歸（`tools/guidance_regression.py`）**：題目、詞與預期條文只由規則對資料推導，沒有人工指定的題目或欄位；`verify` 逐題用規則重算、與題庫不同就是被改過，`tests/test_guidance_regression.py` 擋寫死的詞與多餘的欄位。量的是管線不是相關性，不拿命中率當品質指標、不用來調參數；改了展開、融合、截斷或錨定之後重量並 `compare`。
 - **原生題庫（`tools/native_golden.py`）**：題目與答案純由條文結構程式化產生，不依賴模型或受測系統。改產生規則須遞增 `GENERATOR_VERSION` 並重建與 `derive`；不可為讓 `verify` 通過而放寬或收緊文法。
 
 ## 標註、驗證與推論
