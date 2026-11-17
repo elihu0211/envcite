@@ -158,6 +158,14 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task TheLawWorkbenchKeepsTheGraphInViewWithCollapsedConditionsAndStickyTabs()
+    {
+        var chat = await RunAsync("law-workbench-layout", consent: true);
+
+        Assert.Empty(chat.Calls);
+    }
+
+    [Fact]
     public async Task TheLawGraphInspectorFloatsOverTheCanvasWithoutResizingItAndKeepsFocusSane()
     {
         var chat = await RunAsync("law-graph-inspector", consent: true);

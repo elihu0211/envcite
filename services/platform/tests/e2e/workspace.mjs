@@ -820,12 +820,78 @@ const scenarios = {
         });
     },
 
+    // 法規體系與合規的版面與導覽：查詢條件收成一列摘要，圖譜在 1280×800 就看得到；分頁列黏在頂端；
+    // 「法規目錄」（瀏覽母法體系的抽屜）與圖譜的「法律樹結構」排版不再同名。
+    async "law-workbench-layout"() {
+        const pageTop = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? Math.round(el.getBoundingClientRect().top + scrollY) : null; }, sel);
+
+        await step("登入後前往法規體系與合規：條件收成一列摘要，圖譜在 1280×800 看得到", async () => {
+            await signIn();
+            await page.setViewportSize({ width: 1280, height: 800 });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await until("圖譜應建好", async () => (await page.evaluate(() => Boolean(document.querySelector(".ep-graph-canvas")?._g6Instance))) === true);
+            await page.waitForTimeout(800);
+            const summary = await page.evaluate(() => ({
+                open: document.querySelector(".ep-conditions").open,
+                text: document.querySelector(".ep-conditions-summary").textContent.replace(/\s+/g, " ").trim(),
+            }));
+            if (summary.open) throw new Error("有結果時查詢條件應收成一列");
+            if (!summary.text.includes("環境保護") || !summary.text.includes("現行")) throw new Error(`摘要應列出領域與基準日：${summary.text}`);
+            const canvasTop = await pageTop(".ep-graph-canvas");
+            // 以前條件占一整張卡、卡片標題下還有一段說明，畫布從 633px 才開始，800px 高的視窗只露出 167px；現在要露出一半以上。
+            if (800 - canvasTop < 280) throw new Error(`圖譜畫布離頂端 ${canvasTop}px，1280×800 只露出 ${800 - canvasTop}px`);
+            if (shots) await page.screenshot({ path: `${shots}/law-layout-1280.png` });
+        });
+
+        await step("目錄與排版不同名：抽屜叫「法規目錄」，圖譜排版叫「法律樹結構」", async () => {
+            const names = await page.evaluate(() => ({
+                catalog: document.querySelector("[data-workbench-toggle='catalog']").textContent.replace(/\s+/g, " ").trim(),
+                layout: document.querySelector("[data-graph-action='layout-indented']").textContent.trim(),
+                catalogLabel: document.querySelector("#ep-workbench-catalog").getAttribute("aria-label"),
+            }));
+            if (!names.catalog.startsWith("法規目錄") || names.catalogLabel !== "法規目錄") throw new Error(`目錄抽屜應叫法規目錄：${JSON.stringify(names)}`);
+            if (names.layout !== "法律樹結構" || names.catalog.includes("法律樹結構")) throw new Error(`兩者不該同名：${JSON.stringify(names)}`);
+        });
+
+        await step("調整：展開後三個欄位與套用鈕都在，再按一次收回", async () => {
+            await page.click(".ep-conditions-summary");
+            await until("條件應展開", async () => (await page.evaluate(() => document.querySelector(".ep-conditions").open)) === true);
+            const sizes = await page.evaluate(() => ["#f-law-cat", "#f-law-q", "#f-law-as-of", ".ep-workbench-bar button[type='submit']"].map((s) => Math.round(document.querySelector(s).getBoundingClientRect().height)));
+            if (sizes.some((h) => h < 40)) throw new Error(`展開後欄位應有高度：${JSON.stringify(sizes)}`);
+            await page.click(".ep-conditions-summary");
+            await until("條件應收回", async () => (await page.evaluate(() => document.querySelector(".ep-conditions").open)) === false);
+        });
+
+        await step("分頁列黏在頂欄底下：捲下去仍看得到、沒有被頂欄蓋住", async () => {
+            const r = await page.evaluate(async () => {
+                const tabs = document.querySelector(".ep-workbench-main > .ep-tabs");
+                const header = document.querySelector(".ep-portal-stage > .ep-shell-top");
+                const scroller = document.scrollingElement;
+                scroller.scrollTop = 400;
+                await new Promise((resolve) => setTimeout(resolve, 150));
+                const rect = tabs.getBoundingClientRect();
+                const hit = document.elementFromPoint(rect.left + 40, rect.top + rect.height / 2);
+                return {
+                    scrolled: Math.round(scroller.scrollTop),
+                    delta: Math.round(rect.top - header.getBoundingClientRect().bottom),
+                    visible: Boolean(hit && tabs.contains(hit)),
+                };
+            });
+            if (r.scrolled < 100) throw new Error(`頁面應該要能捲動：${JSON.stringify(r)}`);
+            if (r.delta < -1 || r.delta > 2) throw new Error(`分頁列應黏在頂欄底下：${JSON.stringify(r)}`);
+            if (!r.visible) throw new Error(`分頁列被別的東西蓋住了：${JSON.stringify(r)}`);
+            if (shots) await page.screenshot({ path: `${shots}/law-layout-scrolled.png` });
+        });
+    },
+
     // 法規體系與合規工作列：下拉選單帶統一右側安全距與箭頭、按鈕與欄位依容器斷點對齊且可 RWD 換列。
     async "laws-toolbar"() {
         await step("登入後前往法規體系與合規", async () => {
             await signIn();
             await page.goto(`${base}/portal/${tenant}/laws`);
             await until("工作列應載入", async () => (await page.locator(".ep-workbench-bar").count()) === 1);
+            // 查詢條件預設收成一列摘要；量版面要先展開，不然欄位沒有尺寸。
+            await page.evaluate(() => { document.querySelector(".ep-conditions").open = true; });
         });
 
         const measure = () => page.evaluate(() => {
@@ -839,7 +905,7 @@ const scenarios = {
             const q = document.querySelector("#f-law-q");
             const asOf = document.querySelector("#f-law-as-of");
             const submit = bar.querySelector("button[type='submit']");
-            const catalog = bar.querySelector("[data-workbench-toggle='catalog']");
+            const catalog = document.querySelector("[data-workbench-toggle='catalog']"); // 在摘要列旁，不在條件表單裡
             const chevron = bar.querySelector(".ep-select-chevron");
             const hints = [...bar.querySelectorAll(".ep-hint")];
             const catStyle = getComputedStyle(cat);
@@ -860,7 +926,7 @@ const scenarios = {
             };
         });
 
-        await step("桌機（1280px）：三欄輸入與兩顆按鈕同列等高對齊，提示不截斷", async () => {
+        await step("桌機（1280px）：三欄輸入與套用鈕同列等高對齊，提示不截斷；法規目錄鈕在條件上方的摘要列", async () => {
             await page.setViewportSize({ width: 1280, height: 800 });
             await page.waitForTimeout(150);
             const m = await measure();
@@ -869,18 +935,18 @@ const scenarios = {
                 throw new Error(`下拉選單樣式未套用：${JSON.stringify(m)}`);
             }
             if (m.hintOverflow) throw new Error("提示文字仍被 ellipsis 截斷");
-            const controls = [m.cat, m.q, m.asOf, m.submit, m.catalog];
+            const controls = [m.cat, m.q, m.asOf, m.submit];
             const ys = controls.map((c) => c.y);
             const hs = controls.map((c) => c.h);
             if (Math.max(...ys) - Math.min(...ys) > 2) throw new Error(`桌機同列 Y 未對齊：${JSON.stringify(ys)}`);
             if (Math.max(...hs) - Math.min(...hs) > 2 || Math.min(...hs) < 44) {
                 throw new Error(`桌機控制項高度不一或小於觸控目標：${JSON.stringify(hs)}`);
             }
-            if (m.catalog.x <= m.submit.right) throw new Error(`桌機按鈕應並排同列：${JSON.stringify({ submit: m.submit, catalog: m.catalog })}`);
+            if (m.catalog.h < 44 || m.catalog.bottom > m.cat.y) throw new Error(`法規目錄鈕應在條件欄位上方的摘要列：${JSON.stringify({ catalog: m.catalog, cat: m.cat })}`);
             if (shots) await page.locator(".ep-workbench-bar").screenshot({ path: `${shots}/laws-desktop.png` });
         });
 
-        await step("平板／精簡筆電（1024px）：三欄欄位並排，動作按鈕置底右對齊", async () => {
+        await step("平板／精簡筆電（1024px）：三欄欄位並排，套用鈕置底右對齊", async () => {
             await page.setViewportSize({ width: 1024, height: 900 });
             await page.waitForTimeout(150);
             const m = await measure();
@@ -888,12 +954,11 @@ const scenarios = {
             const fieldYs = [m.cat.y, m.q.y, m.asOf.y];
             if (Math.max(...fieldYs) - Math.min(...fieldYs) > 2) throw new Error(`平板三欄 Y 未對齊：${JSON.stringify(fieldYs)}`);
             if (m.submit.y <= m.maxHintBottom) throw new Error(`平板按鈕列應在欄位說明下方：${JSON.stringify({ submit: m.submit, maxHintBottom: m.maxHintBottom })}`);
-            if (Math.abs(m.submit.y - m.catalog.y) > 2) throw new Error(`平板兩顆按鈕未同列：${JSON.stringify({ submit: m.submit, catalog: m.catalog })}`);
-            if (Math.abs(m.catalog.right - m.asOf.right) > 3) throw new Error(`平板按鈕右緣未對齊最右欄：${JSON.stringify({ catalog: m.catalog, asOf: m.asOf })}`);
+            if (Math.abs(m.submit.right - m.asOf.right) > 3) throw new Error(`平板套用鈕右緣未對齊最右欄：${JSON.stringify({ submit: m.submit, asOf: m.asOf })}`);
             if (shots) await page.locator(".ep-workbench-bar").screenshot({ path: `${shots}/laws-tablet.png` });
         });
 
-        await step("手機（390px）：單欄垂直堆疊且按鈕等寬滿版", async () => {
+        await step("手機（390px）：單欄垂直堆疊且套用鈕與欄位等寬滿版", async () => {
             await page.setViewportSize({ width: 390, height: 844 });
             await page.waitForTimeout(150);
             const m = await measure();
@@ -901,8 +966,8 @@ const scenarios = {
             if (!(m.cat.y < m.q.y && m.q.y < m.asOf.y && m.asOf.y < m.submit.y)) {
                 throw new Error(`手機應單欄依序堆疊：${JSON.stringify(m)}`);
             }
-            if (Math.abs(m.submit.w - m.catalog.w) > 2) {
-                throw new Error(`手機按鈕寬度應對稱：${JSON.stringify({ submit: m.submit, catalog: m.catalog })}`);
+            if (Math.abs(m.submit.w - m.cat.w) > 2) {
+                throw new Error(`手機套用鈕應與欄位等寬：${JSON.stringify({ submit: m.submit, cat: m.cat })}`);
             }
             if (shots) await page.locator(".ep-workbench-bar").screenshot({ path: `${shots}/laws-mobile.png` });
         });

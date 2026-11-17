@@ -2109,8 +2109,23 @@
   <data name="此範圍尚無授權關聯節點" xml:space="preserve">
     <value>No delegation graph nodes in this scope</value>
   </data>
-  <data name="法律樹結構 ({0})" xml:space="preserve">
-    <value>Law Hierarchy ({0})</value>
+  <data name="法規目錄 ({0})" xml:space="preserve">
+    <value>Law catalogue ({0})</value>
+  </data>
+  <data name="法規目錄" xml:space="preserve">
+    <value>Law catalogue</value>
+  </data>
+  <data name="查詢條件" xml:space="preserve">
+    <value>Search criteria</value>
+  </data>
+  <data name="調整" xml:space="preserve">
+    <value>Adjust</value>
+  </data>
+  <data name="篩選：{0}" xml:space="preserve">
+    <value>Filter: {0}</value>
+  </data>
+  <data name="基準日 {0}" xml:space="preserve">
+    <value>As of {0}</value>
   </data>
   <data name="法律直接授權" xml:space="preserve">
     <value>Direct statutory delegation</value>
@@ -2696,9 +2711,6 @@
   </data>
   <data name="請上傳有效的 PNG、JPEG 或 WebP 圖片。" xml:space="preserve">
     <value>Please upload a valid PNG, JPEG, or WebP image.</value>
-  </data>
-  <data name="視覺化追蹤「母法條文 → 授權法規命令 → 行政函釋」之凱爾森位階與授權明確性；點擊節點可檢視授權依據，雙擊可深入展開。" xml:space="preserve">
-    <value>Visualize Kelsenian hierarchy and statutory delegation chains (Statutes → Regulations → Administrative Guidance). Click a node to inspect authority; double-click to focus.</value>
   </data>
   <data name="Ctrl / ⌘ + 滾輪縮放 · 一般滾輪捲動頁面" xml:space="preserve">
     <value>Ctrl / ⌘ + wheel to zoom · wheel scrolls page</value>
