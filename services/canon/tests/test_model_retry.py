@@ -10,9 +10,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 
-import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.verification.config import parse
 from canon.verification.extract import extract_unit
 from canon.verification.gates.base import GateResult
@@ -23,7 +23,6 @@ from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
 from tests.verification_support import EXTRACTED, _two_statements
 
-Conn = psycopg.Connection[tuple[object, ...]]
 GOOD = {"choices": [{"message": {"content": "答"}}]}
 
 

@@ -11,10 +11,9 @@ import psycopg
 import pytest
 from psycopg.types.range import Range
 
+from canon.db import Conn
 from canon.law import delegation
 from canon.law.delegation import Citation, parse
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 D2000, D2005, D2010, D2015 = date(2000, 1, 1), date(2005, 1, 1), date(2010, 1, 1), date(2015, 1, 1)
 FIRST = "本辦法依水污染防治法（以下簡稱本法）第七條第二項規定訂定之。"

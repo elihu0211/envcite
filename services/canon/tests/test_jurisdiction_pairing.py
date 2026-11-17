@@ -5,10 +5,9 @@ from pathlib import Path
 import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.migrate import apply_all
 from tests.test_migrate import _at, _drop
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 _INSERT = (
     "INSERT INTO corpus.legal_resource"

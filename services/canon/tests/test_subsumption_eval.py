@@ -14,10 +14,8 @@ from types import ModuleType
 import pytest
 
 from canon.annotate import Loaded
-from tests.reasoning_support import (
-    WATER,
-    Conn,
-)
+from canon.db import Conn
+from tests.reasoning_support import WATER
 from tests.verification_support import _with_penalties
 
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "subsumption_eval.py"

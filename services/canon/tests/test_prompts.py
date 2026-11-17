@@ -1,5 +1,7 @@
 """Prompts are Jinja2 templates; these tests pin the template mechanics, not the prompt wording."""
 
+from collections.abc import Mapping, Sequence
+
 import pytest
 
 from canon.claims.enums import LEGAL_EFFECTS, TRIGGER_KINDS
@@ -8,17 +10,22 @@ from canon.verification import prompts
 TEXT = "原文 {braces} 與 {{double}} {% raw %}"
 
 
-def _extract(**override: object) -> str:
-    args: dict[str, object] = {
-        "law": "L0001",
-        "path": "art_7/para_1",
-        "text": TEXT,
-        "context": "",
-        "defined": None,
-        "punished_by": (),
-        "review": (),
-    }
-    return prompts.extract(**(args | override))  # type: ignore[arg-type]
+def _extract(
+    *,
+    context: str = "",
+    defined: Mapping[str, str] | None = None,
+    punished_by: Sequence[str] = (),
+    review: Sequence[str] = (),
+) -> str:
+    return prompts.extract(
+        law="L0001",
+        path="art_7/para_1",
+        text=TEXT,
+        context=context,
+        defined=defined,
+        punished_by=punished_by,
+        review=review,
+    )
 
 
 def test_substituted_values_are_never_parsed_as_template_syntax() -> None:

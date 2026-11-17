@@ -7,15 +7,17 @@
 
 import json
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 
 from canon.annotate import Loaded
+from canon.db import Conn, fetch
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.reasoning.engine import Result, evaluate
-from tests.reasoning_support import Conn
 from tests.sample import noise_law, stored_snapshot
 from tests.test_import import _scalar
 from tests.verification_support import _with_penalties
@@ -39,6 +41,11 @@ BASE: dict[str, float] = {
     "still_over_after_improvement_deadline": 1,
     "ap_intent": 1,  # 總則的有責性；這組案例測的是各法自己的罰則要件
 }
+
+
+class _AmountCount(NamedTuple):
+    min_amount: Decimal
+    statements: int
 
 
 @pytest.fixture
@@ -72,14 +79,17 @@ def _tier_fines(result: Result, noise: Loaded) -> dict[str, tuple[int | None, in
 
 
 def test_every_tier_is_its_own_penalty_anchored_to_its_own_item(conn: Conn, noise: Loaded) -> None:
-    anchors: dict[object, object] = dict(
-        conn.execute(
+    anchors = dict(
+        fetch(
+            conn,
             "SELECT sn.min_amount, count(*) FROM annotation.sanction AS sn"
             "  JOIN annotation.statement AS st ON st.id = sn.statement_id"
             "  JOIN corpus.provision AS p ON p.id = st.provision_id"
             " WHERE sn.legal_effect = 'fine' AND NOT sn.per_occasion"
-            "   AND p.path ~ '^art_24/para_1/pt_[1-5]$' GROUP BY 1"
-        ).fetchall()  # type: ignore[arg-type]
+            "   AND p.path ~ '^art_24/para_1/pt_[1-5]$' GROUP BY 1",
+            None,
+            _AmountCount,
+        )
     )
 
     assert anchors == {3000: 3, 6000: 1, 18000: 1}  # 五款，三款同額；各錨在自己的款

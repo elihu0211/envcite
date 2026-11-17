@@ -8,6 +8,7 @@ import pytest
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
+from canon.db import Conn
 from canon.reasoning_service import ReasoningServicer
 from canon.store.canon_store import CanonStore
 from canon.telemetry import register_annotation_health
@@ -15,7 +16,7 @@ from envcite.canon.v1 import reasoning_pb2 as pb
 from envcite.canon.v1 import reasoning_pb2_grpc
 from envcite_grpc import configure_telemetry
 from tests.test_import import _scalar
-from tests.verification_support import Conn, _water_draft
+from tests.verification_support import _water_draft
 
 
 def test_without_an_otlp_endpoint_telemetry_does_nothing(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -6,12 +6,9 @@ import json
 import pytest
 
 from canon.annotate import Loaded
+from canon.db import Conn
 from canon.reasoning.engine import Result, evaluate
-from tests.reasoning_support import (
-    WATER,
-    WATER_DAY,
-    Conn,
-)
+from tests.reasoning_support import WATER, WATER_DAY
 from tests.test_import import _scalar
 from tests.verification_support import _with_penalties
 

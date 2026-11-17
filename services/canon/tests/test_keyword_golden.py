@@ -124,7 +124,8 @@ class _Hit:
 
 def _rules() -> dict[str, Callable[[Any], bool]]:
     args = argparse.Namespace(lexical=0.5, semantic=0.71, coverage=0.5)
-    return tool.rule_variants(args)  # type: ignore[no-any-return]
+    rules: dict[str, Callable[[Any], bool]] = tool.rule_variants(args)
+    return rules
 
 
 @pytest.mark.parametrize(

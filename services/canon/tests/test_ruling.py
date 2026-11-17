@@ -4,15 +4,13 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.law.ruling import RulingError, load
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 URL = "https://cons.judicial.gov.tw/docdata.aspx?fid=100&id=1"
 

@@ -7,12 +7,13 @@ import psycopg
 import pytest
 
 from canon.annotate import AnnotationError, load
+from canon.db import Conn
 from canon.verification.checks.shape import shape_issues
 from tests.reasoning_support import _plain_duty
 from tests.test_annotation import LAW, _definition_doc, _doc, _duty, _limit
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import Conn, _record, _two_statements
+from tests.verification_support import _record, _two_statements
 
 pytestmark = pytest.mark.usefixtures("conn")
 

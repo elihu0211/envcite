@@ -2,15 +2,13 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.law.parsing import PARSER_VERSION
 from tests.sample import stored_snapshot
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 HISTORY = (
     "1.中華民國八十年五月二十三日總統令制定公布全文 3 條\r\n"

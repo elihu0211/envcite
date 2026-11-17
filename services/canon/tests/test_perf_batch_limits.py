@@ -5,13 +5,17 @@ from decimal import Decimal
 
 import pytest
 
+from canon.db import Conn
 from canon.reasoning.facts import chains
 from canon.reasoning.facts import condition_facts as condition_module
 from canon.reasoning.facts.chains import DelegatedLimitRow, VoidLimitRow
 from canon.reasoning.facts.condition_facts import ConditionRow, condition_facts
 
 
-def test_condition_facts_batches_delegated_limits(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_condition_facts_batches_delegated_limits(
+    conn: Conn, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """查詢換成替身計數；連線是真的，但不會被用到。"""
     calls: list[str] = []
     conds = [
         ConditionRow(
@@ -56,7 +60,7 @@ def test_condition_facts_batches_delegated_limits(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(chains, "fetch", fake_fetch)
 
     lines = condition_facts(
-        object(),  # type: ignore[arg-type]
+        conn,
         {"ids": [1]},
         "zh-Hant",
         date(2026, 11, 14),

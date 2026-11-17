@@ -4,16 +4,14 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-import psycopg
 import pytest
 
 from canon import sync
 from canon.acquire.engine import DownloadFailed, Feed, acquire
+from canon.db import Conn
 from canon.law.moj import Moj
 from tests.test_acquire import _publish
 from tests.test_import import _law
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 class LocalMoj(Moj):

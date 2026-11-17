@@ -7,12 +7,12 @@
 
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
-import psycopg
 import pytest
 from psycopg.types.range import Range
 
+from canon.db import Conn, fetch
 from canon.law import audit, importer, moenv_law
 from canon.law.backfill import planner
 from canon.law.backfill.models import Anchor, Article, Version
@@ -27,7 +27,19 @@ from tests.sample import stored_snapshot
 from tests.test_import import _law
 from tests.test_incremental import _next
 
-Conn = psycopg.Connection[tuple[object, ...]]
+
+class _Version(NamedTuple):
+    path: str
+    version_date: date
+    force_period: Range[date] | None
+    text: str
+
+
+class _Status(NamedTuple):
+    path: str
+    status: str
+    text: str | None
+
 
 PCODE = "T0000001"
 TITLE = "噪音管制法施行細則"
@@ -86,32 +98,32 @@ def _full_site(**over: Any) -> dict[str, str]:
     return site("FL000001", TITLE, over.pop("current", (V3, V3_TEXT)), past)
 
 
-def _rows(conn: Conn) -> list[tuple[str, date, Range[date] | None, str]]:
-    return [
-        (str(path), d, force, str(content))  # type: ignore[misc]
-        for path, d, force, content in conn.execute(
-            "SELECT p.path, e.version_date, v.force_period, corpus.article_text(v.id)"
-            "  FROM corpus.provision_version AS v"
-            "  JOIN corpus.provision AS p ON p.id = v.provision_id"
-            "  JOIN corpus.legal_expression AS e ON e.id = v.expression_id"
-            " WHERE v.superseded_at IS NULL AND p.provision_type = 'article'"
-            " ORDER BY p.path, e.version_date"
-        )
-    ]
+def _rows(conn: Conn) -> list[_Version]:
+    return fetch(
+        conn,
+        "SELECT p.path, e.version_date, v.force_period, corpus.article_text(v.id)"
+        "  FROM corpus.provision_version AS v"
+        "  JOIN corpus.provision AS p ON p.id = v.provision_id"
+        "  JOIN corpus.legal_expression AS e ON e.id = v.expression_id"
+        " WHERE v.superseded_at IS NULL AND p.provision_type = 'article'"
+        " ORDER BY p.path, e.version_date",
+        None,
+        _Version,
+    )
 
 
 def _at(conn: Conn, on: date) -> dict[str, tuple[str, str | None]]:
     """查詢日各條的狀態與文字（`corpus.provisions_at`）。"""
-    return {
-        str(path): (str(status), text)  # type: ignore[misc]
-        for path, status, text in conn.execute(
-            "SELECT a.path, a.status::text, corpus.article_text(a.version_id)"
-            "  FROM corpus.legal_resource AS r,"
-            "       LATERAL corpus.provisions_at(r.id, 'zho', %s) AS a"
-            " WHERE r.local_id = %s AND a.provision_type = 'article'",
-            (on, PCODE),
-        )
-    }
+    rows = fetch(
+        conn,
+        "SELECT a.path, a.status::text, corpus.article_text(a.version_id)"
+        "  FROM corpus.legal_resource AS r,"
+        "       LATERAL corpus.provisions_at(r.id, 'zho', %s) AS a"
+        " WHERE r.local_id = %s AND a.provision_type = 'article'",
+        (on, PCODE),
+        _Status,
+    )
+    return {row.path: (row.status, row.text) for row in rows}
 
 
 def test_past_versions_are_chained_to_the_anchor_without_gaps_or_overlaps(

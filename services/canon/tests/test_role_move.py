@@ -4,10 +4,9 @@ from pathlib import Path
 
 import psycopg
 
+from canon.db import Conn
 from canon.migrate import MIGRATIONS_DIR, apply_all
 from tests.test_migrate import _at, _drop
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 ROLES = {
     "envcite_ontology_reader": "canon_reader",

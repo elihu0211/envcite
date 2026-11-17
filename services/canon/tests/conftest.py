@@ -9,6 +9,7 @@ from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from testcontainers.community.postgres import PostgresContainer
 
+from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.migrate import apply_all
@@ -82,7 +83,7 @@ def dsn() -> Iterator[str]:
 
 
 @pytest.fixture
-def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
+def conn(dsn: str) -> Iterator[Conn]:
     """A connection whose writes are undone, including committed ones.
 
     Rolling back is not enough: a test that commits leaves rows behind, and the next
@@ -117,7 +118,7 @@ def conn(dsn: str) -> Iterator[psycopg.Connection[tuple[object, ...]]]:
 
 
 @pytest.fixture
-def sample(conn: psycopg.Connection[tuple[object, ...]], tmp_path: Path) -> None:
+def sample(conn: Conn, tmp_path: Path) -> None:
     """Two real-shaped laws (`tests/sample.py`), imported the way production imports them."""
     stored_snapshot(conn, tmp_path, sample_laws())
     importer.run(conn, tmp_path, Moj())

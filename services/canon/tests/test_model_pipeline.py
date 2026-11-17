@@ -3,19 +3,12 @@
 import json
 from pathlib import Path
 
+from canon.db import Conn
 from canon.reasoning.engine import evaluate
 from canon.verification.methods import ALL_METHODS
 from canon.verification.run import run
 from canon.verification.selection import units_of
-from tests.model_gates_support import (
-    CASES,
-    EXTRACTOR,
-    FAITHFUL,
-    SAME_AS_ANNOTATION,
-    TEXT,
-    Conn,
-    Scripted,
-)
+from tests.model_gates_support import CASES, EXTRACTOR, FAITHFUL, SAME_AS_ANNOTATION, TEXT, Scripted
 from tests.test_annotation import BEFORE, LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

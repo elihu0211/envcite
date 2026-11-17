@@ -8,9 +8,9 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.law.judgment_sync import SyncResult, sync
 from canon.law.judicial_api import (
     AUTH_URL,
@@ -22,7 +22,6 @@ from canon.law.judicial_api import (
 from canon.law.judicial_credentials import CredentialsError, read_credentials
 from tests.test_import import _scalar
 
-Conn = psycopg.Connection[tuple[object, ...]]
 TAIPEI = ZoneInfo("Asia/Taipei")
 JID = "TPAA,110,上,1,20210101,1"
 

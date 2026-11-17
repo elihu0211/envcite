@@ -6,14 +6,11 @@ from typing import Any
 
 import pytest
 
+from canon.db import Conn
 from canon.verification.distinct import PROBES, SameModel, assert_distinct
 from canon.verification.models import AnthropicModel, ModelError
 from canon.verification.run import run
-from tests.model_gates_support import (
-    TEXT,
-    Conn,
-    Scripted,
-)
+from tests.model_gates_support import TEXT, Scripted
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1

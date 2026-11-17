@@ -17,14 +17,13 @@ import psycopg
 import pytest
 
 from canon import projection
+from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 ON = "2019-06-01"

@@ -6,12 +6,20 @@ that, and the constraints that keep versions from overlapping or crossing laws.
 """
 
 from datetime import date
+from typing import NamedTuple
 
 import psycopg
 import pytest
 from psycopg.types.range import Range
 
-Conn = psycopg.Connection[tuple[object, ...]]
+from canon.db import Conn, fetch
+
+
+class _Status(NamedTuple):
+    path: str
+    status: str
+    text: str | None
+
 
 #: The sample law 水污染防治法 (`tests/sample.py`), resolved on a date its current version covers.
 SAMPLE_AT_2020 = (
@@ -97,15 +105,14 @@ def _dated(conn: Conn, expression: int, start: date) -> str:
     return "retroactive" if start < row[0] else "specified"
 
 
-def _at(conn: Conn, law: int, on: date) -> list[tuple[str, str, str | None]]:
-    return [
-        (str(path), str(status), text)  # type: ignore[misc]
-        for path, status, text in conn.execute(
-            "SELECT s.path, s.status, corpus.article_text(s.version_id)"
-            "  FROM corpus.provisions_at(%s, 'zho', %s) AS s ORDER BY s.sort_key",
-            (law, on),
-        ).fetchall()
-    ]
+def _at(conn: Conn, law: int, on: date) -> list[_Status]:
+    return fetch(
+        conn,
+        "SELECT s.path, s.status::text, corpus.article_text(s.version_id)"
+        "  FROM corpus.provisions_at(%s, 'zho', %s) AS s ORDER BY s.sort_key",
+        (law, on),
+        _Status,
+    )
 
 
 def test_pcode_shape_is_enforced(conn: Conn) -> None:

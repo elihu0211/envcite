@@ -5,9 +5,10 @@ from pathlib import Path
 
 from canon import annotation_read
 from canon.annotate import load
+from canon.db import Conn
 from canon.reasoning.engine import evaluate
 from canon.reasoning.transition import evaluate_across
-from tests.reasoning_support import Conn, _plain_duty, _scope, _with
+from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _duty, _limit
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_id, _law_v1, _law_v2, _next

@@ -2,16 +2,13 @@
 
 from pathlib import Path
 
-import psycopg
-
 from canon import projection
+from canon.db import Conn
 from canon.law import delegation, importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 ON = "2019-06-01"
 HISTORY = "1.中華民國一百零七年六月十三日總統令制定公布全文 9 條；並自公布日施行"

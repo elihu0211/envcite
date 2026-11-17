@@ -4,6 +4,7 @@ import psycopg
 import pytest
 from psycopg.conninfo import make_conninfo
 
+from canon.db import Conn
 from canon.migrate import MIGRATIONS_DIR, MigrationChanged, apply_all
 from tests.test_import import _scalar
 
@@ -58,7 +59,7 @@ def test_a_database_at_the_first_baseline_upgrades_to_the_current_files(
             admin.execute(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)")
 
 
-def _at(dsn: str, name: str, tmp_path: Path, before: str) -> psycopg.Connection[tuple[object, ...]]:
+def _at(dsn: str, name: str, tmp_path: Path, before: str) -> Conn:
     """A fresh database with the migrations before `before` applied."""
     with psycopg.connect(dsn, autocommit=True) as admin:
         admin.execute(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)")

@@ -3,16 +3,10 @@ them."""
 
 from pathlib import Path
 
+from canon.db import Conn
 from canon.verification.extract import extract_unit
 from canon.verification.model_gates.independent import IndependentTestGate
-from tests.model_gates_support import (
-    CASES,
-    EXTRACTOR,
-    TEXT,
-    Conn,
-    Scripted,
-    _extracted,
-)
+from tests.model_gates_support import CASES, EXTRACTOR, TEXT, Scripted, _extracted
 from tests.test_annotation import LAW
 from tests.test_incremental import _articles, _first, _law_v1
 

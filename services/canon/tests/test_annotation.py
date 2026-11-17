@@ -9,6 +9,7 @@ import psycopg
 import pytest
 
 from canon.annotate import AnnotationError, load
+from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.reasoning.facts.chains import limit_at
@@ -22,8 +23,6 @@ from tests.test_incremental import (
     _law_v2,
     _next,
 )
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 LAW = "T0000001"
 BEFORE = date(2019, 1, 1)  # v1 text in force

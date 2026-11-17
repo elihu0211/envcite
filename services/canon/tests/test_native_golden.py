@@ -12,13 +12,12 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-import psycopg
 import pytest
 
+from canon.db import Conn
 from tests.sample import AIR
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 def _load(name: str) -> ModuleType:

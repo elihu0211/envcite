@@ -5,12 +5,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-import psycopg
-
 from tests.test_annotation import LAW
-
-Conn = psycopg.Connection[tuple[object, ...]]
-
 
 WATER = Path(__file__).parent / "data" / "water_art7_art40.json"
 

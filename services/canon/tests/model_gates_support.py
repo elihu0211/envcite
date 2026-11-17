@@ -6,14 +6,11 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import psycopg
-
+from canon.db import Conn
 from canon.verification.extract import extract_unit
 from tests.test_annotation import LAW
 from tests.test_incremental import _articles, _first, _law_v1
 from tests.verification_support import EXTRACTED
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 class Scripted:

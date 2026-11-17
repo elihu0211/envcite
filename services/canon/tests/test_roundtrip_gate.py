@@ -6,18 +6,12 @@ from typing import Any
 
 import pytest
 
+from canon.db import Conn
 from canon.verification import prompts
 from canon.verification.extract import extract_unit
 from canon.verification.model_gates.render import render_annotation
 from canon.verification.model_gates.roundtrip import RoundtripGate
-from tests.model_gates_support import (
-    EXTRACTOR,
-    SAME_AS_ANNOTATION,
-    TEXT,
-    Conn,
-    Scripted,
-    _extracted,
-)
+from tests.model_gates_support import EXTRACTOR, SAME_AS_ANNOTATION, TEXT, Scripted, _extracted
 from tests.test_annotation import LAW
 from tests.test_incremental import _articles, _first, _law_v1
 

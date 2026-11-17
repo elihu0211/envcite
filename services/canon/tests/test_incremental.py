@@ -5,12 +5,13 @@ import json
 import zipfile
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import psycopg
 import pytest
 
 from canon import projection
+from canon.db import Conn, fetch
 from canon.law import audit, importer
 from canon.law.importer import Outcome
 from canon.law.moj import Moj, content_sha256, pcode
@@ -19,7 +20,11 @@ from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 
-Conn = psycopg.Connection[tuple[object, ...]]
+
+class _Status(NamedTuple):
+    path: str
+    status: str
+    text: str | None
 
 
 @pytest.fixture(autouse=True)
@@ -88,14 +93,14 @@ def _law_id(conn: Conn) -> int:
 
 
 def _at(conn: Conn, on: date) -> dict[str, tuple[str, str | None]]:
-    return {
-        str(path): (str(status), text)  # type: ignore[misc]
-        for path, status, text in conn.execute(
-            "SELECT s.path, s.status, corpus.article_text(s.version_id)"
-            "  FROM corpus.provisions_at(%s, 'zho', %s) AS s",
-            (_law_id(conn), on),
-        )
-    }
+    rows = fetch(
+        conn,
+        "SELECT s.path, s.status::text, corpus.article_text(s.version_id)"
+        "  FROM corpus.provisions_at(%s, 'zho', %s) AS s",
+        (_law_id(conn), on),
+        _Status,
+    )
+    return {row.path: (row.status, row.text) for row in rows}
 
 
 def test_an_amendment_adds_a_version_and_closes_the_previous_one(

@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+from canon.db import Conn
 from canon.verification.checks.coverage import uncovered_issues
 from canon.verification.checks.fragments import (
     completeness_issues,
@@ -24,7 +25,6 @@ from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
 from tests.verification_support import (
     EXTRACTED,
-    Conn,
     FakeModel,
     ScriptedModel,
     _duty_and_cited_penalty,

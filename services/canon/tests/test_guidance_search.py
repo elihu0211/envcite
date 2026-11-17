@@ -2,12 +2,12 @@
 
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import grpc
-import psycopg
 import pytest
 
+from canon.db import Conn, fetch
 from canon.guidance_search import EXTRA, fuse, guidance_phrases
 from canon.law.guidance import load
 from canon.server import build_server
@@ -20,7 +20,11 @@ from tests.test_guidance import _doc, _letter
 from tests.test_incremental import _first, _law_v1
 from tests.test_reasoning_transition import _amended
 
-Conn = psycopg.Connection[tuple[object, ...]]
+
+class _Article(NamedTuple):
+    number: str
+    documents: int
+
 
 ON = "2019-06-01"
 PHRASE = "露天燃燒"
@@ -31,15 +35,14 @@ def _burning(no: str, issued_on: str, **over: Any) -> dict[str, Any]:
     return _letter(no, issued_on, subject=f"有關{PHRASE}之認定", **over)
 
 
-def _articles(
-    conn: Conn, phrases: list[str], on: str = ON, max_df: float = 0.0
-) -> list[tuple[str, int]]:
-    rows = conn.execute(
+def _articles(conn: Conn, phrases: list[str], on: str = ON, max_df: float = 0.0) -> list[_Article]:
+    return fetch(
+        conn,
         "SELECT corpus.article_number(g.path), g.documents"
         "  FROM retrieval.guidance_articles(%s, %s, 'zho', 10, %s) AS g ORDER BY 1",
         (phrases, on, max_df),
-    ).fetchall()
-    return [(str(number), int(documents)) for number, documents in rows]  # type: ignore[call-overload]
+        _Article,
+    )
 
 
 def test_a_letter_naming_the_phrase_brings_out_the_article_it_interprets(

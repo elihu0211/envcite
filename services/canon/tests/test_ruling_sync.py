@@ -9,9 +9,9 @@ from datetime import date
 from pathlib import Path
 from typing import TypedDict
 
-import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.law import cons
 from canon.law.ruling import RulingError
 from canon.law.ruling_extract import extract, should_keep
@@ -19,8 +19,6 @@ from canon.law.ruling_sync import sync
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 DATA = Path(__file__).parent / "data"
 TITLE = "噪音管制法"

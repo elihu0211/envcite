@@ -2,18 +2,14 @@
 
 from pathlib import Path
 
+from canon.db import Conn
 from canon.reasoning.engine import evaluate
 from canon.verification.extract import extract_unit
 from canon.verification.pipeline import settle
 from tests.test_annotation import BEFORE, LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import (
-    DETERMINISTIC,
-    EXTRACTED,
-    Conn,
-    FakeModel,
-)
+from tests.verification_support import DETERMINISTIC, EXTRACTED, FakeModel
 
 
 def test_the_extractor_anchors_what_the_model_quotes_and_drops_what_it_invents(

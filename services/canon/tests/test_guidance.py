@@ -8,6 +8,7 @@ from typing import Any
 import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.law.guidance import GuidanceError, load
 from envcite.canon.v1 import reasoning_pb2, reasoning_pb2_grpc
 from tests.conftest import call_metadata
@@ -17,7 +18,6 @@ from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1
 from tests.test_reasoning_transition import _amended
 
-Conn = psycopg.Connection[tuple[object, ...]]
 Stub = reasoning_pb2_grpc.ReasoningServiceStub
 
 

@@ -2,19 +2,20 @@
 not change, slots list alternatives, and a defined term stays in its law's scheme."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import psycopg
 import pytest
 
 from canon.annotate import load
+from canon.db import Conn, fetch_one
 from canon.verification.checks.shape import tidy
 from tests.test_annotation import LAW, _definition_doc, _doc, _duty, _limit
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
 
 
-def _claims(conn: psycopg.Connection[tuple[object, ...]]) -> int:
+def _claims(conn: Conn) -> int:
     return int(_scalar(conn, "SELECT count(*) FROM annotation.assertion"))
 
 
@@ -25,7 +26,9 @@ def _with_slots(slots: dict[str, Any], span: list[int] | None = None) -> dict[st
     return duty
 
 
-Conn = psycopg.Connection[tuple[object, ...]]
+class _Anchor(NamedTuple):
+    provision_id: int
+    content_sha256: bytes
 
 
 def test_loading_the_same_document_twice_adds_nothing(conn: Conn, tmp_path: Path) -> None:
@@ -115,9 +118,11 @@ def test_sealed_content_cannot_change(conn: Conn, tmp_path: Path) -> None:
 def test_a_claim_must_be_sealed_before_commit(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_duty()))
-    provision, digest = conn.execute(
-        "SELECT provision_id, content_sha256 FROM annotation.statement"
-    ).fetchone()  # type: ignore[misc]
+    anchor = fetch_one(
+        conn, "SELECT provision_id, content_sha256 FROM annotation.statement", None, _Anchor
+    )
+    assert anchor is not None
+    provision, digest = anchor
     claim = _scalar(
         conn,
         "INSERT INTO annotation.assertion (assertion_kind, derivation_id)"

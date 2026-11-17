@@ -7,10 +7,11 @@ from typing import Any
 from psycopg.types.range import Range
 
 from canon.annotate import load
+from canon.db import Conn
 from canon.law import delegation, importer
 from canon.law.moj import Moj
 from canon.reasoning.engine import Result, evaluate
-from tests.reasoning_support import Conn, _scope, _with
+from tests.reasoning_support import _scope, _with
 from tests.sample import stored_snapshot
 from tests.test_annotation import _doc
 from tests.test_import import _law, _scalar

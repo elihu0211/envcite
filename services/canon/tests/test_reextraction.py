@@ -6,12 +6,13 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
+from canon.db import Conn
 from canon.verification.reextract import due_units, review_notes
 from canon.verification.run import run
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import EXTRACTED, Conn, FakeModel
+from tests.verification_support import EXTRACTED, FakeModel
 
 TEXT = "排放廢水者應符合標準"
 #: 沒有模型閘門，要求的方法永遠不會有結果：義務停在 extracted，沒有定論。

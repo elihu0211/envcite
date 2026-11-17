@@ -3,15 +3,12 @@
 from datetime import date
 from pathlib import Path
 
-import psycopg
-
+from canon.db import Conn
 from canon.import_problems import Problem
 from canon.law.judgment import load
 from canon.law.judgment_anchor import RULE_VERSION, extract
 from tests.test_annotation import LAW
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 DECIDED = date(2021, 1, 1)  # 第 2 條已是「乙二」
 CONDUCT = date(2019, 6, 1)  # 第 2 條仍是「乙一」

@@ -11,6 +11,7 @@ from typing import Any
 import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.import_problems import Problem
 from canon.law import gazette, guidance_anchor, importer, moenv
 from canon.law.guidance_sync.report import Report
@@ -18,8 +19,6 @@ from canon.law.guidance_sync.run import sync
 from canon.law.moj import Moj
 from envcite_jobkit import EndpointError, ExitCode, Policy
 from tests.sample import WATER, sample_laws, stored_snapshot
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 POLICY = Policy(name="test", max_attempts=1, backoff_base_seconds=0.0)
 TODAY = date(2026, 11, 14)

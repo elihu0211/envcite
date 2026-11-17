@@ -8,9 +8,9 @@ sides reach the same segmentation — rather than handing the database words.
 from collections.abc import Iterator
 
 import grpc
-import psycopg
 import pytest
 
+from canon.db import Conn
 from canon.server import build_server
 from canon.store.canon_store import CanonStore
 from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
@@ -20,9 +20,7 @@ from .conftest import call_metadata
 
 
 @pytest.fixture
-def search_stub(
-    conn: psycopg.Connection[tuple[object, ...]], store: CanonStore
-) -> Iterator[canon_pb2_grpc.CanonServiceStub]:
+def search_stub(conn: Conn, store: CanonStore) -> Iterator[canon_pb2_grpc.CanonServiceStub]:
     law = conn.execute(
         "INSERT INTO corpus.legal_resource"
         " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"

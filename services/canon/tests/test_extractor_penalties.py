@@ -3,27 +3,33 @@ held for linking (`annotation.held_penalty`), or dropped."""
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NamedTuple
 
+from canon.db import Conn, fetch
 from canon.verification.extract import extract_unit
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import (
-    EXTRACTED,
-    Conn,
-    FakeModel,
-    _duty_and_cited_penalty,
-)
+from tests.verification_support import EXTRACTED, FakeModel, _duty_and_cited_penalty
+
+
+class _Held(NamedTuple):
+    #: 待連結罰則的載入文件（JSON）。
+    document: dict[str, Any]
+    punished_statement_id: int | None
 
 
 def _held(conn: Conn) -> list[tuple[list[str], int | None]]:
     """待連結罰則：每份的陳述 id 與指明的受罰陳述。"""
+    rows = fetch(
+        conn,
+        "SELECT document, punished_statement_id FROM annotation.held_penalty ORDER BY id",
+        None,
+        _Held,
+    )
     return [
-        ([str(x["id"]) for x in doc["statements"]], cast("int | None", punished))  # type: ignore[index]
-        for doc, punished in conn.execute(
-            "SELECT document, punished_statement_id FROM annotation.held_penalty ORDER BY id"
-        )
+        ([str(x["id"]) for x in row.document["statements"]], row.punished_statement_id)
+        for row in rows
     ]
 
 

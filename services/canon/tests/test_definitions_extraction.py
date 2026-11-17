@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from canon.db import Conn
 from canon.verification.definitions import (
     defined_terms,
     definition_paths,
@@ -15,7 +16,7 @@ from canon.verification.extract import extract_unit
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import Conn, FakeModel
+from tests.verification_support import FakeModel
 
 CHAPEAU = "本法用語，定義如下："
 ITEM_1 = "一、事業：指工廠、礦場。"

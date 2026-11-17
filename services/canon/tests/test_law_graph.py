@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Any
 
 import grpc
-import psycopg
 import pytest
 from google.rpc import error_details_pb2
 from grpc_status import rpc_status
 
 from canon import errors
+from canon.db import Conn
 from canon.law.delegation import extract as extract_delegations
 from canon.law.guidance import load as load_guidance
 from canon.law.importer import run as run_import
@@ -22,7 +22,6 @@ from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 from .conftest import call_metadata, identifier
 from .sample import stored_snapshot
 
-Conn = psycopg.Connection[tuple[object, ...]]
 Stub = canon_pb2_grpc.CanonServiceStub
 
 
@@ -52,7 +51,8 @@ def _moj_law(
 
 
 def _failure(error: grpc.RpcError) -> tuple[str, list[tuple[str, str]]]:
-    status = rpc_status.from_call(error)  # type: ignore[arg-type]
+    assert isinstance(error, grpc.Call)  # stub 丟出的錯誤同時是 Call
+    status = rpc_status.from_call(error)
     assert status is not None
     reason = ""
     violations: list[tuple[str, str]] = []

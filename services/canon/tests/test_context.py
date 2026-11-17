@@ -5,10 +5,10 @@ in the item."""
 
 from pathlib import Path
 
-import psycopg
 import pytest
 
 from canon.annotate import Loaded, load
+from canon.db import Conn
 from canon.verification.context import ancestors_text
 from canon.verification.extract import extract_unit
 from canon.verification.gates.numbers_gate import NumbersGate
@@ -16,8 +16,6 @@ from canon.verification.model_gates.panel import PanelGate
 from tests.model_gates_support import EXTRACTOR, Scripted
 from tests.test_annotation import LAW, _doc, _duty
 from tests.test_incremental import _articles, _first, _law_v1
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 CHAPEAU = (
     "公私場所有下列情形之一者，處新臺幣二萬元以上一百萬元以下罰鍰；"

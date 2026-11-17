@@ -9,6 +9,7 @@ from google.rpc import error_details_pb2, status_pb2
 from psycopg_pool import ConnectionPool
 
 from canon import errors, projection
+from canon.db import Conn
 from canon.embedding import EmbeddingError
 from canon.search_tuning import SearchTuning
 from canon.server import QUERY_EMBED_SLOTS, WORKERS
@@ -17,25 +18,7 @@ from canon.store.canon_store import CanonStore
 from canon.store.connections import Connections
 from envcite.canon.v1 import canon_pb2
 from envcite_segmenter import Segmenter
-
-
-class _Aborted(Exception):
-    def __init__(self, status: grpc.Status) -> None:
-        self.status = status
-
-
-class _Context:
-    def __init__(self, remaining: float | None) -> None:
-        self._remaining = remaining
-
-    def invocation_metadata(self) -> tuple[()]:
-        return ()
-
-    def time_remaining(self) -> float | None:
-        return self._remaining
-
-    def abort_with_status(self, status: grpc.Status) -> None:
-        raise _Aborted(status)
+from tests.grpc_support import Aborted, FakeContext
 
 
 class _CountingEmbedder:
@@ -79,10 +62,10 @@ def test_a_short_deadline_cancels_the_search_query(
     servicer = build_servicer(
         store.laws, store.graph, store.retrieval, Segmenter([]), store.retrieval.law_names()
     )
-    with pytest.raises(_Aborted) as aborted:
+    with pytest.raises(Aborted) as aborted:
         servicer.SearchArticles(
             canon_pb2.SearchArticlesRequest(query="噪音"),
-            _Context(remaining=0.05),  # type: ignore[arg-type]
+            FakeContext(0.05),
         )
 
     assert aborted.value.status.code == grpc.StatusCode.DEADLINE_EXCEEDED
@@ -96,10 +79,10 @@ def test_an_exhausted_pool_is_busy(dsn: str) -> None:
         servicer = build_servicer(
             local.laws, local.graph, local.retrieval, Segmenter([]), local.retrieval.law_names()
         )
-        with pool.connection(), pytest.raises(_Aborted) as aborted:
+        with pool.connection(), pytest.raises(Aborted) as aborted:
             servicer.SearchArticles(
                 canon_pb2.SearchArticlesRequest(query="噪音"),
-                _Context(remaining=0.2),  # type: ignore[arg-type]
+                FakeContext(0.2),
             )
         assert aborted.value.status.code == grpc.StatusCode.RESOURCE_EXHAUSTED
         assert _reason(aborted.value.status) == errors.BUSY
@@ -108,7 +91,7 @@ def test_an_exhausted_pool_is_busy(dsn: str) -> None:
 
 
 def test_a_full_embed_slot_still_returns_lexical_hits(
-    conn: psycopg.Connection[tuple[object, ...]], store: CanonStore, sample: None
+    conn: Conn, store: CanonStore, sample: None
 ) -> None:
     assert projection.rebuild(conn) > 0
     conn.commit()
@@ -127,7 +110,7 @@ def test_a_full_embed_slot_still_returns_lexical_hits(
 
     response = servicer.SearchArticles(
         canon_pb2.SearchArticlesRequest(query="空氣污染"),
-        _Context(remaining=5),  # type: ignore[arg-type]
+        FakeContext(5),
     )
 
     assert embedder.calls == 0
@@ -146,6 +129,6 @@ def test_an_embed_slot_is_released_for_the_next_query(store: CanonStore) -> None
         tuning=SearchTuning(embed_slots=1),
     )
     request = canon_pb2.SearchArticlesRequest(query="噪音")
-    servicer.SearchArticles(request, _Context(remaining=5))  # type: ignore[arg-type]
-    servicer.SearchArticles(request, _Context(remaining=5))  # type: ignore[arg-type]
+    servicer.SearchArticles(request, FakeContext(5))
+    servicer.SearchArticles(request, FakeContext(5))
     assert embedder.calls == 2

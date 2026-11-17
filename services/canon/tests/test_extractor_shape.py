@@ -4,17 +4,13 @@ conditions, missing directions."""
 import json
 from pathlib import Path
 
+from canon.db import Conn
 from canon.verification.checks.fragments import completeness_issues
 from canon.verification.extract import extract_unit
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import (
-    EXTRACTED,
-    Conn,
-    FakeModel,
-    ScriptedModel,
-)
+from tests.verification_support import EXTRACTED, FakeModel, ScriptedModel
 
 
 def test_the_extractor_reads_json_that_the_model_wrapped_in_a_code_fence(

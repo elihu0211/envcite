@@ -3,14 +3,9 @@
 from pathlib import Path
 from typing import Any
 
+from canon.db import Conn
 from canon.verification.model_gates.panel import PanelGate
-from tests.model_gates_support import (
-    FAITHFUL,
-    UNFAITHFUL,
-    Conn,
-    Scripted,
-    _extracted,
-)
+from tests.model_gates_support import FAITHFUL, UNFAITHFUL, Scripted, _extracted
 
 
 def _panel(conn: Conn, tmp_path: Path, *votes: tuple[str, Any]) -> Any:

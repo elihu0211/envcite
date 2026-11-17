@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from canon.annotate import load
+from canon.db import Conn
 from canon.verification.gates.cn_number import amounts, cn_number, numbers_in, qualified_numbers
 from canon.verification.gates.executable_gate import ExecutableGate
 from canon.verification.gates.numbers_gate import NumbersGate
@@ -18,13 +19,7 @@ from canon.violation import citations, delegated_rules, violations
 from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import LAW, _doc, _limit
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import (
-    DETERMINISTIC,
-    Conn,
-    _review,
-    _water,
-    _water_with,
-)
+from tests.verification_support import DETERMINISTIC, _review, _water, _water_with
 
 
 @pytest.mark.parametrize(
@@ -108,8 +103,9 @@ def test_numbers_gate_checks_the_amounts_against_the_text(conn: Conn, sample: No
     ids = _water(conn, sample).ids
     gate = NumbersGate()
 
-    assert gate.check(conn, ids["p40_1_fine"]).verdict == "pass"  # type: ignore[union-attr]
-    assert gate.check(conn, ids["p40_2_fine"]).verdict == "pass"  # type: ignore[union-attr]
+    for fine in ("p40_1_fine", "p40_2_fine"):
+        result = gate.check(conn, ids[fine])
+        assert result is not None and result.verdict == "pass"
     assert gate.check(conn, ids["w7_1"]) is None  # 沒有罰則、沒有帶單位的門檻值
 
     wrong = _water_with(conn, "p40_1_fine", max=2000000).ids["p40_1_fine"]

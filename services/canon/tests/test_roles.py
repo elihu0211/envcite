@@ -9,12 +9,13 @@ import psycopg
 import pytest
 
 from canon.annotate import load
+from canon.db import Conn
 from canon.verification.link import link_penalties
 from canon.verification.pipeline import settle
 from tests.test_annotation import _doc, _duty
 from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1
-from tests.verification_support import DETERMINISTIC, Conn, _two_statements, _water_draft
+from tests.verification_support import DETERMINISTIC, _two_statements, _water_draft
 
 READER = "canon_reader"
 WRITER = "canon_writer"

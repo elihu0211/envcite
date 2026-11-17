@@ -6,13 +6,14 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 import psycopg
 import pytest
 
 from canon import violation
 from canon.annotate import load
+from canon.db import Conn, fetch
 from canon.verification.extract import extract_unit
 from canon.verification.gates.base import GateResult
 from canon.verification.gates.references_gate import ReferencesGate
@@ -21,18 +22,22 @@ from canon.verification.model_gates.panel import PanelGate
 from canon.verification.model_gates.render import render_annotation
 from canon.verification.pipeline import settle
 from canon.verification.run import run
-from tests.model_gates_support import (
-    EXTRACTOR,
-    TEXT,
-    Conn,
-    Scripted,
-)
+from tests.model_gates_support import EXTRACTOR, TEXT, Scripted
 from tests.test_annotation import LAW, _doc
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
 from tests.verification_support import EXTRACTED
 
 PENALTY_TEXT = "違反第一條規定者，處新臺幣一萬元以上十萬元以下罰鍰"
+
+
+class _Target(NamedTuple):
+    statement_id: int
+    punished_statement_id: int
+
+
+class _Id(NamedTuple):
+    id: int
 
 
 def _penalty_doc() -> dict[str, Any]:
@@ -137,13 +142,13 @@ def _states(conn: Conn) -> list[tuple[str, int]]:
     )
 
 
-def _sanction_target(conn: Conn) -> list[tuple[int, int]]:
-    return [
-        (int(a), int(b))  # type: ignore[call-overload]
-        for a, b in conn.execute(
-            "SELECT statement_id, punished_statement_id FROM annotation.sanction"
-        )
-    ]
+def _sanction_target(conn: Conn) -> list[_Target]:
+    return fetch(
+        conn,
+        "SELECT statement_id, punished_statement_id FROM annotation.sanction",
+        None,
+        _Target,
+    )
 
 
 def test_a_penalty_is_linked_to_the_only_statement_of_the_article_it_cites(
@@ -251,9 +256,12 @@ def test_a_penalty_citing_two_articles_is_written_once_for_each_duty_it_punishes
     result = _run(conn, Scripted(EXTRACTOR, reply))
 
     duties = [
-        int(r[0])  # type: ignore[call-overload]
-        for r in conn.execute(
-            "SELECT id FROM annotation.statement WHERE statement_kind = 'prescriptive' ORDER BY id"
+        row.id
+        for row in fetch(
+            conn,
+            "SELECT id FROM annotation.statement WHERE statement_kind = 'prescriptive' ORDER BY id",
+            None,
+            _Id,
         )
     ]
     assert len(duties) == 2

@@ -10,10 +10,10 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-import psycopg
 import pytest
 
 from canon import projection
+from canon.db import Conn
 from canon.store.canon_store import CanonStore
 from canon.store.records import SearchHit
 from envcite_segmenter import Segmenter
@@ -21,7 +21,6 @@ from tests.sample import AIR, WATER
 
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "golden_retrieval_eval.py"
 
-Conn = psycopg.Connection[tuple[object, ...]]
 ON = "2026-10-23"
 
 

@@ -3,6 +3,7 @@ docs 03-04 §3.3)."""
 
 import pytest
 
+from canon.db import Conn
 from canon.reasoning.engine import evaluate
 from canon.verification.gates.base import GateResult
 from canon.verification.link import link_penalties
@@ -12,7 +13,6 @@ from tests.reasoning_support import WATER_DAY
 from tests.test_import import _scalar
 from tests.verification_support import (
     DETERMINISTIC,
-    Conn,
     _latest,
     _review,
     _water,

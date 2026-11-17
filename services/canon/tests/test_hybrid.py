@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-import psycopg
 import pytest
 
 from canon import projection
+from canon.db import Conn
 from canon.embedding import (
     DIMENSION,
     Embedder,
@@ -25,8 +25,6 @@ from envcite_jobkit import EndpointError, ExitCode, FatalError, ItemError, Polic
 from envcite_segmenter import Segmenter
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 ON = "2019-06-01"
 TEXTS = ("排放廢水者應符合放流水標準", "管制區內不得製造噪音", "地震後應檢查建物")
@@ -157,7 +155,8 @@ def test_a_failing_embedder_does_not_fail_the_search(store: CanonStore) -> None:
         store.graph,
         store.retrieval,
         Segmenter([]),
-        Broken(),  # type: ignore[arg-type]
+        store.retrieval.law_names(),
+        embedder=Broken(),
     )
 
     assert servicer.search._query_embedding("噪音") is None
