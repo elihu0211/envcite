@@ -5,13 +5,11 @@
 避免請求內容（含密碼）跟著例外被記下來。
 """
 
-import json
 from collections.abc import Mapping
 from typing import Protocol
 
-import httpx
-
 from canon.exit_codes import Retryable, Unretryable
+from canon.net import HttpStatus, TransportError, post_json
 
 AUTH_URL = "https://data.judicial.gov.tw/jdg/api/Auth"
 JLIST_URL = "https://data.judicial.gov.tw/jdg/api/JList"
@@ -39,12 +37,10 @@ class Post(Protocol):
 
 
 def http_post(url: str, body: Mapping[str, str]) -> object:
-    """真正的 POST。失敗時不把例外原文往外傳。"""
+    """真正的 POST，經 `canon.net.post_json`（自報身分）。失敗時不把例外原文往外傳。"""
     try:
-        response = httpx.post(url, json=dict(body), timeout=_TIMEOUT_SECONDS)
-        response.raise_for_status()
-        return response.json()
-    except httpx.HTTPError, UnicodeError, json.JSONDecodeError:
+        return post_json(url, dict(body), api_key=None, timeout=_TIMEOUT_SECONDS)
+    except HttpStatus, TransportError:
         raise EndpointError(url.rsplit("/", 1)[-1]) from None
 
 
