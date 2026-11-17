@@ -166,6 +166,14 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task TheLawGraphLegendTogglesTiersKeepsOneAndExplainsTheLinkStyles()
+    {
+        var chat = await RunAsync("law-graph-legend", consent: true);
+
+        Assert.Empty(chat.Calls);
+    }
+
+    [Fact]
     public async Task TheLawWorkbenchToolbarAlignsControlsAndRespondsCleanlyAcrossViewports()
     {
         var chat = await RunAsync("laws-toolbar", consent: true);

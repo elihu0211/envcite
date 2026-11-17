@@ -434,7 +434,7 @@
     return metaParts.length > 0 ? `${shortTitle}\n${metaParts.join(" · ")}` : shortTitle;
   }
 
-  function buildVisibleGraphModel(nodes, edges, expandedGroups, labels) {
+  function buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers = new Set()) {
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const incomingByTarget = new Map();
     const outgoingBySource = new Map();
@@ -530,10 +530,11 @@
       });
     }
 
+    // 圖例關掉的層級不畫（分組膠囊的層級是它所屬母法的下一層，所以跟著一起消失）。連線由下面的 visibleIds 自然濾掉。
     const visibleNodes = [
       ...nodes.filter((n) => !hiddenNodeIds.has(n.id)),
       ...groupNodes,
-    ];
+    ].filter((n) => !hiddenTiers.has(Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1));
     const visibleIds = new Set(visibleNodes.map((n) => n.id));
     const visibleEdges = [
       ...edges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target)),
@@ -1301,12 +1302,13 @@
     let showEdgeLabels = edges.length <= 16;
     let selectedNodeId = null;
     const expandedGroups = new Set();
+    const hiddenTiers = new Set(); // 圖例上被關掉的層級
     let visibleModelCache = null;
 
     const palette = themePalette();
 
     function computeCurrentGraphData() {
-      visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+      visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers);
       const { visibleNodes, visibleEdges } = visibleModelCache;
       const { positions, clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
       return buildG6Data(visibleNodes, visibleEdges, clusters, positions, themePalette(), labels);
@@ -1601,19 +1603,21 @@
     const swimlanesEl = host ? host.querySelector("[data-graph-swimlanes]") : null;
     const searchEl = host ? host.querySelector("[data-graph-search]") : null;
 
-    let activeTierFilter = null;
+    // 圖例：層級是「顯示／隱藏」的開關（可複選，被關掉的層級整層不畫）；
+    // 「違憲失效」是另一種標記，只把相關節點打亮、其餘淡化，不改變畫的內容。
+    let invalidSpotlight = false;
 
     function syncFilterButtons() {
       if (!host) return;
-      host.querySelectorAll("[data-graph-filter-tier]").forEach((btn) => {
-        btn.setAttribute("aria-pressed", btn.dataset.graphFilterTier === activeTierFilter ? "true" : "false");
+      host.querySelectorAll('[data-graph-filter-tier="invalid"]').forEach((btn) => {
+        btn.setAttribute("aria-pressed", invalidSpotlight ? "true" : "false");
       });
     }
 
-    function applyTierFilter(filterKey) {
-      activeTierFilter = activeTierFilter === filterKey ? null : filterKey;
+    function applyInvalidSpotlight() {
+      invalidSpotlight = !invalidSpotlight;
       syncFilterButtons();
-      if (!activeTierFilter) {
+      if (!invalidSpotlight) {
         if (selectedNodeId && graph.getNodeData(selectedNodeId)) {
           selectNodeById(selectedNodeId);
         } else {
@@ -1624,13 +1628,7 @@
 
       const matchedIds = new Set();
       graph.getNodeData().forEach((n) => {
-        const raw = n.data?.raw;
-        if (!raw) return;
-        const tierStr = String(Number.isFinite(raw.hierarchyTier) ? raw.hierarchyTier : 1);
-        const matches = activeTierFilter === "invalid"
-          ? raw.invalidationCount > 0
-          : tierStr === activeTierFilter;
-        if (matches) matchedIds.add(n.id);
+        if (n.data?.raw?.invalidationCount > 0) matchedIds.add(n.id);
       });
 
       const states = {};
@@ -1643,36 +1641,158 @@
       graph.setElementState(states, false);
     }
 
-    function renderSwimlanes() {
-      if (!swimlanesEl) return;
-      swimlanesEl.hidden = false;
-      clearEl(swimlanesEl);
-      const tierCounts = new Map();
-      let invalidatedTotal = 0;
+    function tierCountsOf() {
+      const counts = new Map();
       nodes.forEach((n) => {
         const t = Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1;
-        tierCounts.set(t, (tierCounts.get(t) || 0) + 1);
+        counts.set(t, (counts.get(t) || 0) + 1);
+      });
+      return counts;
+    }
+
+    function announceLegend(text) {
+      const status = swimlanesEl?.querySelector("[data-legend-status]");
+      if (status) status.textContent = text;
+    }
+
+    // 切換層級要重排、再適應視窗，中間會依序縮放與平移好幾步：藏起來、定好視角再顯示，使用者看不到中間態。
+    async function relayoutAfterLegendChange() {
+      container.dataset.graphState = "loading";
+      try {
+        graph.setData(computeCurrentGraphData());
+        await graph.render();
+        await applyLayout(currentLayout);
+        if (selectedNodeId && graph.getNodeData(selectedNodeId)) {
+          selectNodeById(selectedNodeId);
+        } else {
+          selectedNodeId = null;
+          clearSelectionStates();
+          renderInspector(inspectorEl, nodes.find((n) => n.focus) || null, nodes, edges, labels, inspectorCallbacks);
+        }
+        if (invalidSpotlight) {
+          invalidSpotlight = false;
+          applyInvalidSpotlight();
+        }
+      } catch {
+        // 圖已卸載
+      } finally {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+          container.dataset.graphState = "ready";
+        }));
+      }
+    }
+
+    async function toggleTierVisibility(tier) {
+      if (!Number.isFinite(tier)) return;
+      if (hiddenTiers.has(tier)) {
+        hiddenTiers.delete(tier);
+      } else {
+        // 至少留一個層級：全關掉圖就空了。
+        if (Array.from(tierCountsOf().keys()).filter((t) => !hiddenTiers.has(t)).length <= 1) {
+          announceLegend(labels.legendLastTier || "至少要保留一個層級");
+          return;
+        }
+        hiddenTiers.add(tier);
+      }
+      await relayoutAfterLegendChange();
+    }
+
+    async function showAllTiers() {
+      if (hiddenTiers.size === 0) return;
+      hiddenTiers.clear();
+      await relayoutAfterLegendChange();
+    }
+
+    function legendLine(dashed) {
+      const ns = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(ns, "svg");
+      svg.setAttribute("viewBox", "0 0 28 8");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("class", "ep-legend-line");
+      const line = document.createElementNS(ns, "line");
+      line.setAttribute("x1", "1");
+      line.setAttribute("y1", "4");
+      line.setAttribute("x2", "27");
+      line.setAttribute("y2", "4");
+      line.setAttribute("stroke", "currentColor");
+      line.setAttribute("stroke-width", "2");
+      line.setAttribute("stroke-linecap", "round");
+      if (dashed) line.setAttribute("stroke-dasharray", "5 4");
+      svg.appendChild(line);
+      return svg;
+    }
+
+    // 圖例列：層級開關、違憲失效標記、連線樣式說明與統計。重畫時把焦點還給同一個控制項（鍵盤切換後焦點不能掉）。
+    function renderSwimlanes() {
+      if (!swimlanesEl) return;
+      const active = swimlanesEl.contains(document.activeElement) ? document.activeElement : null;
+      const focusKey = active
+        ? (active.dataset.graphFilterTier ? `tier:${active.dataset.graphFilterTier}` : active.hasAttribute("data-graph-legend-reset") ? "reset" : null)
+        : null;
+
+      swimlanesEl.hidden = false;
+      clearEl(swimlanesEl);
+      const tierCounts = tierCountsOf();
+      let invalidatedTotal = 0;
+      nodes.forEach((n) => {
         if (n.invalidationCount > 0) invalidatedTotal += 1;
       });
-      const activeTiers = Array.from(tierCounts.keys()).sort((a, b) => a - b);
-      activeTiers.forEach((tier, idx) => {
+
+      const tiersGroup = addEl(swimlanesEl, "div", "ep-legend-group");
+      tiersGroup.setAttribute("role", "group");
+      tiersGroup.setAttribute("aria-label", labels.legendTiers || "層級（點選顯示或隱藏）");
+      Array.from(tierCounts.keys()).sort((a, b) => a - b).forEach((tier, idx) => {
         if (idx > 0 && currentLayout === "stufenbau") {
-          addEl(swimlanesEl, "span", "ep-hint", "→");
+          addEl(tiersGroup, "span", "ep-hint", "→").setAttribute("aria-hidden", "true");
         }
-        const pill = addEl(swimlanesEl, "button", "ep-swimlane-pill", `${tierName(tier, labels)} (${tierCounts.get(tier)})`);
+        const pill = addEl(tiersGroup, "button", "ep-swimlane-pill");
         pill.type = "button";
         pill.dataset.tier = String(Math.min(tier, 3));
         pill.dataset.graphFilterTier = String(tier);
-        pill.setAttribute("aria-pressed", activeTierFilter === String(tier) ? "true" : "false");
+        pill.setAttribute("aria-pressed", hiddenTiers.has(tier) ? "false" : "true");
+        addEl(pill, "span", "ep-legend-name", tierName(tier, labels));
+        addEl(pill, "span", "ep-legend-count", String(tierCounts.get(tier)));
       });
-      if (invalidatedTotal > 0) {
-        const invPill = addEl(swimlanesEl, "button", "ep-swimlane-pill", `⚠ ${invalidatedTotal}`);
-        invPill.type = "button";
-        invPill.dataset.graphFilterTier = "invalid";
-        invPill.setAttribute("aria-pressed", activeTierFilter === "invalid" ? "true" : "false");
+      if (hiddenTiers.size > 0) {
+        const reset = addEl(tiersGroup, "button", "ep-btn ep-btn-quiet ep-legend-reset", labels.legendShowAll || "全部顯示");
+        reset.type = "button";
+        reset.dataset.graphLegendReset = "true";
       }
+
+      if (invalidatedTotal > 0) {
+        const inv = addEl(swimlanesEl, "button", "ep-swimlane-pill");
+        inv.type = "button";
+        inv.dataset.graphFilterTier = "invalid";
+        inv.setAttribute("aria-pressed", invalidSpotlight ? "true" : "false");
+        addEl(inv, "span", "ep-legend-name", `⚠ ${(labels.invalidationBadge || "{n} 項違憲失效").replace("{n}", String(invalidatedTotal))}`);
+      }
+
+      const kinds = new Set(edges.map((e) => (e.kind === "sub_delegation" ? "sub" : "direct")));
+      if (kinds.size > 0) {
+        const list = addEl(swimlanesEl, "ul", "ep-legend-edges");
+        list.setAttribute("aria-label", labels.legendEdges || "連線");
+        [["direct", false, labels.delegationKind || "法律直接授權"], ["sub", true, labels.subDelegationKind || "再授權"]]
+          .filter(([kind]) => kinds.has(kind))
+          .forEach(([kind, dashed, text]) => {
+            const li = addEl(list, "li", "ep-legend-edge");
+            li.dataset.kind = kind;
+            li.appendChild(legendLine(dashed));
+            addEl(li, "span", null, text);
+          });
+      }
+
       if (swimlanesEl.dataset.graphSummary) {
         addEl(swimlanesEl, "span", "ep-swimlane-summary", swimlanesEl.dataset.graphSummary);
+      }
+      const status = addEl(swimlanesEl, "span", "ep-visually-hidden");
+      status.setAttribute("role", "status");
+      status.dataset.legendStatus = "true";
+
+      if (focusKey) {
+        const next = focusKey === "reset"
+          ? swimlanesEl.querySelector("[data-graph-legend-reset]")
+          : swimlanesEl.querySelector(`[data-graph-filter-tier="${focusKey.slice(5)}"]`);
+        next?.focus({ preventScroll: true });
       }
     }
 
@@ -1858,7 +1978,7 @@
         });
         await graph.layout();
       } else if (mode === "indented") {
-        visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+        visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers);
         const { visibleNodes, visibleEdges } = visibleModelCache;
         const { clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
         const positions = computeIndentedPositions(
@@ -1875,7 +1995,7 @@
           await graph.draw();
         }
       } else {
-        visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels);
+        visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers);
         const { visibleNodes, visibleEdges } = visibleModelCache;
         const updated = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
         const updates = [];
@@ -1995,7 +2115,12 @@
       host.addEventListener("click", (evt) => {
         const filterBtn = evt.target.closest("[data-graph-filter-tier]");
         if (filterBtn) {
-          applyTierFilter(filterBtn.dataset.graphFilterTier);
+          if (filterBtn.dataset.graphFilterTier === "invalid") applyInvalidSpotlight();
+          else toggleTierVisibility(Number(filterBtn.dataset.graphFilterTier));
+          return;
+        }
+        if (evt.target.closest("[data-graph-legend-reset]")) {
+          showAllTiers();
           return;
         }
         const openBtn = evt.target.closest("[data-inspector-open-btn]");
@@ -2058,7 +2183,7 @@
           // 焦點在面板裡時，收起後要把焦點交還給「法學檢視」，不能掉到 body。
           setInspectorOpen(false, { restoreFocus: Boolean(host.querySelector(".ep-graph-inspector")?.contains(document.activeElement)) });
           selectedNodeId = null;
-          activeTierFilter = null;
+          invalidSpotlight = false;
           syncFilterButtons();
           clearSelectionStates();
         } else if (evt.key === "0") {
