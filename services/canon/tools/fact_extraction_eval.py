@@ -34,6 +34,7 @@ from canon.db import Conn, fetch
 from canon.reasoning.engine import evaluate
 from canon.settings import DatabaseSettings, load
 from canon.verification.config import load as load_models
+from canon.verification.config import load_judges
 from canon.verification.models import ChatCompletionsModel, ModelError
 
 type Kind = Literal["flag", "number"]
@@ -316,11 +317,49 @@ def parse_facts(raw: str) -> list[Fact]:
     return out
 
 
+_DIGITS = {
+    "零": 0,
+    "〇": 0,
+    "一": 1,
+    "二": 2,
+    "兩": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+}
+_UNITS = {"十": 10, "百": 100, "千": 1000}
+_NUMERAL = re.compile("[" + "".join(_DIGITS) + "".join(_UNITS) + "]+")
+
+
+def _numeral_value(run: str) -> int:
+    """一段中文數字的值：有位值字（十百千）按位值算，只有數字的逐位串接。"""
+    if not any(ch in _UNITS for ch in run):
+        return int("".join(str(_DIGITS[ch]) for ch in run))
+    total = current = 0
+    for ch in run:
+        if ch in _DIGITS:
+            current = _DIGITS[ch]
+        else:
+            total += (current or 1) * _UNITS[ch]
+            current = 0
+    return total + current
+
+
+def arabic(text: str) -> str:
+    """把問句裡的中文數字換成阿拉伯數字（「四個」「兩年」），讓數字檢查不因寫法而擋掉。"""
+    return _NUMERAL.sub(lambda m: str(_numeral_value(m.group())), text)
+
+
 def check(
     question: str, facts: list[Fact], vocab: dict[str, Concept]
 ) -> tuple[list[Fact], Counter[str]]:
     """程式檢查：概念在候選集、型別相符、原文片段在問句裡、數字在問句裡。回傳通過者與各項被擋的次數。"""
     flat = re.sub(r"\s+", "", question.replace(",", ""))
+    digits = arabic(flat)
     kept: list[Fact] = []
     rejected: Counter[str] = Counter()
     for f in facts:
@@ -331,25 +370,49 @@ def check(
             rejected["值的型別不符"] += 1
         elif re.sub(r"\s+", "", f.quote) not in flat or not f.quote.strip():
             rejected["原文片段不在問句"] += 1
-        elif not isinstance(f.value, bool) and f"{f.value:g}" not in flat:
+        elif not isinstance(f.value, bool) and f"{f.value:g}" not in digits:
             rejected["數字不在問句"] += 1
         else:
             kept.append(f)
     return kept, rejected
 
 
-def verify_prompt(question: str, fact: Fact, vocab: dict[str, Concept]) -> str:
-    """驗證提示：問句有沒有明確陳述這個事實（不是「能不能推測」）。"""
+def verify_prompt(question: str, fact: Fact, vocab: dict[str, Concept], variant: str = "v1") -> str:
+    """驗證提示：問句有沒有明確陳述這個事實（不是「能不能推測」）。
+
+    v1 只給概念名稱，要求字面相符；v2 另附抽取者引用的原文，並容許用詞不同但意思相同。
+    """
     c = vocab[fact.concept]
     stated = (
         f"「{c.name}」{'成立或有發生' if fact.value else '明說沒有發生'}"
         if c.kind == "flag"
         else f"「{c.name}」為 {fact.value:g}{c.unit or ''}"
     )
+    if variant == "v2":
+        return (
+            "請判斷下列問句有沒有明確陳述指定的事實。抽取者指出問句中支持它的原文片段如下，"
+            "請核對這段原文的意思是否就是該事實。\n"
+            "用詞不同但意思相同算「是」（例如「昨晚施工到半夜」就是「夜間施工」成立）；"
+            "問句沒說、需要靠推測或法規知識才能得出、或只是在詢問規定與假設的，算「否」。\n"
+            f"問句：{question}\n原文片段：「{fact.quote}」\n事實：{stated}\n只回答「是」或「否」。"
+        )
     return (
         "請判斷下列問句有沒有明確陳述指定的事實。只看問句的字面意思；問句沒說、需要靠推測或法規知識才能得出的，都算「否」。\n"
         f"問句：{question}\n事實：{stated}\n只回答「是」或「否」。"
     )
+
+
+def union(first: list[Fact], second: list[Fact]) -> list[Fact]:
+    """兩個抽取者的結果取聯集；同一概念兩邊的值不同時兩邊都丟（不替它們裁決）。"""
+    merged: dict[str, Fact] = {f.concept: f for f in first}
+    conflicted: set[str] = set()
+    for f in second:
+        known = merged.get(f.concept)
+        if known is None:
+            merged[f.concept] = f
+        elif known.value != f.value:
+            conflicted.add(f.concept)
+    return [f for k, f in merged.items() if k not in conflicted]
 
 
 class Cache:
@@ -421,18 +484,28 @@ def main() -> None:
     ap.add_argument(
         "--filter-verify", action="store_true", help="抽出後由不同家族的模型逐項核對，不通過就丟棄"
     )
+    ap.add_argument(
+        "--verify", choices=("v1", "v2"), default="v1", help="過濾者的核對提示版本（稽核固定 v1）"
+    )
+    ap.add_argument(
+        "--extra-extractor",
+        help="第二個抽取模型的識別；兩者結果取聯集，同概念值衝突者兩邊都丟",
+    )
     ap.add_argument("--split", choices=("dev", "test", "all"), default="all")
     ap.add_argument(
         "--cache", type=Path, help="模型回覆快取檔，預設在輸出目錄；多次執行共用可省費用"
     )
     args = ap.parse_args()
 
-    models = load_models(args.models).everyone
+    models = (*load_models(args.models).everyone, *load_judges(args.models).models)
     pick = {m.model_id: m for m in models if isinstance(m, ChatCompletionsModel)}
     extractor, asker, filterer = pick[EXTRACTOR_ID], pick[ASKER_ID], pick[VERIFIER_ID]
     auditor = pick[AUDITOR_ID]
+    extra = pick[args.extra_extractor] if args.extra_extractor else None
     if len({extractor.family, asker.family, filterer.family}) != 3:
         raise SystemExit("抽取者、出題者與過濾者必須各屬不同家族")
+    if extra and extra.family in (extractor.family, asker.family, filterer.family):
+        raise SystemExit("第二個抽取者的家族必須不同於抽取者、出題者與過濾者")
     args.out.mkdir(parents=True, exist_ok=True)
     cache = Cache(args.cache or args.out / "model-cache.json")
 
@@ -461,26 +534,38 @@ def main() -> None:
                     zip(questions, cands, strict=True),
                 )
             )
-        checked = [
-            check(q, parse_facts(raw), c) for q, raw, c in zip(questions, raws, cands, strict=True)
-        ]
+            extra_raws = (
+                list(
+                    pool.map(
+                        lambda qc: cache.get(extra, extract_prompt(qc[0], qc[1], args.variant)),
+                        zip(questions, cands, strict=True),
+                    )
+                )
+                if extra
+                else None
+            )
+        parsed = [parse_facts(raw) for raw in raws]
+        if extra_raws:
+            parsed = [union(a, parse_facts(b)) for a, b in zip(parsed, extra_raws, strict=True)]
+        checked = [check(q, f, c) for q, f, c in zip(questions, parsed, cands, strict=True)]
 
-        def audited(model: ChatCompletionsModel, pair: tuple[int, Fact]) -> bool:
-            return is_yes(cache.get(model, verify_prompt(questions[pair[0]], pair[1], vocab)))
+        def audited(model: ChatCompletionsModel, pair: tuple[int, Fact], variant: str) -> bool:
+            prompt = verify_prompt(questions[pair[0]], pair[1], vocab, variant)
+            return is_yes(cache.get(model, prompt))
 
         dropped: dict[int, list[str]] = {}
         kept_by_item = [list(kept) for kept, _ in checked]
         if args.filter_verify:
             pairs = [(i, f) for i, kept in enumerate(kept_by_item) for f in kept]
             with ThreadPoolExecutor(args.workers) as pool:
-                oks = list(pool.map(lambda pr: audited(filterer, pr), pairs))
+                oks = list(pool.map(lambda pr: audited(filterer, pr, args.verify), pairs))
             for (i, f), ok in zip(pairs, oks, strict=True):
                 if not ok:
                     dropped.setdefault(i, []).append(f.concept)
                     kept_by_item[i].remove(f)
         pairs = [(i, f) for i, kept in enumerate(kept_by_item) for f in kept]
         with ThreadPoolExecutor(args.workers) as pool:
-            oks = list(pool.map(lambda pr: audited(auditor, pr), pairs))
+            oks = list(pool.map(lambda pr: audited(auditor, pr, "v1"), pairs))
         unsupported: dict[int, list[str]] = {}
         for (i, f), ok in zip(pairs, oks, strict=True):
             if not ok:
@@ -496,8 +581,7 @@ def main() -> None:
             print(f"推理機無法執行（資料庫綱要落後於程式），只量抽取：{exc}")
 
         rows = []
-        for idx, (item, question, raw) in enumerate(zip(items, questions, raws, strict=True)):
-            asked = parse_facts(raw)
+        for idx, (item, question, asked) in enumerate(zip(items, questions, parsed, strict=True)):
             kept, rejected = kept_by_item[idx], checked[idx][1]
             got = {f.concept: f.value for f in kept}
             gold_v, gold_t = judged(conn, args.as_of, item.gold) if reasoner else ({}, 0.0)
@@ -526,6 +610,8 @@ def main() -> None:
         "variant": args.variant,
         "narrow": args.narrow,
         "filter_verify": args.filter_verify,
+        "verify": args.verify,
+        "extra_extractor": extra.name if extra else None,
         "split": args.split,
         "extractor": extractor.name,
         "filterer": filterer.name,
