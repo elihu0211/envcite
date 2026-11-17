@@ -133,6 +133,37 @@ def test_an_article_that_is_both_interpreted_and_a_sanction_keeps_its_letter_cou
     ]  # 第 2 條是處罰條、也被函釋直接解釋：件數不被展開蓋成 0
 
 
+def test_the_repository_keeps_each_sanction_right_after_the_article_that_brought_it(
+    conn: Conn, tmp_path: Path, dsn: str
+) -> None:
+    """展開出來的處罰條（件數 0）緊跟在它的來源之後，不被依件數重排到所有來源後面：名次太後，
+    融合時會被截掉。"""
+    _first(
+        conn,
+        tmp_path,
+        _law_v1(
+            LawArticles=law_articles("甲一", "違反第一條規定者，處新臺幣一萬元以上罰鍰。", "丙三")
+        ),
+    )
+    violation.extract(conn)
+    third = {"law": LAW, "path": "art_3", "text": "丙三"}
+    load(
+        conn,
+        _doc(
+            _burning("甲字第1號", "2019-03-01"),
+            _burning("甲字第2號", "2019-04-01"),
+            _burning("甲字第3號", "2019-05-01", interprets=[third]),
+        ),
+    )
+    conn.commit()
+
+    with CanonStore.from_dsn(dsn) as store:
+        hits = store.retrieval.guidance_hits([PHRASE], as_of=ON, limit=10)
+
+    # 第 1 條（兩件函釋）→ 它的罰則第 2 條（0 件）→ 第 3 條（一件函釋）
+    assert [(h.number, documents) for h, documents in hits] == [("1", 2), ("2", 0), ("3", 1)]
+
+
 def test_every_phrase_must_appear_in_the_letter(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_burning("甲字第1號", "2019-03-01")))
