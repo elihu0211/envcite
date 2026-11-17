@@ -636,6 +636,208 @@
     document.addEventListener("pointerup", endDrag);
     document.addEventListener("pointercancel", endDrag);
 
+    // ---- 條文抽屜：點外面、Esc、往右滑收起、焦點歸還 ------------------------------------------------
+    // 抽屜的開關狀態只有 Blazor 一個來源：這裡一律模擬按下它的關閉鈕，所以不論從哪條路收起，
+    // 離場動畫都是同一份（CitationDrawer 的 data-state），也不會有第二套狀態要對齊。
+    const sheetPanel = () => document.querySelector(".ep-drawer-panel:not([data-state='closing'])");
+    const dismissSheet = (panel = sheetPanel()) => panel?.querySelector(".ep-drawer-close")?.click();
+
+    // 點抽屜以外的任何地方就收起。按下與放開都在外面才算（文字選取從抽屜內拖到外面不會誤收），
+    // 而且在 click 才收、不在按下當下收：並排時收起會讓頁面讓出的寬度滑回來，按下就動的話，
+    // 放開時游標底下已經是別的元素，這一下點擊會落空。
+    // 例外：抽屜自己、遮罩（它有自己的點擊）、會打開抽屜的法源標籤（點了是換一條，不是收起再開）、
+    // 疊在上面的對話框與選單、頁面的捲軸，以及正在選取文字（要複製條文，不要收）。
+    const sheetIgnores =
+        ".ep-drawer-panel, .ep-drawer-backdrop, [data-drawer-trigger], dialog, :popover-open, .mud-dialog-container, .mud-popover, .mud-overlay";
+    let outsideDown = false;
+
+    document.addEventListener("pointerdown", (event) => {
+        const target = event.target;
+        outsideDown = Boolean(sheetPanel()) && event.button === 0 && target instanceof Element && !target.closest(sheetIgnores) &&
+            !(target === root && (event.clientX >= root.clientWidth || event.clientY >= root.clientHeight)); // 後者是頁面的捲軸
+    }, true);
+
+    document.addEventListener("click", (event) => {
+        const armed = outsideDown;
+        outsideDown = false;
+        if (!armed || !sheetPanel() || !(event.target instanceof Element) || event.target.closest(sheetIgnores)) {
+            return;
+        }
+
+        if (window.getSelection()?.toString()) {
+            return;
+        }
+
+        dismissSheet();
+    }, true);
+
+    // Esc 不論焦點在哪都收起（原本只有焦點在抽屜裡才行）；輸入法選字中的 Esc、已被別處處理的 Esc、
+    // 疊在上面的對話框與選單先收，不連帶收掉抽屜。
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || event.defaultPrevented || event.isComposing || !sheetPanel()) {
+            return;
+        }
+
+        if (document.querySelector("dialog[open], :popover-open, .mud-dialog-container")) {
+            return;
+        }
+
+        dismissSheet();
+    });
+
+    // 焦點：開啟時移進面板（Esc 與鍵盤閱讀才接得上），收起後還給原本點開它的那顆標籤。
+    let sheetOpener = null;
+    let sheetWasOpen = false;
+    let sheetFocusFrame = 0;
+
+    const syncSheetFocus = () => {
+        sheetFocusFrame = 0;
+        const panel = sheetPanel();
+        if (panel && !sheetWasOpen) {
+            const active = document.activeElement;
+            sheetOpener = active instanceof HTMLElement && active !== document.body ? active : null;
+            panel.focus({ preventScroll: true });
+        } else if (!panel && sheetWasOpen) {
+            const opener = sheetOpener;
+            sheetOpener = null;
+            if (opener?.isConnected && (!document.activeElement || document.activeElement === document.body)) {
+                opener.focus({ preventScroll: true });
+            }
+        }
+
+        sheetWasOpen = Boolean(panel);
+    };
+
+    // 觀察 <html> 而不是 <body>：互動式頁面接手時 <body> 會被換成新的，掛在舊 body 上的觀察器就再也收不到變動。
+    new MutationObserver(() => {
+        if (!sheetFocusFrame) {
+            sheetFocusFrame = requestAnimationFrame(syncSheetFocus);
+        }
+    }).observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state"] });
+
+    // 往右滑收起（觸控與手寫筆；滑鼠有遮罩、關閉鈕與 Esc）：跟手 1:1、放開時用速度投射落點、
+    // 再以放開當下的速度接續動畫，拖過頭的那一段（往左）有橡皮筋的阻力。可以隨時重新抓住。
+    let sheetDrag = null;
+
+    document.addEventListener("pointerdown", (event) => {
+        const panel = sheetPanel();
+        if (!panel || event.pointerType === "mouse" || !event.isPrimary || !panel.contains(event.target)) {
+            return;
+        }
+
+        // 內容自己要橫向捲動或選取的地方（法源軌道、表格、程式碼、輸入）不接手。
+        if (event.target.closest("[data-drawer-sources-track], table, pre, input, textarea, select, [contenteditable]")) {
+            return;
+        }
+
+        const rect = panel.getBoundingClientRect();
+        const rest = root.clientWidth - rect.width; // 面板貼在右緣時的 left
+        sheetDrag = {
+            id: event.pointerId,
+            panel,
+            startX: event.clientX,
+            startY: event.clientY,
+            from: Math.max(0, rect.left - rest), // 起點取畫面上目前的位置，抓住一個還在動的面板不會跳
+            width: rect.width,
+            active: false,
+            position: 0,
+            samples: [{ t: event.timeStamp, x: event.clientX }],
+        };
+        sheetDrag.position = sheetDrag.from;
+    });
+
+    document.addEventListener("pointermove", (event) => {
+        if (!sheetDrag || event.pointerId !== sheetDrag.id) {
+            return;
+        }
+
+        const dx = event.clientX - sheetDrag.startX;
+        const dy = event.clientY - sheetDrag.startY;
+        if (!sheetDrag.active) {
+            // 先看方向：垂直多於水平是在捲動，放手給瀏覽器；水平超過一小段（約 10px）才接手。
+            if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+                sheetDrag = null;
+                return;
+            }
+
+            // 面板已完全打開時只有往右有東西可拖；抓住一個還在滑入的面板（from > 0）則兩個方向都可以。
+            if (!(dx > 10 || (sheetDrag.from > 0 && dx < -10))) {
+                return;
+            }
+
+            sheetDrag.active = true;
+            sheetDrag.panel.setAttribute("data-dragging", "");
+            root.setAttribute("data-sheet-dragging", "");
+            try {
+                sheetDrag.panel.setPointerCapture(event.pointerId);
+            } catch {
+                // 合成事件或指標已結束：不影響拖曳，只是不鎖定。
+            }
+        }
+
+        const raw = sheetDrag.from + dx;
+        sheetDrag.position = raw < 0 ? -rubberband(-raw, sheetDrag.width) : Math.min(sheetDrag.width, raw);
+        sheetDrag.panel.style.setProperty("--ep-sheet-x", `${sheetDrag.position}px`);
+        root.style.setProperty("--ep-sheet-progress", String(Math.min(1, Math.max(0, 1 - sheetDrag.position / sheetDrag.width))));
+        sheetDrag.samples.push({ t: event.timeStamp, x: event.clientX });
+        sheetDrag.samples = sheetDrag.samples.filter((sample) => event.timeStamp - sample.t < 120);
+    });
+
+    const endSheetDrag = (event) => {
+        if (!sheetDrag || event.pointerId !== sheetDrag.id) {
+            return;
+        }
+
+        const { active, panel, position, width, samples } = sheetDrag;
+        sheetDrag = null;
+        if (!active) {
+            return;
+        }
+
+        // 放開當下的速度（px/s，往右為正）：放開前最近一小段（約 120ms）的位移除以時間。
+        // 把放開這一刻也算一個取樣：手指停住一陣子才放開時，窗口裡只剩這一點，速度是 0，不會拿停住之前的速度去投射。
+        samples.push({ t: event.timeStamp, x: event.clientX });
+        const recent = samples.filter((sample) => event.timeStamp - sample.t < 120);
+        const first = recent[0];
+        const last = recent[recent.length - 1];
+        const velocity = recent.length > 1 ? ((last.x - first.x) / Math.max(last.t - first.t, 1)) * 1000 : 0;
+
+        // 依投射的落點決定收或留（過半就收）：很快地往右一甩，即使只拖了一點也會收。
+        const dismiss = position + project(velocity) > width / 2;
+        const remaining = dismiss ? width - position : position;
+        const toward = dismiss ? Math.max(velocity, 0) : Math.max(-velocity, 0);
+        // 收起的上限是 CitationDrawer 離場計時（normal 階）：再長，面板會在還沒滑完時就被拿掉。
+        const duration = toward > 50 ? Math.min(Math.max((remaining / toward) * 2000, 120), dismiss ? 200 : 420) : null;
+        if (duration) {
+            root.style.setProperty("--ep-sheet-duration", `${Math.round(duration)}ms`);
+        }
+
+        // 先把畫面接到落點，再通知 Blazor：收起時面板與遮罩立刻朝離場狀態過渡（從手指放開的位置起算），
+        // 不必等一趟往返；Blazor 之後渲染出的 data-state 與這裡設的一致。
+        if (dismiss) {
+            panel.setAttribute("data-state", "closing");
+            document.querySelector(".ep-drawer-backdrop")?.setAttribute("data-state", "closing");
+        }
+
+        panel.removeAttribute("data-dragging");
+        root.removeAttribute("data-sheet-dragging");
+        root.style.removeProperty("--ep-sheet-progress");
+        if (dismiss) {
+            dismissSheet(panel);
+        } else {
+            panel.style.removeProperty("--ep-sheet-x");
+        }
+
+        // 拖曳之後瀏覽器仍會送出一次 click（落在面板內的按鈕或連結上）：吃掉它，不然剛放開就誤觸。
+        const swallow = (clickEvent) => clickEvent.stopPropagation();
+        window.addEventListener("click", swallow, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener("click", swallow, true), 50);
+        setTimeout(() => root.style.removeProperty("--ep-sheet-duration"), (duration ?? 300) + 80);
+    };
+
+    document.addEventListener("pointerup", endSheetDrag);
+    document.addEventListener("pointercancel", endSheetDrag);
+
     // ---- 六格驗證碼 --------------------------------------------------------------------------------
     // 真的輸入框在方格上面（透明）：輸入、貼上、簡訊自動填入、無障礙都走它；這裡只把值畫進方格、標出目前那一格，
     // 把游標固定在最後（點哪一格都一樣，不會在中間插入），輸滿且標了 data-autosubmit 就自動送出。

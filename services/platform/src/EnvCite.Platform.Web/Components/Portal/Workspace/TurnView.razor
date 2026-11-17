@@ -87,7 +87,7 @@
                 }
                 @if (_sources.Count > 0)
                 {
-                    <button type="button" class="ep-answer-action" @onclick="() => OpenAsync(_sources[0])">
+                    <button type="button" class="ep-answer-action" data-drawer-trigger @onclick="() => OpenAsync(_sources[0])">
                         <NavIcon Path="@Icons.Material.Outlined.MenuBook" />
                         <span>@L["法源依據（{0}）", _sources.Count]</span>
                     </button>

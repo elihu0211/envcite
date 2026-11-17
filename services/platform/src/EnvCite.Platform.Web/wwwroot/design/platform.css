@@ -471,6 +471,7 @@ h1[tabindex="-1"]:focus-visible {
 .ep-drawer-source-pill:active,
 .ep-drawer-step-btn:active,
 .ep-drawer-iri-btn:active,
+.ep-drawer-close:active,
 .ep-chip:active,
 .ep-btn:active,
 .ep-segment:has(> input:active) {
@@ -5863,7 +5864,8 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 /* 手機與平板：抽屜蓋住大半個畫面，是 modal，背後的頁面不跟著捲。gutter 已固定，鎖捲動不會讓版面跳動。
    桌機起：抽屜是並排閱讀的側欄，不加遮罩、不鎖捲動；頁面讓出抽屜的寬度，主內容往左推、不被蓋住，
-   背後的頁面照常用滾輪捲；用關閉鈕收起（焦點在抽屜內時 Esc 也行）。 */
+   背後的頁面照常用滾輪捲。兩種都能點抽屜外面（遮罩或頁面）、按 Esc、或在觸控裝置往右滑收起（forms.js 一律模擬按下關閉鈕）。
+   開關靠 data-state 與 CSS 過渡：從畫面上目前的位置起算，所以進場途中收、離場途中再開，都是掉頭而不是跳一下。 */
 :root {
     --ep-drawer-width: var(--ep-measure-drawer);
 }
@@ -5886,8 +5888,14 @@ html:has(.ep-drawer-backdrop) {
         display: none;
     }
 
-    html:has(.ep-drawer-panel) body {
+    /* 收起時頁面同時把位置讓回來，不等面板走完。 */
+    html:has(.ep-drawer-panel:not([data-state="closing"])) body {
         padding-inline-end: var(--ep-drawer-width);
+    }
+
+    /* 並排時面板不壓在內容上，不需要投影；一條細邊界就夠分出兩欄。 */
+    .ep-drawer-panel {
+        box-shadow: none;
     }
 }
 
@@ -5895,14 +5903,38 @@ html:has(.ep-drawer-backdrop) {
     body {
         transition: padding-inline-end var(--ep-motion-slow) var(--ep-motion-ease-settle);
     }
+
+    html:has(.ep-drawer-panel[data-state="closing"]) body {
+        transition-duration: var(--ep-sheet-duration, var(--ep-motion-normal));
+    }
 }
 
+/* 進場快起慢收（settle），離場短一階：離開的東西不該搶戲。--ep-sheet-duration 由 forms.js 在手勢放開時依速度設定。 */
 .ep-drawer-backdrop {
     position: fixed;
     inset: 0;
     z-index: 90;
     background: color-mix(in srgb, var(--ep-bg) 48%, transparent);
-    animation: ep-fade-in var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    opacity: 1;
+    transition: opacity var(--ep-motion-slow) var(--ep-motion-ease-standard);
+}
+
+@starting-style {
+    .ep-drawer-backdrop {
+        opacity: 0;
+    }
+}
+
+.ep-drawer-backdrop[data-state="closing"] {
+    opacity: 0;
+    pointer-events: none;
+    transition-duration: var(--ep-sheet-duration, var(--ep-motion-normal));
+}
+
+/* 拖曳中遮罩的濃淡跟著面板被拉開的程度，手放開後再接續過渡。 */
+html[data-sheet-dragging] .ep-drawer-backdrop {
+    opacity: var(--ep-sheet-progress, 1);
+    transition: none;
 }
 
 .ep-drawer-panel {
@@ -5916,28 +5948,75 @@ html:has(.ep-drawer-backdrop) {
     background: var(--ep-surface-raised);
     border-inline-start: 1px solid var(--ep-border-subtle);
     box-shadow: var(--ep-elevation-3);
-    animation: ep-drawer-slide-in var(--ep-motion-slow) var(--ep-motion-ease-settle);
+    outline: none; /* 容器只是接焦點讓 Esc 與焦點歸還可用，不是可操作的控制項 */
+    translate: 0 0;
+    touch-action: pan-y pinch-zoom; /* 垂直捲動與縮放交給瀏覽器，水平拖曳給我們（forms.js 的往右滑收起） */
+    transition:
+        translate var(--ep-sheet-duration, var(--ep-motion-slow)) var(--ep-motion-ease-settle),
+        box-shadow var(--ep-sheet-duration, var(--ep-motion-slow)) var(--ep-motion-ease-settle);
 }
 
-@keyframes ep-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* 從哪來、回哪去：進場從右緣滑入，離場回到右緣；陰影一起淡出，面板在畫面外時不會把陰影漏進來。 */
+@starting-style {
+    .ep-drawer-panel {
+        translate: 100% 0;
+        box-shadow: none;
+    }
 }
 
-@keyframes ep-drawer-slide-in {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
+.ep-drawer-panel[data-state="closing"] {
+    translate: 100% 0;
+    box-shadow: none;
+    pointer-events: none;
+    transition-duration: var(--ep-sheet-duration, var(--ep-motion-normal));
 }
 
+/* 抽屜與遮罩是主區的直接子元素：主區的垂直節奏（下一個兄弟的上邊距）會把面板的頂端推下 1.5rem、露出一條頁面底色，
+   主區的進場動畫（ep-rise）也會蓋過面板自己的滑入。兩者都不該落在它們身上。 */
+:is(.ep-console-main, .ep-shell-main, .ep-auth-body) > :is(.ep-drawer-backdrop, .ep-drawer-panel) {
+    margin: 0;
+    animation: none;
+}
+
+/* 跟手：拖曳中位置 1:1 由 --ep-sheet-x 決定、沒有過渡；放開後移除，過渡從手指放開的位置接續到落點。 */
+.ep-drawer-panel[data-dragging] {
+    translate: var(--ep-sheet-x, 0px) 0;
+    transition: none;
+}
+
+/* 使用者要求減少動態：不滑動，改成淡入淡出（全域規則把過渡收成瞬間，這裡明確給回 fast 階）。 */
 @media (prefers-reduced-motion: reduce) {
-    .ep-drawer-backdrop,
     .ep-drawer-panel,
+    .ep-drawer-panel[data-state="closing"] {
+        translate: 0 0;
+        transition-property: opacity;
+        transition-duration: var(--ep-motion-fast) !important;
+    }
+
+    .ep-drawer-panel[data-state="closing"] {
+        opacity: 0;
+    }
+
+    .ep-drawer-backdrop,
+    .ep-drawer-backdrop[data-state="closing"] {
+        transition-duration: var(--ep-motion-fast) !important;
+    }
+
     .ep-drawer-source-pill,
     .ep-drawer-step-btn,
     .ep-drawer-iri-btn,
     .ep-citation-chip {
         animation: none;
         transition: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    @starting-style {
+        .ep-drawer-panel {
+            translate: 0 0;
+            opacity: 0;
+        }
     }
 }
 
@@ -6096,41 +6175,70 @@ html:has(.ep-drawer-backdrop) {
     font-size: var(--ep-label-l-size);
     font-weight: var(--ep-label-l-weight);
     line-height: 1.35;
+    letter-spacing: var(--ep-label-l-tracking);
+    text-wrap: balance;
     color: var(--ep-text);
 }
 
 .ep-drawer-close {
     flex-shrink: 0;
-    width: 2rem;
-    height: 2rem;
+    inline-size: var(--ep-control-height);
+    block-size: var(--ep-control-height);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: var(--ep-radius-pill);
-    border: 1px solid var(--ep-border-subtle);
-    background: var(--ep-surface);
+    border: 0;
+    background: var(--ep-surface-muted);
     color: var(--ep-text-secondary);
     cursor: pointer;
+    transition:
+        transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
-.ep-drawer-close:hover {
-    color: var(--ep-text);
-    background: var(--ep-surface-muted);
+.ep-drawer-close-icon {
+    inline-size: 1rem;
+    block-size: 1rem;
+}
+
+@media (hover: hover) {
+    .ep-drawer-close:hover {
+        color: var(--ep-text);
+        background: color-mix(in srgb, var(--ep-text) 12%, var(--ep-surface-muted));
+    }
+}
+
+@media (pointer: coarse) {
+    .ep-drawer-close {
+        inline-size: var(--ep-touch-target);
+        block-size: var(--ep-touch-target);
+    }
 }
 
 .ep-drawer-body {
     flex: 1 1 auto;
     overflow-y: auto;
     overscroll-behavior: contain; /* 捲到底不把滾輪交給背後的頁面（觸控的橡皮筋也是） */
+    touch-action: pan-y pinch-zoom; /* 捲動容器自己的 touch-action 擋住面板那層：這裡也要讓水平拖曳留給往右滑收起 */
     padding: var(--ep-space-4) var(--ep-space-6);
 }
 
-.ep-drawer-loading {
-    display: flex;
-    align-items: center;
-    gap: var(--ep-space-2);
-    color: var(--ep-text-secondary);
-    padding-block: var(--ep-space-4);
+/* 條文到了才淡入：換一條法源時先看到骨架，內容再柔和地接上，版面不跳。 */
+.ep-drawer-content {
+    animation: ep-fade var(--ep-motion-normal) var(--ep-motion-ease-standard);
+}
+
+.ep-drawer-skeleton {
+    display: grid;
+    gap: var(--ep-space-3);
+}
+
+.ep-drawer-skeleton-card {
+    block-size: calc(var(--ep-space-8) * 3);
+    border-radius: var(--ep-radius-card);
+    margin-block-end: var(--ep-space-2);
 }
 
 .ep-drawer-footer {
