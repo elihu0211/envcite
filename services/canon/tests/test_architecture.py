@@ -1,4 +1,5 @@
-"""結構守門：模組不得長成巨石，套件不再匯出，邏輯不直接讀系統時鐘，核心不匯入來源子包。
+"""結構守門：模組不得長成巨石，套件不再匯出，邏輯不直接讀系統時鐘，核心不匯入來源子包，
+對外 HTTP 只走共用層。
 
 單一模組超過 `MAX_LINES` 行，就是在一個檔案裡放了不只一個職責：把職責拆到各自的模組，
 不要調高上限。
@@ -184,3 +185,48 @@ def test_sources_do_not_import_each_other() -> None:
             crossing[rel] = sorted(others)
 
     assert not crossing, f"來源之間互相匯入：{crossing}。共用的部分放在核心。"
+
+
+#: 對外 HTTP 的唯一出口：網頁用 `acquire/web.py`，JSON API 用 `net.py`。
+HTTP_MODULES = {"net.py", "acquire/web.py"}
+#: 不准在出口以外匯入的網路函式庫：各自重寫逾時、重試、身分與錯誤分類，就是這次收掉的重複。
+NETWORK_LIBRARIES = {"httpx", "urllib", "http", "requests", "aiohttp"}
+
+
+def _network_imports(path: Path) -> list[str]:
+    """檔案匯入的網路函式庫（`http.server` 這類伺服器端不算，只擋用戶端的 `http.client`）。"""
+    found = []
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        names = (
+            [alias.name for alias in node.names]
+            if isinstance(node, ast.Import)
+            else [node.module or ""]
+            if isinstance(node, ast.ImportFrom) and node.level == 0
+            else []
+        )
+        found += [
+            name
+            for name in names
+            if name.split(".")[0] in NETWORK_LIBRARIES and name != "http.server"
+        ]
+    return found
+
+
+def test_outbound_http_goes_through_the_shared_layer() -> None:
+    """身分（User-Agent）、逾時、重試與狀態分類只在共用層寫一次；其他模組匯入它們，不自己連線。"""
+    offenders = {
+        path.relative_to(SRC).as_posix(): imports
+        for path in _modules()
+        if path.relative_to(SRC).as_posix() not in HTTP_MODULES
+        and (imports := _network_imports(path))
+    }
+    offenders |= {
+        f"tools/{path.name}": imports
+        for path in sorted((SRC.parents[1] / "tools").glob("*.py"))
+        if (imports := _network_imports(path))
+    }
+
+    assert not offenders, (
+        f"在共用層以外匯入網路函式庫：{offenders}。網頁用 `acquire.web.Http`，JSON API 用 "
+        f"`net.post_json`；需要新能力就加在 {sorted(HTTP_MODULES)}。"
+    )
