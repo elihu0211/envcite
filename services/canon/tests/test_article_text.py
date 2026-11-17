@@ -27,7 +27,7 @@ def _iri(conn: Conn, path: str) -> str:
 def test_an_article_with_paragraphs_reads_as_its_paragraphs_together(
     conn: Conn, tmp_path: Path, dsn: str
 ) -> None:
-    """引用抽屜依 IRI 取條文：條的那一列沒有內文時，不能回空字串讓畫面說「沒有可顯示的條文內容」。"""
+    """引用抽屜依 IRI 取條文：條的那一列沒有內文時，不能回空字串，畫面會說沒有可顯示的內容。"""
     law = _law("T0000001", "廢水管理法", HISTORY, "20180613", [("1", f"{FIRST}\r\n{SECOND}")])
     stored_snapshot(conn, tmp_path, [law])
     importer.run(conn, tmp_path, Moj())
