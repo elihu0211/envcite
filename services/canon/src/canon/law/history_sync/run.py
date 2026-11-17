@@ -9,7 +9,7 @@ from pathlib import Path
 from canon import embedding, projection, rules
 from canon.clock import Today
 from canon.db import Conn
-from canon.exit_codes import JobStopped
+from canon.exit_codes import JobStopped, fail
 from canon.law import delegation
 from canon.law.history_sources import HistorySource, Web
 from canon.law.history_sync.acquire import acquire
@@ -81,9 +81,7 @@ def sync(
                 projection.rebuild(conn, embedder, policy)
                 code = _write_gate(report)
     except JobStopped as e:
-        conn.rollback()
-        code = e.code
-        log.error("history sync stopped (exit %d): %s", code, e)
+        code = fail(conn, e, "history sync")
     report.seconds = round(time.monotonic() - started, 1)
     log.info("歷史版本（%s）：%s", source.feed, report.line())
     return int(code)

@@ -20,13 +20,11 @@ from canon.acquire.cli import SOURCES
 from canon.acquire.engine import Source, acquire
 from canon.db import Conn
 from canon.embedding import Embeds
-from canon.exit_codes import exit_code
+from canon.exit_codes import fail
 from canon.law import delegation, importer
 from canon.settings import SnapshotSettings, load
 from canon.verification import config
 from envcite_jobkit import ExitCode, Policy
-
-log = logging.getLogger(__name__)
 
 #: 匯入之後依序執行的確定性規則抽取器；新增一種規則在此登記。
 EXTRACTORS = (delegation.EXTRACTOR, violation.EXTRACTOR)
@@ -55,10 +53,7 @@ def sync(
         conn.commit()
         projection.rebuild(conn, embedder, policy)
     except Exception as e:
-        conn.rollback()
-        code = exit_code(e)
-        log.error("sync failed (exit %d): %s", code, e)
-        return int(code)
+        return int(fail(conn, e, "sync"))
     return int(ExitCode.OK)
 
 

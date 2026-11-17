@@ -20,8 +20,9 @@ import psycopg
 
 from canon.clock import taipei_now
 from canon.db import Conn, fetch, scalar
+from canon.exit_codes import JobStopped, fail
 from canon.law import judgment, judgment_anchor
-from canon.law.judicial_api import AuthRejected, Client, EndpointError, removed
+from canon.law.judicial_api import Client, EndpointError, removed
 from canon.law.judicial_credentials import CredentialsError, credentials_path, read_credentials
 from canon.rules import Rule
 from canon.settings import DatabaseSettings
@@ -86,14 +87,9 @@ def sync(
         days = _changes(client.changes())
         listed = _enqueue(conn, days)
         stored, taken, files = _drain(conn, client, now, sleep, pause, stored, taken, files)
-    except EndpointError as e:
-        log.error("裁判書同步中斷：%s", e)
-        conn.rollback()
-        return _result(conn, stored, taken, files, ExitCode.FAILED)
-    except AuthRejected as e:
-        log.error("裁判書同步拒絕：%s", e)
-        conn.rollback()
-        return _result(conn, stored, taken, files, ExitCode.FATAL)
+    except JobStopped as e:
+        code = fail(conn, e, "judgment sync")
+        return _result(conn, stored, taken, files, code)
     return _result(conn, stored, taken, files, listed=listed)
 
 
