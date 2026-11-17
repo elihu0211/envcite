@@ -1,4 +1,5 @@
-"""授權鏈：命令的陳述回溯到法律的授權；鏈斷了，命令所定的罰則與處罰命令義務的罰則附條件。"""
+"""授權鏈：命令的陳述回溯到法律的授權；鏈斷了，命令所定的罰則與處罰命令義務的罰則附條件，
+出自該命令的限值照常採用、另列問題。"""
 
 from datetime import date
 from pathlib import Path
@@ -45,18 +46,19 @@ def _corpus(conn: Conn, tmp_path: Path, first: str, *, other: str | None = None)
     delegation.extract(conn)
 
 
-def _statements(conn: Conn) -> dict[str, int]:
-    def fine(name: str, law: str, path: str, text: str) -> dict[str, Any]:
-        return {
-            "id": name,
-            "law": law,
-            "path": path,
-            "text": text,
-            "kind": "sanction",
-            "conditions": [_scope("serious")],
-            "sanction": {"punishes": "duty", "effect": "fine", "min": 1, "max": 2},
-        }
+def _fine(name: str, law: str, path: str, text: str) -> dict[str, Any]:
+    return {
+        "id": name,
+        "law": law,
+        "path": path,
+        "text": text,
+        "kind": "sanction",
+        "conditions": [_scope("serious")],
+        "sanction": {"punishes": "duty", "effect": "fine", "min": 1, "max": 2},
+    }
 
+
+def _statements(conn: Conn) -> dict[str, int]:
     duty = {
         "id": "duty",
         "law": COMMAND,
@@ -74,13 +76,47 @@ def _statements(conn: Conn) -> dict[str, int]:
         _with(
             _doc(
                 duty,
-                fine("own", COMMAND, "art_3", "乙一"),
-                fine("statute", MOTHER, "art_2", "違反者處罰鍰"),
+                _fine("own", COMMAND, "art_3", "乙一"),
+                _fine("statute", MOTHER, "art_2", "違反者處罰鍰"),
             ),
             "serious",
         ),
     )
     return dict(loaded.ids)
+
+
+def _limit_statements(conn: Conn) -> dict[str, int]:
+    """母法第 1 條的義務把限值委由命令第 2 條，母法第 2 條處罰違反。義務與罰則都在法律裡。"""
+    duty = {
+        "id": "duty",
+        "law": MOTHER,
+        "path": "art_1",
+        "text": "授權訂定辦法",
+        "kind": "prescriptive",
+        "deontic": "obligation",
+        "conditions": [
+            _scope("discharging"),
+            {
+                "role": "duty",
+                "clause": 1,
+                "concept": "cod",
+                "comparator": "le",
+                "delegate": {"law": COMMAND, "path": "art_2"},
+            },
+        ],
+    }
+    limit = {
+        "id": "limit",
+        "law": COMMAND,
+        "path": "art_2",
+        "text": "甲一",
+        "kind": "constitutive",
+        "conditions": [
+            {"role": "limit", "clause": 1, "concept": "cod", "comparator": "le", "threshold": 100}
+        ],
+    }
+    fine = _fine("statute", MOTHER, "art_2", "違反者處罰鍰")
+    return dict(load(conn, _with(_doc(duty, limit, fine), "serious")).ids)
 
 
 def _conditional(result: Result) -> dict[int, bool]:
@@ -203,3 +239,59 @@ def test_commands_that_delegate_to_each_other_never_reach_a_statute(
     gaps = _broken(evaluate(conn, ON, CASE), ids)
 
     assert gaps == (None, "cycle")
+
+
+def test_a_limit_from_a_rooted_command_is_used_without_a_problem(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _corpus(conn, tmp_path, "本辦法依母法第一條規定訂定之。")
+    ids = _limit_statements(conn)
+
+    result = evaluate(conn, ON, CASE)
+
+    assert result.verdicts[ids["duty"]] == "violation"
+    assert _conditional(result) == {ids["statute"]: False}
+    (condition,) = result.limit_sources
+    assert result.limit_sources == {condition: ids["limit"]}
+    assert result.delegation[ids["limit"]].rooted
+    assert result.problems == (("measurement_unlabeled", condition),)
+
+
+def test_a_limit_from_a_command_that_reaches_no_statute_is_used_and_reported(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """系統不宣告命令無效：限值照常比較，結論與罰則不變，只多一則問題指出限值的授權待查。"""
+    _corpus(conn, tmp_path, "為辦理本事項，特訂定本辦法。")
+    ids = _limit_statements(conn)
+
+    result = evaluate(conn, ON, CASE)
+
+    assert result.verdicts[ids["duty"]] == "violation"  # 150 > 100
+    assert _conditional(result) == {ids["statute"]: False}
+    (condition,) = result.limit_sources
+    assert result.limit_sources == {condition: ids["limit"]}
+    chain = result.delegation[ids["limit"]]
+    assert not chain.rooted
+    assert [link.gap for link in chain.links] == ["no_citation"]
+    assert sorted(result.problems) == [
+        ("measurement_unlabeled", condition),
+        ("unrooted_delegation", condition),
+    ]
+
+    compliant = evaluate(conn, ON, CASE | {"cod": 90})
+    assert compliant.verdicts[ids["duty"]] == "compliant"
+    assert ("unrooted_delegation", condition) in compliant.problems
+
+
+def test_an_unrooted_limit_that_was_not_compared_is_not_reported(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """沒有給事實就沒有比較，結論不倚賴該限值；缺的是事實。"""
+    _corpus(conn, tmp_path, "為辦理本事項，特訂定本辦法。")
+    ids = _limit_statements(conn)
+
+    result = evaluate(conn, ON, {"discharging": 1})
+
+    assert result.verdicts[ids["duty"]] == "undetermined"
+    assert result.missing == ((ids["duty"], "cod"),)
+    assert result.problems == ()

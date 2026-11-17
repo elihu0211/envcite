@@ -94,6 +94,7 @@ flowchart LR
 | `general.criminalDeductions[]`：`penaltyStatementId`、`amount` | 第 26 條第 3、4 項的扣抵額 |
 | `general.unpunished[].excuse` 的 `CriminalPriority` | 第 26 條第 1 項刑事優先，罰鍰不列出 |
 | `problems[].kind` 的 `InvalidatedDelegation`（`conditionId`） | 授權的限值所在條文已違憲失效，要件為未知 |
+| `problems[].kind` 的 `UnrootedDelegation`（`conditionId`） | 授權的限值出自 `rooted` 為假的命令，照常比較、結論不變；`limitSources` 對到限值陳述，其授權鏈在 `delegationBases` |
 | 請求 `administrativePenalty`：`criminalOffense`、`courtConfiscated`、`criminalClearedOn`、`criminalPayment`、`communityServiceHours`、`minimumHourlyWage`、`gainedBenefit` | 第 18、26 條所依的事實 |
 
 ### AI 代理的入口（MCP，`/v2/mcp`）

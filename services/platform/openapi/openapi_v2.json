@@ -2519,7 +2519,8 @@
           "BadDate",
           "MeasurementMismatch",
           "MeasurementUnlabeled",
-          "InvalidatedDelegation"
+          "InvalidatedDelegation",
+          "UnrootedDelegation"
         ]
       },
       "RaisedCapDto": {
