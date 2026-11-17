@@ -5,6 +5,7 @@
 """
 
 import ssl
+import threading
 from collections.abc import Mapping
 from importlib.metadata import PackageNotFoundError, metadata
 
@@ -69,13 +70,32 @@ def json_headers(api_key: str | None) -> dict[str, str]:
     return headers
 
 
+_pool: httpx.Client | None = None
+_pool_lock = threading.Lock()
+
+
+def _shared_client() -> httpx.Client:
+    """行程內共用的連線池：同一個端點的連續請求重用連線，省掉每次的 TCP 與 TLS 握手。
+
+    第一次用到才建（建 SSL 情境要載入憑證，不讓只匯入本模組的指令付這個成本）。`httpx.Client`
+    可跨執行緒共用，伺服器的併發名額與排程的批次都走同一個池。
+    """
+    global _pool
+    with _pool_lock:
+        if _pool is None:
+            _pool = httpx.Client()
+        return _pool
+
+
 def post_json(url: str, payload: object, *, api_key: str | None, timeout: float) -> object:
     """以 `httpx` POST 一份 JSON，回傳解析後的回應；回應是不是物件由呼叫端判斷。
 
     4xx／5xx 丟 `HttpStatus`，其餘通訊失敗丟 `TransportError`，重試與例外的分類留給呼叫端。
     """
     try:
-        response = httpx.post(url, json=payload, headers=json_headers(api_key), timeout=timeout)
+        response = _shared_client().post(
+            url, json=payload, headers=json_headers(api_key), timeout=timeout
+        )
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
