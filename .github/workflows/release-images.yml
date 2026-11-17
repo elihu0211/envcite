@@ -90,7 +90,8 @@ jobs:
             -- --build-context nuget=.nuget/packages \
             --build-arg UV_VERSION="$UV_VERSION" \
             --build-arg PYTHON_VERSION="$PYTHON_VERSION" \
-            --build-arg DOTNET_VERSION="$DOTNET_VERSION"
+            --build-arg DOTNET_VERSION="$DOTNET_VERSION" \
+            --build-arg SOURCE_REVISION="$GITHUB_SHA"
 
   consult:
     needs: [versions, deps-dotnet]

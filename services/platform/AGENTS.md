@@ -93,7 +93,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 ## Observability
 
 - **追蹤與租戶標籤**：已認證租戶僅標於追蹤 `tenant.id`，不進指標。
-- **RED 指標與探針**：HTTP 用標準伺服器指標（探針設 `DisableHttpMetrics()` 排除）；gRPC 用戶端由 `GrpcClientMetrics` 量測。`/health/live` 不檢查依賴；`/health/ready` 檢查 `TenancyDbContext`（故障回 `503`），探針不追蹤。
+- **RED 指標與探針**：HTTP 用標準伺服器指標（探針設 `DisableHttpMetrics()` 排除）；gRPC 用戶端由 `GrpcClientMetrics` 量測。`/health/live` 不檢查依賴；`/health/ready` 檢查 `TenancyDbContext`（故障回 `503`），探針不追蹤。`/health/version` 回 `{"revision": "<commit SHA>"}`（`no-store`，未登入可讀，不是探針）：映像建置時由 `SOURCE_REVISION` 帶入，沒帶（本機建置）為 `null`；部署後驗證靠它確認執行中的版本就是清單裡的 tag，因為滾動卡住時舊 pod 照常服務、探針都綠。
 - **模型呼叫遙測**：`IChatClient` 一律經 `AnswerTelemetry.Wrap` 包裝並**明確關閉 `EnableSensitiveData`**（由 `AnswerTelemetryTests` 守門，僅留模型、token 數、延遲與結束原因）。
 - **作答結果計數**：`envcite.platform.answer.outcomes`（`AnswerMetrics`）於每次作答得出結果時遞增，標籤僅限 `outcome` 與 `bare_topic`（由 `AskServiceTests` 守門）。
 
