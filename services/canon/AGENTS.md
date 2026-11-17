@@ -9,7 +9,7 @@
 - **Name:** `canon`（典籍：具權威的條文與典籍全體，對應 PostgreSQL 為唯一真值、結論只是候選的定位）。
 - **服務名出現處**：目錄、Python 套件與映像、叢集服務與工作負載、指令前綴 `canon-`、環境變數 `ENVCITE_CANON_*`、可觀測性服務名（不加專案名 `envcite`）。
 - **Naming**：持久化與錯誤識別碼前綴同為 `canon`：
-  - 資料庫角色：`canon_reader`／`canon_writer`／`canon_reviewer`（遷移檔 `0027`–`0067` 與 `0068` 內的舊角色名因檢查碼不改；`0068` 之後一律用新角色名）
+  - 資料庫角色：`canon_reader`／`canon_writer`／`canon_reviewer`
   - 計量鍵 `canon.*`、API key 範圍 `canon:*`、結果碼 `canon.*`、`ErrorInfo.domain` 為 `canon.envcite`
   - gRPC 套件 `envcite.canon.v1`（`CanonService`、`ReasoningService`）：改動為破壞性變更，須開新套件版本
 - **Role**：知識服務（shared, non-tenant data），由 `services/platform` 與 `services/consult` 呼叫。一種知識來源對應一個來源子包，各自擁有 schema 與引用代號字母（呼叫端規則見 [`proto/README.md`](../../proto/README.md)）；不因新增來源另立服務，除非需要獨立擴縮、發版、資料隔離或執行環境。
@@ -30,7 +30,7 @@
 ### 技術棧與資料真值
 
 - **Stack**：Python（≥3.14）· uv · gRPC（`grpcio` 同步伺服器）· PostgreSQL（`psycopg` 3）· ruff · mypy (strict) · pytest
-- **唯一真值**：PostgreSQL 關聯式實表，表結構以 `migrations/*.sql` 為準（不修改已套用的遷移檔，由 `schema_migration` 雜湊強制）。
+- **唯一真值**：PostgreSQL 關聯式實表，表結構以 `migrations/*.sql` 為準（不修改已套用的遷移檔，由 `schema_migration` 雜湊強制）。`0001_baseline.sql` 是 pg_dump 產生的合併基線，不手改；再合併等於重建每個環境的資料庫，動手前先問。
 - **法規主鍵與時間軸不變式（由綱要約束強制）**：
   - 自然鍵為 `(jurisdiction, id_scheme, local_id)`，三欄皆無預設值，方案與管轄配對由 CHECK 強制（地方方案目前僅為契約預留）。
   - 效力逐條文單元記載與解析；名稱可隨修正而變，標題屬公布版本；標註錨定 `(單元, 內容雜湊)`，不錨定版本列。

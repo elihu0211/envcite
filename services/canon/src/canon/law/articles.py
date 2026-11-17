@@ -63,7 +63,7 @@ def is_deleted(content: str) -> bool:
 
 
 def sort_key(path: str) -> list[int]:
-    """閱讀順序的整數陣列（0001 provision.sort_key）：下層單元為上層的鍵加 0 再加序位。"""
+    """閱讀順序的整數陣列（`corpus.provision.sort_key`）：下層單元為上層的鍵加 0 再加序位。"""
     head, *rest = path.split("/")
     key = [int(n) for n in head.removeprefix("art_").split("-")]
     for segment in rest:

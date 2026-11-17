@@ -22,7 +22,7 @@ class _SettledRow(NamedTuple):
 
 
 def settle_crawl(conn: Conn, crawl: Crawl, report: Report, today: date) -> None:
-    """一次全量走訪之後：未出現的計數與下架由 `guidance.settle_crawl` 轉移（門檻在遷移 0050）。"""
+    """一次全量走訪之後：未出現的計數與下架由 `guidance.settle_crawl` 轉移（門檻在該函式）。"""
     if not crawl.complete:
         report.crawl_complete = False
         log.warning("有葉分類沒走完，不推論下架")
