@@ -5862,18 +5862,38 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 }
 
 /* 手機與平板：抽屜蓋住大半個畫面，是 modal，背後的頁面不跟著捲。gutter 已固定，鎖捲動不會讓版面跳動。
-   桌機起：抽屜是並排閱讀的側欄，不加遮罩、不鎖捲動，背後的頁面照常用滾輪捲；用關閉鈕收起（焦點在抽屜內時 Esc 也行）。 */
+   桌機起：抽屜是並排閱讀的側欄，不加遮罩、不鎖捲動；頁面讓出抽屜的寬度，主內容往左推、不被蓋住，
+   背後的頁面照常用滾輪捲；用關閉鈕收起（焦點在抽屜內時 Esc 也行）。 */
+:root {
+    --ep-drawer-width: var(--ep-measure-drawer);
+}
+
 html:has(.ep-drawer-backdrop) {
     overflow: hidden;
 }
 
 @media (width >= 80rem) {
+    :root {
+        /* 側欄與主內容並排：隨視窗縮，主內容才留得下一欄。 */
+        --ep-drawer-width: clamp(var(--ep-measure-narrow), 36vw, var(--ep-measure-drawer));
+    }
+
     html:has(.ep-drawer-backdrop) {
         overflow: visible;
     }
 
     .ep-drawer-backdrop {
         display: none;
+    }
+
+    html:has(.ep-drawer-panel) body {
+        padding-inline-end: var(--ep-drawer-width);
+    }
+}
+
+@media (width >= 80rem) and (prefers-reduced-motion: no-preference) {
+    body {
+        transition: padding-inline-end var(--ep-motion-slow) var(--ep-motion-ease-settle);
     }
 }
 
@@ -5890,7 +5910,7 @@ html:has(.ep-drawer-backdrop) {
     inset-block: 0;
     inset-inline-end: 0;
     z-index: 91;
-    width: min(680px, 100vw);
+    width: min(var(--ep-drawer-width), 100vw);
     display: flex;
     flex-direction: column;
     background: var(--ep-surface-raised);

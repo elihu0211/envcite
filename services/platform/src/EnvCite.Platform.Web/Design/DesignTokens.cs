@@ -206,6 +206,8 @@ public static class DesignTokens
         // 營運後台：表格與兩欄的設定頁要寬，但超過這個寬度的一行就讀不完了。
         ["console"] = "76rem",
         ["sidebar"] = "15rem",
+        // 條文抽屜：桌機並排時隨視窗縮到 narrow，窄螢幕蓋在頁面上用滿這個寬度。
+        ["drawer"] = "42.5rem",
         ["sidebar-rail"] = "4.5rem",
     };
 
