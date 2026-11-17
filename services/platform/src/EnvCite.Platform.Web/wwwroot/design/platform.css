@@ -3808,11 +3808,23 @@ html[data-reveal]::view-transition-new(root) {
     display: none;
 }
 
-.ep-side-new-chat .ep-icon {
+/* 「新對話」是側欄唯一的主要動作（Grok 式）：外框膠囊加實心主色的加號圓，和下面的導覽列分得開；
+   導覽列的目前項是淡藍底，所以這顆不用填色，只靠外框與加號圓成為視覺重心。 */
+.ep-side-new-chat-mark {
     flex: none;
-    inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
-    block-size: calc(var(--ep-space-4) + var(--ep-space-1));
-    color: var(--ep-text-secondary);
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-space-6);
+    block-size: var(--ep-space-6);
+    border-radius: 50%;
+    background: var(--ep-primary);
+    color: var(--ep-on-primary);
+}
+
+.ep-side-new-chat-mark .ep-icon {
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    color: inherit;
 }
 
 .ep-portal-new-chat {
@@ -4124,12 +4136,14 @@ html[data-reveal]::view-transition-new(root) {
         flex: none;
         inline-size: 100%;
         min-block-size: var(--ep-touch-target);
-        padding-inline: var(--ep-space-3);
+        margin-block: var(--ep-space-1) var(--ep-space-3);
+        padding-inline: var(--ep-space-2) var(--ep-space-4);
+        border: 1px solid var(--ep-border-control);
         border-radius: var(--ep-radius-pill);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
-        font-weight: var(--ep-body-l-weight);
+        font-weight: var(--ep-label-m-weight);
         white-space: nowrap;
         transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
     }
@@ -4223,12 +4237,14 @@ html[data-reveal]::view-transition-new(root) {
         flex: none;
         inline-size: 100%;
         min-block-size: var(--ep-control-height);
-        padding-inline: var(--ep-space-3);
+        margin-block: var(--ep-space-1) var(--ep-space-3);
+        padding-inline: var(--ep-space-2) var(--ep-space-4);
+        border: 1px solid var(--ep-border-control);
         border-radius: var(--ep-radius-pill);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
-        font-weight: var(--ep-body-l-weight);
+        font-weight: var(--ep-label-m-weight);
         white-space: nowrap;
         transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
     }
@@ -4302,10 +4318,12 @@ html[data-reveal]::view-transition-new(root) {
         padding-inline: var(--ep-space-2);
     }
 
+    /* 窄欄：只剩加號圓（外框拿掉，圓本身就是鈕）。 */
     html[data-side="collapsed"] .ep-portal.ep-console .ep-side-new-chat {
         inline-size: var(--ep-control-height);
         margin-inline: auto;
         padding-inline: 0;
+        border-color: transparent;
         justify-content: center;
     }
 

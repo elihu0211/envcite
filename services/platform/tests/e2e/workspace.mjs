@@ -118,8 +118,8 @@ const scenarios = {
             await circuitConnected();
             await until("應還原兩個回合", async () => (await turns().count()) === 2);
         });
-        await step("側欄的「查詢」開新對話、最近對話回到舊的那一串", async () => {
-            await page.click(`a.ep-side-link[href='/portal/${tenant}']`);
+        await step("側欄的「新對話」開新對話、最近對話回到舊的那一串", async () => {
+            await page.click(`a.ep-side-new-chat[href='/portal/${tenant}']`);
             await until("應是空畫面", async () => (await page.locator(".ep-ask[data-state='empty']").count()) === 1);
             await page.click(".ep-recent-link");
             await until("應回到兩個回合", async () => (await turns().count()) === 2);
@@ -210,7 +210,7 @@ const scenarios = {
             await until("側欄應只剩原本那串", async () => (await page.locator(".ep-recent-link").count()) === 1);
         });
 
-        await step("搜尋：側欄沒有篩選框；點「全部」旁的圖示到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
+        await step("搜尋：側欄沒有篩選框；點對話清單標題旁的圖示到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
             if ((await page.locator("input[data-recent-filter]").count()) !== 0) throw new Error("側欄不該有篩選框");
             await page.locator(".ep-history-filter").click();
             await until("應到對話紀錄頁", async () => page.url().endsWith("/history"));
@@ -221,7 +221,7 @@ const scenarios = {
         });
 
         await step("離開再從側欄點回來：還原回合，接著問會帶著前文", async () => {
-            await page.click(`a.ep-side-link[href='/portal/${tenant}']`);
+            await page.click(`a.ep-side-new-chat[href='/portal/${tenant}']`);
             await until("應是空畫面", async () => (await page.locator(".ep-ask[data-state='empty']").count()) === 1);
             await page.click(".ep-recent-link");
             await until("應還原一個回合", async () => (await turns().count()) === 1);
@@ -363,7 +363,7 @@ const scenarios = {
         // 換到 path 後等頁面穩定（動畫收尾、串流結束），再比對外殼，並檢查沒有缺屬性的畫面與外殼元素的版面位移。
         // 業務模塊與對話紀錄在側欄；成員、帳號這類系統設定收在帳號選單（popover），要先打開才點得到。
         const visit = async (name, path, expected) => {
-            const sideLink = page.locator(`a[href='${path}']:is(.ep-side-link, .ep-history-filter)`);
+            const sideLink = page.locator(`a[href='${path}']:is(.ep-side-link, .ep-side-new-chat, .ep-history-filter)`);
             if ((await sideLink.count()) > 0) {
                 await sideLink.click();
             } else {

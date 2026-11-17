@@ -48,9 +48,8 @@ public static class PortalNavigation
     public static IReadOnlyList<PortalShell.NavItem> Collect(IEnumerable<IPortalNavContributor> contributors, PortalNavContext context, PortalNavSlot slot) =>
         [.. contributors.Where(c => c.Slot == slot).OrderBy(c => c.Order).SelectMany(c => c.Items(context))];
 
-    /// <summary>入口自帶的五個來源。</summary>
+    /// <summary>入口自帶的四個來源。</summary>
     internal static IServiceCollection AddPortalNavigation(this IServiceCollection services) => services
-        .AddPortalNavContributor<QueryNav>()
         .AddPortalNavContributor<LawWorkbenchNav>()
         .AddPortalNavContributor<MembersNav>()
         .AddPortalNavContributor<DirectoryNav>()

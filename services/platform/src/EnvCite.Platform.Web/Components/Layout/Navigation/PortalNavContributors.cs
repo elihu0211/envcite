@@ -22,15 +22,8 @@ internal abstract class PortalNavContributorBase(IStringLocalizer<Ui> localizer)
     public abstract IEnumerable<PortalShell.NavItem> Items(PortalNavContext context);
 }
 
-internal sealed class QueryNav(IStringLocalizer<Ui> localizer) : PortalNavContributorBase(localizer)
-{
-    public override int Order => 10;
-
-    // 首頁只在首頁算「目前頁」，否則其他頁都在它底下，它會一直亮著。
-    public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
-        [new(context.Home, L["法規諮詢"], ServicesGroup, Exact: true, Icon: Icons.Material.Outlined.QuestionAnswer)];
-}
-
+// 首頁（法規諮詢的新對話）不是導覽項目：外殼把它畫成側欄頂端的「新對話」主要動作，對話清單的標題才是法規諮詢；
+// 同一個目的地不在導覽裡再列一次。這裡只放與首頁不同的目的地。
 internal sealed class LawWorkbenchNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
 {
     public override int Order => 15;
