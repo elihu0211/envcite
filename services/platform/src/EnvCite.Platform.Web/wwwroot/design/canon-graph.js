@@ -1219,11 +1219,17 @@
     const buildRelationGroup = (headingText, items) => {
       if (items.length === 0) return;
       const box = addEl(relations, "div", "ep-inspector-rel-group");
-      addEl(box, "h4", "ep-inspector-rel-heading", headingText);
+      const heading = addEl(box, "h4", "ep-inspector-rel-heading", headingText);
+      addEl(heading, "span", "ep-badge", String(items.length));
       const list = addEl(box, "ul", "ep-inspector-rel-list");
       items.forEach(({ edge, peer }) => {
         const li = addEl(list, "li", "ep-inspector-rel-item");
-        if (peer.focusHref) {
+        if (callbacks?.focusNodeOnCanvas && callbacks.hasNode?.(peer.id)) {
+          // 圖上有這個節點：在圖裡選取並移過去，不離開頁面、不丟掉目前的視角與展開狀態。
+          const jump = addEl(li, "button", "ep-inspector-rel-link", peer.title);
+          jump.type = "button";
+          jump.addEventListener("click", () => callbacks.focusNodeOnCanvas(peer.id));
+        } else if (peer.focusHref) {
           const link = addEl(li, "a", "ep-inspector-rel-link", peer.title);
           link.href = peer.focusHref;
         } else {
@@ -1538,7 +1544,7 @@
               await toggleGroupsForNode(nodeId);
             } else if (value === "inspect") {
               selectNodeById(nodeId);
-              if (host) host.dataset.inspectorOpen = "true";
+              setInspectorOpen(true);
             } else if (value === "focus" && raw?.focusHref) {
               window.location.assign(raw.focusHref);
             } else if (value === "structure" && raw?.structureHref) {
@@ -1696,19 +1702,48 @@
     const inspectorCallbacks = {
       getNodeGroups: (id) => visibleModelCache?.childGroupMap.get(id) || [],
       toggleNodeGroups: (id) => { toggleGroupsForNode(id); },
+      hasNode: (id) => Boolean(graph.getNodeData(id)),
       focusNodeOnCanvas: async (nodeId) => {
         if (!nodeId || !graph.getNodeData(nodeId)) return;
         selectNodeById(nodeId);
-        if (host) {
-          delete host.dataset.inspectorDismissed;
-          host.dataset.inspectorOpen = "true";
-        }
+        setInspectorOpen(true);
         if (graph.getZoom() < 0.78) {
           await graph.zoomTo(0.86);
         }
         await graph.focusElement(nodeId).catch(() => {});
+        await revealBesideInspector(nodeId);
       },
     };
+
+    // 檢視面板浮在畫布右側：被選的節點若在面板底下就把畫面往左推到面板左緣，選了卻看不到節點是最糟的。
+    // 窄容器的底部面板是 fixed、蓋在畫布外，不需要讓位。
+    async function revealBesideInspector(nodeId) {
+      const sheet = host?.querySelector(".ep-graph-inspector");
+      if (!sheet || host.dataset.inspectorOpen !== "true" || !graph.getNodeData(nodeId)) return;
+      if (getComputedStyle(sheet).position === "fixed") return;
+      try {
+        // 面板的最終位置用版面座標（offsetLeft 不含進場的位移動畫）；量 getBoundingClientRect 會把動畫中的位移算進去，少推一截。
+        const sheetLeft = sheet.offsetLeft - container.offsetLeft;
+        const [x] = graph.getViewportByCanvas(graph.getElementPosition(nodeId));
+        const overflow = x + (284 / 2) * graph.getZoom() - (sheetLeft - 16);
+        if (overflow > 0) {
+          const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+          await graph.translateBy([-overflow, 0], reduced ? false : { duration: 200 });
+        }
+      } catch {
+        // 圖正在重建或已卸載：不需要讓位
+      }
+    }
+
+    function setInspectorOpen(open, { focus = false, restoreFocus = false } = {}) {
+      if (!host) return;
+      host.dataset.inspectorOpen = open ? "true" : "false";
+      const sheet = host.querySelector(".ep-graph-inspector");
+      const toggle = host.querySelector("[data-inspector-open-btn]");
+      toggle?.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open && focus) sheet?.focus({ preventScroll: true });
+      if (!open && restoreFocus) toggle?.focus({ preventScroll: true });
+    }
 
     function collectLineage(rootId) {
       const inAdj = new Map();
@@ -1875,10 +1910,8 @@
         return;
       }
       selectNodeById(id);
-      if (host) {
-        delete host.dataset.inspectorDismissed;
-        host.dataset.inspectorOpen = "true";
-      }
+      setInspectorOpen(true);
+      revealBesideInspector(id);
     });
 
     graph.on("node:dblclick", (evt) => {
@@ -1892,7 +1925,7 @@
 
     graph.on("canvas:click", () => {
       selectedNodeId = null;
-      if (host) host.dataset.inspectorOpen = "false";
+      setInspectorOpen(false);
       clearSelectionStates();
       const focusNode = nodes.find((n) => n.focus) || null;
       renderInspector(inspectorEl, focusNode, nodes, edges, labels, inspectorCallbacks);
@@ -1967,14 +2000,18 @@
         }
         const openBtn = evt.target.closest("[data-inspector-open-btn]");
         if (openBtn) {
-          delete host.dataset.inspectorDismissed;
-          host.dataset.inspectorOpen = "true";
+          // 「法學檢視」是開關：開著再按就收起；從鍵盤打開時把焦點帶進面板。
+          if (host.dataset.inspectorOpen === "true") {
+            setInspectorOpen(false);
+          } else {
+            setInspectorOpen(true, { focus: true });
+            if (selectedNodeId) revealBesideInspector(selectedNodeId);
+          }
           return;
         }
         const closeBtn = evt.target.closest("[data-inspector-close]");
         if (closeBtn) {
-          host.dataset.inspectorDismissed = "true";
-          host.dataset.inspectorOpen = "false";
+          setInspectorOpen(false, { restoreFocus: true });
           return;
         }
         const btn = evt.target.closest("[data-graph-action]");
@@ -2018,7 +2055,8 @@
         }
         const activeGraph = container._g6Instance || graph;
         if (evt.key === "Escape") {
-          host.dataset.inspectorOpen = "false";
+          // 焦點在面板裡時，收起後要把焦點交還給「法學檢視」，不能掉到 body。
+          setInspectorOpen(false, { restoreFocus: Boolean(host.querySelector(".ep-graph-inspector")?.contains(document.activeElement)) });
           selectedNodeId = null;
           activeTierFilter = null;
           syncFilterButtons();
