@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Components;
 
+using MudBlazor;
+
 namespace EnvCite.Platform.Web.Components.Shared;
 
 public sealed partial class FormattedAnswerView
@@ -39,6 +41,13 @@ public sealed partial class FormattedAnswerView
         CalloutTone.Requirement => "ep-ans-callout-requirement",
         CalloutTone.Caution => "ep-ans-callout-caution",
         _ => "ep-ans-callout-summary",
+    };
+
+    private static string CalloutToneIcon(CalloutTone tone) => tone switch
+    {
+        CalloutTone.Requirement => Icons.Material.Outlined.Gavel,
+        CalloutTone.Caution => Icons.Material.Outlined.WarningAmber,
+        _ => Icons.Material.Outlined.AutoAwesome,
     };
 
     private string CalloutToneLabel(CalloutTone tone) => tone switch

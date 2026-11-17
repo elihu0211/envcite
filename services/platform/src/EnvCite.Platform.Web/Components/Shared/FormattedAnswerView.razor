@@ -8,13 +8,18 @@
                 case CalloutBlock callout:
                     <section class="ep-ans-callout @CalloutToneClass(callout.Tone)">
                         <div class="ep-ans-callout-head">
+                            <span class="ep-ans-callout-icon" aria-hidden="true"><NavIcon Path="@CalloutToneIcon(callout.Tone)" /></span>
                             <span class="ep-ans-callout-badge">@CalloutToneLabel(callout.Tone)</span>
-                            <h2 class="ep-ans-heading">@callout.Title</h2>
                         </div>
-                        <p class="ep-ans-p">
-                            @callout.Body
-                            @RenderCitations(callout.CitationCodes)
-                        </p>
+                        <h2 class="ep-ans-heading">@callout.Title</h2>
+                        <p class="ep-ans-p">@callout.Body</p>
+                        @if (callout.CitationCodes.Count > 0)
+                        {
+                            <div class="ep-ans-sources">
+                                <span class="ep-ans-sources-label">@L["依據"]</span>
+                                @RenderCitations(callout.CitationCodes)
+                            </div>
+                        }
                     </section>
                     break;
 
@@ -87,10 +92,10 @@
                                                 }
                                                 else
                                                 {
-                                                    <td>@row.Cells[c]</td>
+                                                    <td data-label="@(c < table.Columns.Count ? table.Columns[c] : null)">@row.Cells[c]</td>
                                                 }
                                             }
-                                            <td class="ep-ans-table-citations">@RenderCitations(row.CitationCodes)</td>
+                                            <td class="ep-ans-table-citations" data-label="@L["依據"]">@RenderCitations(row.CitationCodes)</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -136,8 +141,9 @@
             @if (item.Checked is bool checkedState)
             {
                 <span class="ep-ans-task-marker"
+                      data-state="@(checkedState ? "done" : "todo")"
                       role="img"
-                      aria-label="@(checkedState ? L["已完成"] : L["未完成"])">@(checkedState ? "☑" : "☐")</span>
+                      aria-label="@(checkedState ? L["已完成"] : L["未完成"])"></span>
             }
             <span class="ep-ans-item-text">
                 <strong class="ep-ans-item-label">@item.Label</strong>
@@ -151,20 +157,25 @@
     </text>;
 
     private RenderFragment RenderCitations(IReadOnlyList<string> codes) => @<text>
-        @foreach (var code in codes)
+        @if (codes.Count > 0)
         {
-            @if (OnCitationSelect.HasDelegate && SourceLookup.TryGetValue(code, out var matched))
-            {
-                <button type="button"
-                        class="ep-cite-inline"
-                        title="@matched.Citation"
-                        aria-label="@L["檢視 {0} 條文內容", $"{code} {matched.Citation}"]"
-                        @onclick="() => OnCitationSelect.InvokeAsync(matched)">@($"[{code}]")</button>
-            }
-            else
-            {
-                <span class="ep-cite-inline ep-cite-static">@($"[{code}]")</span>
-            }
+            <span class="ep-cite-group">
+                @foreach (var citeCode in codes)
+                {
+                    @if (OnCitationSelect.HasDelegate && SourceLookup.TryGetValue(citeCode, out var matched))
+                    {
+                        <button type="button"
+                                class="ep-cite-inline"
+                                title="@matched.Citation"
+                                aria-label="@L["檢視 {0} 條文內容", $"{citeCode} {matched.Citation}"]"
+                                @onclick="() => OnCitationSelect.InvokeAsync(matched)">@citeCode</button>
+                    }
+                    else
+                    {
+                        <span class="ep-cite-inline ep-cite-static">@citeCode</span>
+                    }
+                }
+            </span>
         }
     </text>;
 }

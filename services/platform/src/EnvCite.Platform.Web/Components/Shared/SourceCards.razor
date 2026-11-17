@@ -1,19 +1,21 @@
 @* 一次回答的法源索引列：僅呈現引用代號與法條名稱，點擊後由抽屜依索引 API 按需載入全文並排版。 *@
 @if (Sources.Count > 0)
 {
-    <div class="ep-citation-strip" role="list" aria-label="@L["引用法條清單"]">
-        @foreach (var source in Sources)
-        {
-            <button type="button"
-                    class="ep-citation-chip"
-                    role="listitem"
-                    aria-label="@L["檢視 {0} 條文內容", source.Citation]"
-                    @onclick="() => OnSelect.InvokeAsync(source)">
-                <span class="ep-citation-badge">[@source.Code]</span>
-                <span class="ep-citation-name">@source.Citation</span>
-                <span class="ep-citation-chevron" aria-hidden="true">›</span>
-            </button>
-        }
+    <div class="ep-citation-block">
+        <p class="ep-citation-label" aria-hidden="true">@L["引用法條清單"]</p>
+        <div class="ep-citation-strip" role="list" aria-label="@L["引用法條清單"]">
+            @foreach (var source in Sources)
+            {
+                <button type="button"
+                        class="ep-citation-chip"
+                        role="listitem"
+                        aria-label="@L["檢視 {0} 條文內容", source.Citation]"
+                        @onclick="() => OnSelect.InvokeAsync(source)">
+                    <span class="ep-citation-badge">@source.Code</span>
+                    <span class="ep-citation-name">@source.Citation</span>
+                </button>
+            }
+        </div>
     </div>
 }
 

@@ -151,7 +151,7 @@ public sealed class StructuredAnswerViewTests
         Assert.Contains("class=\"ep-mermaid\" data-mermaid-source=\"", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-ans-workflow-steps\"", html, StringComparison.Ordinal);
         Assert.Contains("<button type=\"button\" class=\"ep-cite-inline\"", html, StringComparison.Ordinal);
-        Assert.Contains("<span class=\"ep-cite-inline ep-cite-static\">[L99]</span>", html, StringComparison.Ordinal);
+        Assert.Contains("<span class=\"ep-cite-inline ep-cite-static\">L99</span>", html, StringComparison.Ordinal);
         Assert.DoesNotContain("<script>alert(1)</script>", rawHtml, StringComparison.OrdinalIgnoreCase);
         Assert.Null(selected);
     }
