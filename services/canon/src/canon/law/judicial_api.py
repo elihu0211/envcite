@@ -11,6 +11,8 @@ from typing import Protocol
 
 import httpx
 
+from canon.exit_codes import Retryable, Unretryable
+
 AUTH_URL = "https://data.judicial.gov.tw/jdg/api/Auth"
 JLIST_URL = "https://data.judicial.gov.tw/jdg/api/JList"
 JDOC_URL = "https://data.judicial.gov.tw/jdg/api/JDoc"
@@ -20,12 +22,12 @@ _AUTH_REJECTED = "驗證失敗"
 _REMOVED = "查無資料"
 
 
-class EndpointError(Exception):
+class EndpointError(Retryable):
     """逾時、HTTP 錯誤或回應不是 JSON。訊息只有路徑末段，沒有回應本文。"""
 
 
-class AuthRejected(Exception):
-    """帳號密碼或重新取得的 token 仍被拒。"""
+class AuthRejected(Unretryable):
+    """帳號密碼或重新取得的 token 仍被拒：重試同一組密鑰沒有用。"""
 
 
 class Post(Protocol):
