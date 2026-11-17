@@ -46,8 +46,6 @@ so the negatives give the distribution a rerank-score floor would be chosen from
 latency of the scoring call.
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

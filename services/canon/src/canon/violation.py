@@ -9,8 +9,9 @@
 
 import re
 from collections.abc import Sequence
+from typing import NamedTuple
 
-from canon.db import Conn
+from canon.db import Conn, fetch
 from canon.numerals import CN_NUMERALS, parse_int
 from canon.rules import Extracted, Extractor
 
@@ -108,9 +109,17 @@ def within(path: str, cited: Sequence[str]) -> bool:
     return any(path == c or path.startswith(c + "/") or c.startswith(path + "/") for c in cited)
 
 
+class _VersionRow(NamedTuple):
+    provision_id: int
+    resource_id: int
+    content_sha256: bytes
+    content: str
+
+
 def extract(conn: Conn) -> Extracted:
     """寫入語料所有現行條文的處罰依賴圖；`written` 是新寫入的列數。不 commit，由呼叫端決定。"""
-    rows = conn.execute(
+    rows = fetch(
+        conn,
         "SELECT v.provision_id, p.resource_id, v.content_sha256, v.content"
         "  FROM corpus.provision_version AS v"
         "  JOIN corpus.provision AS p ON p.id = v.provision_id"
@@ -120,14 +129,12 @@ def extract(conn: Conn) -> Extracted:
         "                      AND vi.content_sha256 = v.content_sha256"
         "                      AND vi.rule_version = %s)",
         (RULE_VERSION,),
-    ).fetchall()
+        _VersionRow,
+    )
     found = [
         (pid, digest, cited, rid, cited, kind, RULE_VERSION)
         for pid, rid, digest, text in rows
-        for kind, paths in (
-            ("duty", violations(str(text))),
-            ("delegated_rule", delegated_rules(str(text))),
-        )
+        for kind, paths in (("duty", violations(text)), ("delegated_rule", delegated_rules(text)))
         for cited in paths
     ]
     with conn.cursor() as cur:

@@ -28,8 +28,6 @@
 與修復同一份程式。
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

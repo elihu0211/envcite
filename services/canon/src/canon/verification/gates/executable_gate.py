@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Any, NamedTuple
 
 from canon.db import Conn, fetch_one
-from canon.reasoning import Result, evaluate
+from canon.reasoning.engine import Result, evaluate
 from canon.reasoning.facts.case_inputs import CaseValue, Measurement
 from canon.reasoning.facts.chains import limit_at
 from canon.verification.gates.base import GateResult, Unit, unit_of

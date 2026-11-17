@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, NamedTuple
 
-from canon.db import Conn, fetch_one
+from canon.db import Conn, fetch, fetch_one
 from canon.verification.gates.base import GateResult, Unit, Verdict, unit_of
 from canon.verification.gates.cn_number import (
     QUALIFIER_COMPARATOR,
@@ -21,6 +21,12 @@ class _AmountRow(NamedTuple):
     amount_text: str | None
     min_amount: Decimal | None
     max_amount: Decimal | None
+
+
+class _ThresholdRow(NamedTuple):
+    threshold: Decimal
+    comparator: str
+    negated: bool
 
 
 @dataclass(frozen=True)
@@ -46,25 +52,26 @@ class NumbersGate:
         )
         if sanction is not None and any(v is not None for v in sanction):
             checks.extend(self._sanction(u, *sanction))
-        for value, comparator, negated in conn.execute(
+        for number, comparator, negated in fetch(
+            conn,
             "SELECT threshold, comparator::text, negated FROM annotation.statement_condition"
             " WHERE statement_id = %s AND threshold IS NOT NULL"
             " AND (condition_role = 'limit' OR measure_unit IS NOT NULL)",
             (statement_id,),
+            _ThresholdRow,
         ):
             have = numbers_in(u.quoted)
-            number = Decimal(str(value))
             ok = number in have
             checks.append(
                 {
                     "what": "threshold",
-                    "value": str(value),
+                    "value": str(number),
                     "in_text": [str(x) for x in sorted(have)],
                     "ok": ok,
                 }
             )
             if ok and number == number.to_integral_value():
-                bound = self._bound(u, int(number), str(comparator), bool(negated))
+                bound = self._bound(u, int(number), comparator, negated)
                 if bound is not None:
                     checks.append(bound)
         if not checks:

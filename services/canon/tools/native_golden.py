@@ -37,8 +37,6 @@
 題庫的 sha256
 是檔案位元組的雜湊，改任何一題都會使 qrels 與切分失效、要重新 `derive`。"""
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

@@ -1,10 +1,15 @@
 """閘門二：罰則所處罰的陳述，必須是原文引用的那一條（項）。"""
 
 from dataclasses import dataclass
+from typing import NamedTuple
 
-from canon.db import Conn
+from canon.db import Conn, fetch, fetch_one
 from canon.verification.gates.base import GateResult, unit_of
 from canon.violation import citations, within
+
+
+class _PathRow(NamedTuple):
+    path: str
 
 
 @dataclass(frozen=True)
@@ -22,23 +27,27 @@ class ReferencesGate:
 
         原文沒有任何引用、所處罰的陳述就在同一單元時，視同引用自己。
         """
-        row = conn.execute(
+        punished = fetch_one(
+            conn,
             "SELECT pp.path FROM annotation.sanction AS sn"
             "  JOIN annotation.statement AS t ON t.id = sn.punished_statement_id"
             "  JOIN corpus.provision AS pp ON pp.id = t.provision_id"
             " WHERE sn.statement_id = %s",
             (statement_id,),
-        ).fetchone()
-        if row is None:
+            _PathRow,
+        )
+        if punished is None:
             return None
         u = unit_of(conn, statement_id)
-        target = str(row[0])
+        target = punished.path
         cited = citations(u.text)
         in_corpus = {
-            str(p)
-            for (p,) in conn.execute(
+            row.path
+            for row in fetch(
+                conn,
                 "SELECT path FROM corpus.provision WHERE resource_id = %s AND path = ANY(%s)",
                 (u.resource_id, cited),
+                _PathRow,
             )
         }
         evidence = {

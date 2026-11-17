@@ -14,7 +14,8 @@ import pytest
 from canon import violation
 from canon.annotate import load
 from canon.verification.extract import extract_unit
-from canon.verification.gates import GateResult, ReferencesGate
+from canon.verification.gates.base import GateResult
+from canon.verification.gates.references_gate import ReferencesGate
 from canon.verification.link import link_penalties, penalized
 from canon.verification.model_gates.panel import PanelGate
 from canon.verification.model_gates.render import render_annotation

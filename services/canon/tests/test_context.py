@@ -11,7 +11,7 @@ import pytest
 from canon.annotate import Loaded, load
 from canon.verification.context import ancestors_text
 from canon.verification.extract import extract_unit
-from canon.verification.gates import NumbersGate
+from canon.verification.gates.numbers_gate import NumbersGate
 from canon.verification.model_gates.panel import PanelGate
 from tests.model_gates_support import EXTRACTOR, Scripted
 from tests.test_annotation import LAW, _doc, _duty

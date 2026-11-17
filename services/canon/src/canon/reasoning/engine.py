@@ -27,11 +27,11 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from importlib import resources
-from typing import Any
+from typing import Any, NamedTuple
 
 import clingo
 
-from canon.db import Conn
+from canon.db import Conn, fetch
 from canon.reasoning.facts.case_inputs import (
     Case,
     Measurements,
@@ -52,6 +52,12 @@ from canon.reasoning.scoring.matrices import load_matrices
 from canon.reasoning.scoring.models import ScoringInput, ScoringResult
 
 _RULES = resources.files(__package__).joinpath("rules.lp").read_text(encoding="utf-8")
+
+
+class _SanctionFlags(NamedTuple):
+    statement_id: int
+    per_occasion: bool
+    discretionary: bool
 
 
 @dataclass(frozen=True)
@@ -215,11 +221,13 @@ def evaluate(
         for p, s, e, lo, hi in get(name)
     ]
     flags = {
-        int(row[0]): (bool(row[1]), bool(row[2]))  # type: ignore[call-overload]
-        for row in conn.execute(
+        row.statement_id: (row.per_occasion, row.discretionary)
+        for row in fetch(
+            conn,
             "SELECT statement_id, per_occasion, discretionary FROM annotation.sanction"
             " WHERE statement_id = ANY(%s)",
             ([c[0] for c in candidates],),
+            _SanctionFlags,
         )
     }
     triggers: dict[int, list[tuple[int, str]]] = {}

@@ -7,7 +7,7 @@ from typing import Any
 
 from canon.annotate import load
 from canon.db import Conn
-from canon.reasoning import evaluate
+from canon.reasoning.engine import evaluate
 from canon.reasoning.facts.case_inputs import PerOccasionTimeline
 from canon.reasoning.scoring.adjustments import compute_lecture_hours
 from canon.reasoning.scoring.audit import (

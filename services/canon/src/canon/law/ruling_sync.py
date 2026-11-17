@@ -19,12 +19,14 @@ import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
+from typing import NamedTuple
 
 import psycopg
 
 from canon.acquire.engine import download as download_file
-from canon.db import Conn
+from canon.db import Conn, fetch, fetch_one, scalar
 from canon.law import cons, ruling
 from canon.law.ruling_extract import EXTRACTOR_VERSION, extract, should_keep
 from canon.settings import DatabaseSettings
@@ -110,12 +112,30 @@ def _urls(
     return list(dict.fromkeys(urls))
 
 
+class _ScanRow(NamedTuple):
+    extractor_version: int
+
+
+class _RulingRow(NamedTuple):
+    id: int
+    decided_on: date
+    excerpt: str
+
+
+class _TitleRow(NamedTuple):
+    title: str
+    pcode: str
+
+
 def _scanned(conn: Conn, url: str) -> bool:
-    row = conn.execute(
-        "SELECT extractor_version FROM corpus.ruling_scan WHERE source_url = %s", (url,)
-    ).fetchone()
+    row = fetch_one(
+        conn,
+        "SELECT extractor_version FROM corpus.ruling_scan WHERE source_url = %s",
+        (url,),
+        _ScanRow,
+    )
     conn.rollback()
-    return row is not None and row[0] == EXTRACTOR_VERSION
+    return row is not None and row.extractor_version == EXTRACTOR_VERSION
 
 
 def _scan(conn: Conn, page: cons.RulingPage) -> None:
@@ -152,9 +172,12 @@ def _extract(conn: Conn) -> tuple[int, int, int]:
     """對庫裡每則裁判重抽；一個交易，整批成功或整批不變。"""
     titles = _titles(conn)
     try:
-        rows = conn.execute(
-            "SELECT id, decided_on, excerpt FROM corpus.constitutional_ruling ORDER BY id"
-        ).fetchall()
+        rows = fetch(
+            conn,
+            "SELECT id, decided_on, excerpt FROM corpus.constitutional_ruling ORDER BY id",
+            None,
+            _RulingRow,
+        )
         unresolved = 0
         for ruling_id, decided_on, excerpt in rows:
             conn.execute(
@@ -163,9 +186,9 @@ def _extract(conn: Conn) -> tuple[int, int, int]:
                 (ruling_id,),
             )
             written = 0
-            for c in extract(str(excerpt), decided_on, frozenset(titles)):  # type: ignore[arg-type]
+            for c in extract(excerpt, decided_on, frozenset(titles)):
                 pcode = titles[c.law_title]
-                if pcode is None or c.invalid_from < decided_on:  # type: ignore[operator]
+                if pcode is None or c.invalid_from < decided_on:
                     continue
                 written += conn.execute(
                     "INSERT INTO corpus.ruling_invalidation"
@@ -181,27 +204,31 @@ def _extract(conn: Conn) -> tuple[int, int, int]:
                 "SELECT 1 FROM corpus.ruling_invalidation WHERE ruling_id = %s", (ruling_id,)
             ).fetchone()
             unresolved += has_any is None
-        total = conn.execute(
-            "SELECT count(*) FROM corpus.ruling_invalidation WHERE extractor_version IS NOT NULL"
-        ).fetchone()
-        assert total is not None
+        total = scalar(
+            conn,
+            "SELECT count(*) FROM corpus.ruling_invalidation WHERE extractor_version IS NOT NULL",
+            None,
+            int,
+        )
     except Exception:
         conn.rollback()
         raise
     conn.commit()
-    return len(rows), int(total[0]), unresolved  # type: ignore[call-overload]
+    return len(rows), total, unresolved
 
 
 def _titles(conn: Conn) -> dict[str, str | None]:
     """標題 → pcode；同一標題對到兩部法規（歷來名稱重複）為 None，抽取時略過。"""
     found: dict[str, str | None] = {}
-    for title, pcode in conn.execute(
+    for title, pcode in fetch(
+        conn,
         "SELECT DISTINCT e.title, r.local_id FROM corpus.legal_expression AS e"
         "  JOIN corpus.legal_resource AS r ON r.id = e.resource_id"
-        " WHERE r.id_scheme = 'moj_pcode' AND e.language = 'zho' AND char_length(e.title) >= 2"
+        " WHERE r.id_scheme = 'moj_pcode' AND e.language = 'zho' AND char_length(e.title) >= 2",
+        None,
+        _TitleRow,
     ):
-        key = str(title)
-        found[key] = str(pcode) if key not in found or found[key] == pcode else None
+        found[title] = pcode if title not in found or found[title] == pcode else None
     conn.rollback()
     return found
 

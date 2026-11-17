@@ -27,8 +27,6 @@
 方案只能依開發集選；測試集在定案後報一次。
 """
 
-from __future__ import annotations
-
 import argparse
 import getpass
 import json

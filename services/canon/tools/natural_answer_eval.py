@@ -13,8 +13,6 @@ commit、題庫與語料快照（不記本工具的執行時間，所以同一�
 沒有 `--out` 時只印出 Markdown。
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

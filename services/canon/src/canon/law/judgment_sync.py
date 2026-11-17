@@ -13,12 +13,13 @@ import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, time
+from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 import psycopg
 
 from canon.clock import taipei_now
-from canon.db import Conn
+from canon.db import Conn, fetch, scalar
 from canon.law import judgment, judgment_anchor
 from canon.law.judicial_api import AuthRejected, Client, EndpointError, removed
 from canon.law.judicial_credentials import CredentialsError, credentials_path, read_credentials
@@ -38,6 +39,10 @@ COURTS: Mapping[str, str] = {"TPA": "supreme", "TPB": "high", "TCB": "high", "KS
 
 type Clock = Callable[[], datetime]
 type Sleep = Callable[[float], None]
+
+
+class _JidRow(NamedTuple):
+    jid: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,9 +106,12 @@ def _drain(
     files: int,
 ) -> tuple[int, int, int]:
     pending = [
-        str(jid)
-        for (jid,) in conn.execute(
-            "SELECT jid FROM judgment.fetch WHERE status = 'pending' ORDER BY listed_on, jid"
+        row.jid
+        for row in fetch(
+            conn,
+            "SELECT jid FROM judgment.fetch WHERE status = 'pending' ORDER BY listed_on, jid",
+            None,
+            _JidRow,
         )
     ]
     for index, jid in enumerate(pending):
@@ -291,10 +299,7 @@ def _result(
     *,
     listed: int = 0,
 ) -> SyncResult:
-    pending = conn.execute(
-        "SELECT count(*) FROM judgment.fetch WHERE status = 'pending'"
-    ).fetchone()
-    left = pending[0] if pending is not None and isinstance(pending[0], int) else 0
+    left = scalar(conn, "SELECT count(*) FROM judgment.fetch WHERE status = 'pending'", None, int)
     result = SyncResult(False, listed, stored, taken, files, left, exit_code)
     log.info("裁判書同步：%s", result)
     return result

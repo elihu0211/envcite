@@ -14,7 +14,7 @@ import pytest
 from canon.annotate import Loaded
 from canon.law import importer
 from canon.law.moj import Moj
-from canon.reasoning import Result, evaluate
+from canon.reasoning.engine import Result, evaluate
 from tests.reasoning_support import Conn
 from tests.sample import noise_law, stored_snapshot
 from tests.test_import import _scalar

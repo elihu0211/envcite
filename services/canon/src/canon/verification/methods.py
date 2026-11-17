@@ -3,7 +3,11 @@
 from collections.abc import Sequence
 
 from canon.verification.config import ModelSet
-from canon.verification.gates import DEFAULT_GATES, Gate
+from canon.verification.gates.base import Gate
+from canon.verification.gates.executable_gate import ExecutableGate
+from canon.verification.gates.numbers_gate import NumbersGate
+from canon.verification.gates.proviso_gate import ProvisoGate
+from canon.verification.gates.references_gate import ReferencesGate
 from canon.verification.model_gates.independent import IndependentTestGate
 from canon.verification.model_gates.panel import PanelGate
 from canon.verification.model_gates.roundtrip import RoundtripGate
@@ -18,6 +22,9 @@ ALL_METHODS = (
     "independent_test",
     "panel",
 )
+
+#: 確定性閘門：不呼叫模型，`settle` 未指定閘門時只跑這些。
+DEFAULT_GATES: tuple[Gate, ...] = (NumbersGate(), ReferencesGate(), ExecutableGate(), ProvisoGate())
 
 
 def gates_for(verifiers: Sequence[Model], allow_same_family: bool = False) -> tuple[Gate, ...]:

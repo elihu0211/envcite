@@ -16,7 +16,7 @@ from canon.verification.checks.fragments import (
 from canon.verification.checks.sanctions import criminal_penalties, sanction_issues
 from canon.verification.checks.shape import borrowed_issues
 from canon.verification.extract import MAX_REPAIRS, extract_unit
-from canon.verification.gates import NumbersGate
+from canon.verification.gates.numbers_gate import NumbersGate
 from canon.verification.pipeline import verify
 from canon.verification.statements_format import STATEMENTS_FORMAT
 from tests.test_annotation import LAW

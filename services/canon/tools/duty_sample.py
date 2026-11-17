@@ -11,8 +11,6 @@
 `--min-round` 只抽此輪以後（重抽）確認的，`--exclude` 排除已看過的陳述編號。
 """
 
-from __future__ import annotations
-
 import argparse
 import random
 from typing import Any

@@ -11,10 +11,7 @@ from pathlib import Path
 import pytest
 
 from canon.annotate import Loaded
-from canon.reasoning import (
-    SubsumptionCase,
-    evaluate_subsumption,
-)
+from canon.reasoning.subsumption import SubsumptionCase, evaluate_subsumption
 from tests.reasoning_support import (
     WATER,
     Conn,

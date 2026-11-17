@@ -16,10 +16,10 @@ from canon.annotate import (
     load,
 )
 from canon.annotation_read import list_statements
-from canon.reasoning import evaluate
+from canon.reasoning.engine import evaluate
 from canon.reasoning.facts.case_inputs import Measurement
 from canon.reasoning_codec import enums
-from canon.verification.gates import ExecutableGate
+from canon.verification.gates.executable_gate import ExecutableGate
 from canon.verification.model_gates.render import render_annotation
 from envcite.canon.v1 import reasoning_pb2 as pb
 from tests.reasoning_support import Conn, _plain_duty, _scope, _with

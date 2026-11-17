@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from canon.annotate import load
-from canon.reasoning import evaluate
+from canon.reasoning.engine import evaluate
 from tests.reasoning_support import (
     Conn,
     _plain_duty,

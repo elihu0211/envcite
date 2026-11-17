@@ -21,8 +21,6 @@ out-of-scope ones); the tool reports the curve and the point that maximises the 
 between the two pass rates (Youden's J).
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 from collections.abc import Sequence

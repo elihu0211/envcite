@@ -1,7 +1,5 @@
 """負載基準工具（load_bench.py）之邏輯與 CLI 參數單元測試。"""
 
-from __future__ import annotations
-
 import importlib.util
 import sys
 from pathlib import Path

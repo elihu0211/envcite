@@ -1,7 +1,5 @@
 """以網址（與表單的檢索詞）對到頁面的替身，取代 `acquire.web.Http`；沒有的頁是 404。"""
 
-from __future__ import annotations
-
 from envcite_jobkit import ItemError
 
 

@@ -5,8 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from canon.reasoning import Result
-from canon.reasoning.engine import Penalty
+from canon.reasoning.engine import Penalty, Result
 from canon.reasoning.facts.chains import Chain
 from canon.reasoning.facts.statements import Invalidated
 from canon.reasoning.scoring.audit import DispositionAuditResult

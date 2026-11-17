@@ -1,7 +1,5 @@
 """義務修復效果量測（tools/duty_effect.py）：盲測、抽樣、判定旗標與檢定規則。"""
 
-from __future__ import annotations
-
 import importlib.util
 import json
 import sys

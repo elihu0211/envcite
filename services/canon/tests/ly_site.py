@@ -1,7 +1,5 @@
 """立法院法律系統的頁面，照真實頁面的形狀（2026-11-04 取樣）縮成測試用的最小頁。"""
 
-from __future__ import annotations
-
 from datetime import date
 
 from canon.law import ly_law

@@ -3,9 +3,10 @@ docs 03-04 §3.3)."""
 
 import pytest
 
-from canon.reasoning import evaluate
-from canon.verification.gates import DEFAULT_GATES, GateResult
+from canon.reasoning.engine import evaluate
+from canon.verification.gates.base import GateResult
 from canon.verification.link import link_penalties
+from canon.verification.methods import DEFAULT_GATES
 from canon.verification.pipeline import settle, verify
 from tests.reasoning_support import WATER_DAY
 from tests.test_import import _scalar
