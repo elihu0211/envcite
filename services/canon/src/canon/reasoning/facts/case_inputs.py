@@ -4,10 +4,7 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import NamedTuple
 
-from canon.db import Conn, fetch
-from canon.reasoning import units
 from canon.reasoning.facts.asp import milli, q
 
 # 案件事實的值：數字，或概念代碼（概念取某個值概念）；同一概念可帶多個值。
@@ -16,18 +13,12 @@ type CaseValue = float | str
 type Case = Mapping[str, CaseValue | Sequence[CaseValue]]
 
 
-class _UnitRow(NamedTuple):
-    code: str
-    canonical_unit: str
-
-
 @dataclass(frozen=True)
 class Measurement:
-    """案件事實的認定方式與物理單位：檢測方法、平均時段與量測單位；None 是未提供。"""
+    """案件事實的認定方式：檢測方法與平均時段；None 是未提供。"""
 
     method: str | None = None
     averaging: str | None = None
-    unit: str | None = None
 
 
 @dataclass(frozen=True)
@@ -104,49 +95,6 @@ def amount_facts(given: Amounts, fine_caps: Mapping[int, int]) -> str:
     if given.wage_missing:
         out.append("wage_missing.")
     return "\n".join(out)
-
-
-def normalize_case_units(
-    conn: Conn,
-    case: Case,
-    measurements: Measurements | None = None,
-    fact_units: Mapping[str, str] | None = None,
-) -> tuple[Case, list[str]]:
-    """依詞彙標準量綱單位換算案件數值；物理量綱不相容者排除該數值並回報 `unit_mismatch` 問題。"""
-    if not measurements and not fact_units:
-        return case, []
-    canonical = dict(
-        fetch(
-            conn,
-            "SELECT code, canonical_unit FROM vocab.concept WHERE canonical_unit IS NOT NULL",
-            None,
-            _UnitRow,
-        )
-    )
-    if not canonical:
-        return case, []
-    normalized: dict[str, CaseValue | Sequence[CaseValue]] = dict(case)
-    problems: list[str] = []
-    for code, target_unit in canonical.items():
-        if code not in normalized:
-            continue
-        raw = normalized[code]
-        if isinstance(raw, str | Sequence) and not isinstance(raw, int | float):
-            continue
-        src_unit = (fact_units or {}).get(code)
-        if src_unit is None and measurements and code in measurements:
-            unit_candidates = [m.unit for m in measurements[code] if m.unit is not None]
-            if unit_candidates:
-                src_unit = unit_candidates[0]
-        if src_unit is None:
-            continue
-        converted, ok = units.normalize_value(raw, src_unit, target_unit)
-        if not ok or converted is None:
-            problems.append(f"problem(unit_mismatch,{q(code)}).")
-            normalized.pop(code)
-        else:
-            normalized[code] = float(converted)
-    return normalized, problems
 
 
 def act_group_facts(act_groups: Mapping[str, Sequence[int]] | None) -> str:
