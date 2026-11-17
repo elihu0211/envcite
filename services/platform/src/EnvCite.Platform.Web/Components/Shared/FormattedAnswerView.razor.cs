@@ -1,3 +1,5 @@
+using EnvCite.Platform.Web.Presentation;
+
 using Microsoft.AspNetCore.Components;
 
 using MudBlazor;
@@ -42,6 +44,26 @@ public sealed partial class FormattedAnswerView
         CalloutTone.Caution => "ep-ans-callout-caution",
         _ => "ep-ans-callout-summary",
     };
+
+    // 欄位由資料宣告：標題與儲存格怎麼畫交給共用的 DataTable；第一欄是列首，最後一欄是依據。
+    private List<ColumnDef<ComparisonRow>> ColumnsOf(ComparisonTableBlock table)
+    {
+        var columns = table.Columns
+            .Select((title, index) => new ColumnDef<ComparisonRow>
+            {
+                Title = title,
+                Labeled = index != 0,
+                Class = index == 0 ? "ep-keep" : null,
+                Cell = row => builder => builder.AddContent(0, index < row.Cells.Count ? row.Cells[index] : null),
+            })
+            .ToList();
+        columns.Add(new ColumnDef<ComparisonRow>
+        {
+            Title = L["依據"],
+            Cell = row => RenderCitations(row.CitationCodes),
+        });
+        return columns;
+    }
 
     private static string CalloutToneIcon(CalloutTone tone) => tone switch
     {

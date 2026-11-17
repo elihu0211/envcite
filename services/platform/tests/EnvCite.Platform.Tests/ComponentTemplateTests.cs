@@ -14,7 +14,7 @@ public static partial class ComponentTemplateTests
     {
         "FormAlert", "PostForm", "FormField", "SubmitButton", "PageHeading", "DocumentTitle",
         "PageHeader", "StatusPage", "DialogError", "DialogSubmitActions",
-        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal", "PageTabs", "TabPanel", "AskComposer",
+        "SectionCard", "StatGrid", "StatTile", "DataTable", "SelectField", "OptionSelect", "LoadedView", "CheckboxField", "SecretReveal", "PageTabs", "TabPanel", "AskComposer", "TaskMarker",
     };
 
     // 標記只在模板裡寫：頁面與對話框用 <FormAlert>、<PostForm>、<FormField>、<SubmitButton>、<PageHeading>、<DocumentTitle>、<DialogError>。

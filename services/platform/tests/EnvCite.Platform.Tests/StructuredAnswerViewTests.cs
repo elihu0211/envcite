@@ -146,8 +146,8 @@ public sealed class StructuredAnswerViewTests
         Assert.Contains("<h2 class=\"ep-ans-heading\">合規警示</h2>", html, StringComparison.Ordinal);
         Assert.DoesNotContain("<h1", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-ans-task-marker\"", html, StringComparison.Ordinal);
-        Assert.DoesNotContain("type=\"checkbox\"", html, StringComparison.Ordinal);
-        Assert.Contains("<table class=\"ep-legal-table ep-ans-table\">", html, StringComparison.Ordinal);
+        Assert.Contains("<input type=\"checkbox\" class=\"ep-ans-task-marker\" checked tabindex=\"-1\" aria-readonly=\"true\"", html, StringComparison.Ordinal);
+        Assert.Contains("<table class=\"ep-plain-table\" aria-label=\"管制對照\">", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-mermaid\" data-mermaid-source=\"", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-ans-workflow-steps\"", html, StringComparison.Ordinal);
         Assert.Contains("<button type=\"button\" class=\"ep-cite-inline\"", html, StringComparison.Ordinal);
@@ -229,7 +229,7 @@ public sealed class StructuredAnswerViewTests
 
         Assert.Contains("class=\"ep-ans-body\"", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-ans-callout ep-ans-callout-summary\"", html, StringComparison.Ordinal);
-        Assert.Contains("class=\"ep-legal-table ep-ans-table\"", html, StringComparison.Ordinal);
+        Assert.Contains("class=\"ep-plain-table\"", html, StringComparison.Ordinal);
         Assert.Contains("class=\"ep-mermaid\" data-mermaid-source=\"", html, StringComparison.Ordinal);
         Assert.Contains("<button type=\"button\" class=\"ep-cite-inline\"", html, StringComparison.Ordinal);
     }
