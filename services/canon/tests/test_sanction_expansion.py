@@ -7,6 +7,7 @@ from canon.db import Conn
 from canon.law import delegation, importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
+from canon.vocabulary import serving
 from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 
@@ -69,7 +70,7 @@ def test_a_duty_hit_brings_its_sanction_right_after_it(
 ) -> None:
     _corpus(conn, tmp_path)
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         assert _ids(store, segmenter, "排放口暢通") == ["T0000001-3", "T0000001-9"]
 
 
@@ -78,7 +79,7 @@ def test_a_command_hit_brings_the_sanction_for_its_authorizing_article(
 ) -> None:
     _corpus(conn, tmp_path)
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         assert _ids(store, segmenter, "水質水量資料") == ["T0000002-2", "T0000001-8"]
 
 
@@ -87,7 +88,7 @@ def test_the_brought_sanction_carries_the_score_of_what_brought_it(
 ) -> None:
     _corpus(conn, tmp_path)
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         terms = segmenter.to_tsvector_input("排放口暢通")
         duty, sanction = store.retrieval.search(
             terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=10

@@ -16,6 +16,7 @@ from canon.server import QUERY_EMBED_SLOTS, WORKERS
 from canon.service import build_servicer
 from canon.store.canon_store import CanonStore
 from canon.store.connections import Connections
+from canon.vocabulary import Fixed, Vocabulary, serving
 from envcite.canon.v1 import canon_pb2
 from envcite_segmenter import Segmenter
 from tests.grpc_support import Aborted, FakeContext
@@ -60,7 +61,10 @@ def test_a_short_deadline_cancels_the_search_query(
 ) -> None:
     monkeypatch.setattr("canon.store.retrieval._SEARCH", "SELECT pg_sleep(5)")
     servicer = build_servicer(
-        store.laws, store.graph, store.retrieval, Segmenter([]), store.retrieval.law_names()
+        store.laws,
+        store.graph,
+        store.retrieval,
+        Fixed(Vocabulary(Segmenter([]), store.retrieval.law_names())),
     )
     with pytest.raises(Aborted) as aborted:
         servicer.SearchArticles(
@@ -77,7 +81,10 @@ def test_an_exhausted_pool_is_busy(dsn: str) -> None:
     try:
         local = CanonStore.over(Connections(pool))
         servicer = build_servicer(
-            local.laws, local.graph, local.retrieval, Segmenter([]), local.retrieval.law_names()
+            local.laws,
+            local.graph,
+            local.retrieval,
+            Fixed(Vocabulary(Segmenter([]), local.retrieval.law_names())),
         )
         with pool.connection(), pytest.raises(Aborted) as aborted:
             servicer.SearchArticles(
@@ -100,8 +107,7 @@ def test_a_full_embed_slot_still_returns_lexical_hits(
         store.laws,
         store.graph,
         store.retrieval,
-        Segmenter(store.retrieval.lexicon()),
-        store.retrieval.law_names(),
+        Fixed(serving(store.retrieval)),
         embedder=embedder,
         tuning=SearchTuning(embed_slots=1),
     )
@@ -123,8 +129,7 @@ def test_an_embed_slot_is_released_for_the_next_query(store: CanonStore) -> None
         store.laws,
         store.graph,
         store.retrieval,
-        Segmenter([]),
-        store.retrieval.law_names(),
+        Fixed(Vocabulary(Segmenter([]), store.retrieval.law_names())),
         embedder=embedder,
         tuning=SearchTuning(embed_slots=1),
     )

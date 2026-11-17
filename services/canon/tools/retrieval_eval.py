@@ -35,6 +35,7 @@ from canon.embedding import Embeds
 from canon.settings import DatabaseSettings, ModelsSettings, load
 from canon.store.canon_store import CanonStore
 from canon.verification import config
+from canon.vocabulary import serving
 from envcite_segmenter import Segmenter
 
 #: 題目與條文共有的字元對比例超過此值即丟掉：模型照抄了條文，量到的是字面臂自己
@@ -266,7 +267,7 @@ def main() -> None:
     ]
     embedder = config.embedder_from_settings(load(ModelsSettings), timeout=30.0)
     with CanonStore.from_dsn(db.dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         lexical = search_all(store, segmenter, items, None, k=args.k, on=on.isoformat())
         hybrid = (
             search_all(store, segmenter, items, embedder, k=args.k, on=on.isoformat())

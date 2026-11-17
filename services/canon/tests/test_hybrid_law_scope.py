@@ -8,7 +8,7 @@ from canon.law import importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
 from canon.store.retrieval import SEARCH_POOL
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
 
@@ -47,7 +47,7 @@ def test_both_arms_stay_inside_the_scope(conn: Conn, tmp_path: Path, dsn: str) -
     embedder = _corpus(conn, tmp_path)
     scope = [_resource(conn, "T0000002")]
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         # 「檢查」三部法規都有；「廢水」只在另一部：字面臂在範圍內找不到它
         for query in ("檢查", "廢水"):
             vector = embedder.embed([query])[0]
@@ -77,7 +77,7 @@ def test_the_search_follows_the_named_laws_and_falls_back_to_everything(
 ) -> None:
     _corpus(conn, tmp_path)
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         tokenizer = segmenter.tokenizer_id
         terms = segmenter.to_tsvector_input("檢查")
         assert {

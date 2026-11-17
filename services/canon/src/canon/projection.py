@@ -1,19 +1,23 @@
 """檢索投影的建置。
 
-`retrieval.passage` 是可整個重建的衍生物，且為內容定址：一列是一段段落文字（以雜湊為鍵）的
-字面向量與嵌入向量，各記產生它的分詞器與模型，不指向版本列。索引單位是段落，召回單位仍是條，
-由查詢函式依路徑歸併。
+投影是可整個重建的衍生物，以內容雜湊為鍵（一列是一段段落文字），不指向版本列。索引單位是段落，
+召回單位仍是條，由查詢函式依路徑歸併。兩份衍生物各自成表，因為它們失效的原因不同：
+
+- `retrieval.passage_lexical`：字面索引，依分詞器版本分列（`retrieval.tokenizer`）。分詞器識別碼含
+  詞典（所有版本的法規標題）雜湊，新法規出現即變，整個索引都要重算。
+- `retrieval.passage`：嵌入向量，只取決於文字與模型，不隨分詞器重算。
+
+分詞器換版採藍綠切換：新版本的索引與詞頻在背景建好，才把 `retrieval.serving` 指過去；建的期間舊版本
+照常服務，所以重建不中斷搜尋。查詢端輪詢 `serving`，換了就載入新版本的詞典（`vocabulary` 模組），
+不必重啟。舊版本在寬限期（讓每個副本都換過去）之後清掉。
 
 內容定址使索引無從陳舊：
 
 - 文字改了：舊列無人引用（`retrieval.prune` 清掉），新文字沒有列，這裡補上。
 - 效力列更替而文字沒變：雜湊相同，沿用原列。
 
-字面臂的高頻詞修剪靠詞頻表（`retrieval.term_stat`）：索引有變動就整批重算，與段落同一個
-分詞器識別碼；沒有統計時查詢不修剪（較慢，不出錯）。
-
-分詞器識別碼含詞典（法規名稱）雜湊，新法規出現即變：不符的列就地重算字面向量，嵌入不動。
-模型換了同理，只重算嵌入。服務端詞典啟動時讀一次，重建後須重啟才採用新識別碼。
+字面臂的高頻詞修剪靠詞頻表（`retrieval.term_stat`）：索引有變動就整批重算，與段落同一個分詞器版本；
+沒有統計時查詢不修剪（較慢，不出錯）。
 """
 
 import logging
@@ -38,30 +42,37 @@ _EMBED_WORKERS = 8
 #: 一批：（內容雜湊，段落文字）
 type Page = list[tuple[bytes, str]]
 
-# 一頁要重算字面向量的文字：沒有列，或分詞器不符。以雜湊鍵分頁，現行列雜湊的部分索引可自
+#: 不再服務的分詞器版本留多久才清：要比查詢端的輪詢間隔（`ServerSettings`）長得多，
+#: 讓每個副本都換過去。
+GRACE = "10 minutes"
+#: 建到一半就放棄的版本（從沒服務過）留多久：要比一次完整建置長，否則別的投影會清掉還在建的。
+_ABANDONED = "1 day"
+
+# 一頁要建字面索引的文字：這個分詞器版本還沒有列。以雜湊鍵分頁，現行列雜湊的部分索引可自
 # `after` 起依序走（不用一次性的「全部缺列」查詢：逐頁呼叫會變成頁數乘以全表掃描）。
 _LEXICAL_PAGE = """
     SELECT DISTINCT ON (v.content_sha256) v.content_sha256, v.content
       FROM corpus.provision_version AS v
-      LEFT JOIN retrieval.passage AS i ON i.content_sha256 = v.content_sha256
+      LEFT JOIN retrieval.passage_lexical AS i
+             ON i.content_sha256 = v.content_sha256 AND i.tokenizer = %(tokenizer)s
      WHERE v.superseded_at IS NULL
        AND v.content IS NOT NULL
        AND v.content_sha256 > %(after)s
-       AND (i.content_sha256 IS NULL OR i.tokenizer <> %(tokenizer)s)
+       AND i.content_sha256 IS NULL
      ORDER BY v.content_sha256
      LIMIT %(limit)s
 """
 
-# 一頁要（重新）嵌入的段落：尚未嵌入，或模型不符。列一定已在（字面臂先建）。
+# 一頁要（重新）嵌入的段落：尚未嵌入，或模型不符。
 _EMBED_PAGE = """
-    SELECT DISTINCT ON (i.content_sha256) i.content_sha256, v.content
-      FROM retrieval.passage AS i
-      JOIN corpus.provision_version AS v
-        ON v.content_sha256 = i.content_sha256 AND v.superseded_at IS NULL
-     WHERE i.content_sha256 > %(after)s
+    SELECT DISTINCT ON (v.content_sha256) v.content_sha256, v.content
+      FROM corpus.provision_version AS v
+      LEFT JOIN retrieval.passage AS i ON i.content_sha256 = v.content_sha256
+     WHERE v.superseded_at IS NULL
+       AND v.content IS NOT NULL AND v.content <> ''
+       AND v.content_sha256 > %(after)s
        AND i.model IS DISTINCT FROM %(model)s
-       AND v.content IS NOT NULL
-     ORDER BY i.content_sha256
+     ORDER BY v.content_sha256
      LIMIT %(limit)s
 """
 
@@ -84,8 +95,9 @@ class EmbeddingStopped(JobStopped, RuntimeError):
 
 
 def rebuild(conn: Conn, embedder: Embeds | None = None, policy: Policy | None = None) -> int:
-    """清掉無人引用的列、補齊字面向量，有嵌入模型時再補嵌入；回傳新建或重算的字面列數。
+    """清掉無人引用的列、補齊目前詞典的字面索引並切換服務，有嵌入模型時再補嵌入；回傳新建的字面列數。
 
+    詞典沒變時只補新文字；變了就建出新分詞器版本的整份索引，建好、詞頻算完才切換 `serving`。
     嵌入的重試、退避與斷路依 `policy`（`envcite_jobkit`）。重試用盡的批次跳過，留待下次。
     """
     segmenter = Segmenter(
@@ -104,13 +116,58 @@ def rebuild(conn: Conn, embedder: Embeds | None = None, policy: Policy | None = 
     if pruned:
         log.info("清理 %s 列不再被引用的文字的索引", pruned)
 
+    _register(conn, segmenter)
     built = _lexical(conn, segmenter)
-    log.info("檢索投影：字面向量新建或重算 %d 列，分詞器 %s", built, segmenter.tokenizer_id)
+    log.info("檢索投影：字面向量新建 %d 列，分詞器 %s", built, segmenter.tokenizer_id)
     _term_stat(conn, segmenter.tokenizer_id, changed=bool(built or pruned))
+    _serve(conn, segmenter.tokenizer_id)
+    _retire(conn)
     if embedder is not None:
         embedded = _embed(conn, embedder, policy=policy)
         log.info("檢索投影：嵌入 %d 段，模型 %s", embedded, embedder.model)
     return built
+
+
+def _register(conn: Conn, segmenter: Segmenter) -> None:
+    """登記這個分詞器版本與它的詞典；查詢端要靠詞典才切得出同樣的詞。已登記的不動。"""
+    conn.execute(
+        "INSERT INTO retrieval.tokenizer (id, terms) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING",
+        (segmenter.tokenizer_id, list(segmenter.terms)),
+    )
+    conn.commit()
+
+
+def _serve(conn: Conn, tokenizer: str) -> None:
+    """把服務切到這個版本（索引與詞頻都已建完）；原本服務的版本記下退場時間，寬限期後清。"""
+    previous = conn.execute("SELECT tokenizer FROM retrieval.serving").fetchone()
+    if previous is not None and previous[0] == tokenizer:
+        return
+    with conn.transaction():
+        conn.execute(
+            "UPDATE retrieval.tokenizer SET retired_at = now()"
+            " WHERE id = (SELECT tokenizer FROM retrieval.serving) AND retired_at IS NULL"
+        )
+        conn.execute("UPDATE retrieval.tokenizer SET retired_at = NULL WHERE id = %s", (tokenizer,))
+        conn.execute(
+            "INSERT INTO retrieval.serving (tokenizer) VALUES (%s)"
+            " ON CONFLICT (singleton) DO UPDATE SET tokenizer = EXCLUDED.tokenizer",
+            (tokenizer,),
+        )
+    log.info("檢索投影：服務切換到分詞器 %s", tokenizer)
+
+
+def _retire(conn: Conn) -> None:
+    """清掉已退場超過寬限期、或建到一半就放棄的分詞器版本（索引與詞頻隨外鍵連鎖刪除）。"""
+    gone = conn.execute(
+        "DELETE FROM retrieval.tokenizer"
+        " WHERE id <> (SELECT tokenizer FROM retrieval.serving)"
+        "   AND ((retired_at IS NOT NULL AND retired_at < now() - %s::interval)"
+        "     OR (retired_at IS NULL AND created_at < now() - %s::interval))",
+        (GRACE, _ABANDONED),
+    ).rowcount
+    conn.commit()
+    if gone:
+        log.info("檢索投影：清掉 %d 個不再服務的分詞器版本", gone)
 
 
 def _term_stat(conn: Conn, tokenizer: str, *, changed: bool) -> None:
@@ -145,10 +202,9 @@ def _lexical(conn: Conn, segmenter: Segmenter) -> int:
         ]
         with conn.cursor() as cur:
             cur.executemany(
-                "INSERT INTO retrieval.passage (content_sha256, tokenizer, tsv)"
+                "INSERT INTO retrieval.passage_lexical (content_sha256, tokenizer, tsv)"
                 " VALUES (%s, %s, to_tsvector('simple', %s))"
-                " ON CONFLICT (content_sha256)"
-                " DO UPDATE SET tokenizer = EXCLUDED.tokenizer, tsv = EXCLUDED.tsv",
+                " ON CONFLICT (content_sha256, tokenizer) DO NOTHING",
                 batch,
             )
         conn.commit()
@@ -192,10 +248,12 @@ def _embed(conn: Conn, embedder: Embeds, *, policy: Policy | None = None) -> int
             vectors = [v for chunk in results for v in chunk]
         with conn.cursor() as cur:
             cur.executemany(
-                "UPDATE retrieval.passage SET model = %s, embedding = %s::vector"
-                " WHERE content_sha256 = %s",
+                "INSERT INTO retrieval.passage (content_sha256, model, embedding)"
+                " VALUES (%s, %s, %s::vector)"
+                " ON CONFLICT (content_sha256)"
+                " DO UPDATE SET model = EXCLUDED.model, embedding = EXCLUDED.embedding",
                 [
-                    (embedder.model, to_sql(v), digest)
+                    (digest, embedder.model, to_sql(v))
                     for (digest, _), v in zip(rows, vectors, strict=True)
                 ],
             )

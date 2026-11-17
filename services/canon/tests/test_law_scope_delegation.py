@@ -7,7 +7,7 @@ from canon.db import Conn
 from canon.law import delegation, importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 from tests.sample import _law, stored_snapshot
 
 ON = "2019-06-01"
@@ -60,7 +60,7 @@ def test_naming_the_statute_searches_its_commands_down_the_chain(
 ) -> None:
     _corpus(conn, tmp_path)
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         terms = segmenter.to_tsvector_input("申報")
         hits = store.retrieval.search(
             terms, tokenizer=segmenter.tokenizer_id, as_of=ON, laws=["T0000001"]
@@ -73,7 +73,7 @@ def test_naming_a_command_does_not_climb_to_its_statute(
 ) -> None:
     _corpus(conn, tmp_path)
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         terms = segmenter.to_tsvector_input("申報")
         hits = store.retrieval.search(
             terms, tokenizer=segmenter.tokenizer_id, as_of=ON, laws=["T0000002"]

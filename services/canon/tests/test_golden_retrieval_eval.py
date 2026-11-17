@@ -15,7 +15,7 @@ from canon import projection
 from canon.db import Conn
 from canon.store.canon_store import CanonStore
 from canon.store.records import SearchHit
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 from tests.sample import AIR, WATER
 
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "golden_retrieval_eval.py"
@@ -381,7 +381,7 @@ def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mappe
     """從資料庫讀對應、真實的混合檢索、命中轉條文代號、對 qrels：中央與地方各一題。"""
     by_title, provisions = corpus
     projection.rebuild(conn)
-    segmenter = Segmenter(store.retrieval.lexicon())
+    segmenter = serving(store.retrieval).segmenter
     items = [
         {
             "id": "central",

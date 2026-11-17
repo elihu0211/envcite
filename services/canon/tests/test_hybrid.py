@@ -22,6 +22,7 @@ from canon.embedding import (
 )
 from canon.net import USER_AGENT
 from canon.store.canon_store import CanonStore
+from canon.vocabulary import Fixed, Vocabulary, serving
 from envcite_jobkit import EndpointError, ExitCode, FatalError, ItemError, Policy
 from envcite_segmenter import Segmenter
 from tests.fake_web import route_post_json
@@ -66,7 +67,7 @@ def _corpus(conn: Conn, tmp_path: Path) -> None:
 
 def _search(dsn: str, query: str, embedder: FakeEmbedder | None) -> list[tuple[str, float, Any]]:
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         hits = store.retrieval.search(
             segmenter.to_tsvector_input(query),
             tokenizer=segmenter.tokenizer_id,
@@ -91,23 +92,31 @@ def test_one_row_per_passage_carries_both_arms(conn: Conn, tmp_path: Path) -> No
     assert embedder.calls == calls  # 沒有缺的，就不再呼叫端點
 
 
-def test_a_new_lexicon_retokenizes_in_place_and_keeps_the_embeddings(
+def test_a_new_lexicon_builds_a_new_version_beside_the_old_and_keeps_the_embeddings(
     conn: Conn, tmp_path: Path
 ) -> None:
     _corpus(conn, tmp_path)
     embedder = FakeEmbedder()
     projection.rebuild(conn, embedder)
-    conn.execute("UPDATE retrieval.passage SET tokenizer = 'old-dictionary'")
+    old = _scalar(conn, "SELECT tokenizer FROM retrieval.serving")
+    conn.execute("UPDATE corpus.legal_expression SET title = title || '施行細則'")
     conn.commit()
     calls = embedder.calls
 
     assert projection.rebuild(conn, embedder) == 3
 
+    new = _scalar(conn, "SELECT tokenizer FROM retrieval.serving")
+    assert new != old
     assert embedder.calls == calls  # 換詞典不重新嵌入
-    assert (
-        _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE tokenizer = 'old-dictionary'")
-        == 0
-    )
+    # 新版本建好才切換；舊版本的索引在寬限期內原封不動，還沒換過來的副本照常查得到
+    for tokenizer in (old, new):
+        assert (
+            _scalar(
+                conn,
+                f"SELECT count(*) FROM retrieval.passage_lexical WHERE tokenizer = '{tokenizer}'",
+            )
+            == 3
+        )
     assert _scalar(conn, "SELECT count(embedding) FROM retrieval.passage") == 3
 
 
@@ -156,8 +165,7 @@ def test_a_failing_embedder_does_not_fail_the_search(store: CanonStore) -> None:
         store.laws,
         store.graph,
         store.retrieval,
-        Segmenter([]),
-        store.retrieval.law_names(),
+        Fixed(Vocabulary(Segmenter([]), store.retrieval.law_names())),
         embedder=Broken(),
     )
 
@@ -312,6 +320,18 @@ class Flaky(FakeEmbedder):
 NO_WAIT = Policy(max_attempts=3, backoff_base_seconds=0.0, open_action="wait")
 
 
+def _unembedded(conn: Conn) -> int:
+    """字面索引裡有、卻還沒有嵌入的段落數。"""
+    return int(
+        _scalar(
+            conn,
+            "SELECT count(*) FROM retrieval.passage_lexical AS l WHERE NOT EXISTS ("
+            "  SELECT 1 FROM retrieval.passage AS p"
+            "   WHERE p.content_sha256 = l.content_sha256 AND p.embedding IS NOT NULL)",
+        )
+    )
+
+
 def test_a_transient_endpoint_error_is_retried_and_the_projection_completes(
     conn: Conn, tmp_path: Path
 ) -> None:
@@ -320,7 +340,7 @@ def test_a_transient_endpoint_error_is_retried_and_the_projection_completes(
 
     projection.rebuild(conn, embedder, NO_WAIT)
 
-    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") == 0
+    assert _unembedded(conn) == 0
 
 
 def test_a_batch_that_keeps_failing_is_skipped_and_embedded_on_the_next_run(
@@ -329,10 +349,10 @@ def test_a_batch_that_keeps_failing_is_skipped_and_embedded_on_the_next_run(
     _corpus(conn, tmp_path)
 
     projection.rebuild(conn, Flaky(failures=NO_WAIT.max_attempts), NO_WAIT)
-    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") > 0
+    assert _unembedded(conn) > 0
 
     projection.rebuild(conn, FakeEmbedder(), NO_WAIT)
-    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") == 0
+    assert _unembedded(conn) == 0
 
 
 class Misconfigured(FakeEmbedder):

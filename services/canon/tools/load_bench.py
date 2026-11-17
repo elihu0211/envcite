@@ -373,7 +373,10 @@ def environment(
         corpus = {
             "legal_resources": one("SELECT count(*) FROM corpus.legal_resource"),
             "provisions": one("SELECT count(*) FROM corpus.provision"),
-            "passages": one("SELECT count(*) FROM retrieval.passage"),
+            "passages": one(
+                "SELECT count(*) FROM retrieval.passage_lexical"
+                " WHERE tokenizer = (SELECT tokenizer FROM retrieval.serving)"
+            ),
             "embedded_passages": one(
                 "SELECT count(*) FROM retrieval.passage WHERE embedding IS NOT NULL"
             ),

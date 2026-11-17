@@ -110,7 +110,7 @@ uv run --env-file .env canon serve
 
 ### 3. 混合檢索、函釋入口與精排
 
-檢索詞典、法規名稱表（`law_names.LawNames`）與分詞器（受 `envcite-segmenter` 約束）於伺服器啟動時讀一次，**語料或詞典重建後須重啟服務**。調校任何檢索／門檻參數前，須以 `tools/golden_retrieval_eval.py` 在開發集量測並以 `compare` 檢定，不憑感覺調整。
+**分詞器分版本、建好才切換**：分詞器識別碼含詞典（所有版本的法規標題）雜湊，新法規名稱出現就換一版，整份字面索引要重算。投影把新版本的索引（`retrieval.passage_lexical`）與詞頻建好，才把 `retrieval.serving` 指過去（藍綠索引）；建的期間舊版本照常服務，舊版本在寬限期（`projection.GRACE`）後清掉。查詢端的詞典（斷詞器與 `law_names.LawNames`）隨 `serving` 熱更新（[`vocabulary.py`](src/canon/vocabulary.py)，輪詢間隔 `ENVCITE_CANON_VOCABULARY_REFRESH_SECONDS`），**語料或詞典重建後不必重啟服務**；詞典存在 `retrieval.tokenizer`，與建索引時同一份。嵌入與分詞器無關，留在 `retrieval.passage`，換詞典不重算嵌入。**投影不得就地改寫服務中的版本**。調校任何檢索／門檻參數前，須以 `tools/golden_retrieval_eval.py` 在開發集量測並以 `compare` 檢定，不憑感覺調整。
 
 - **混合雙臂與查詢詞覆蓋率**：字面臂與語意臂同列（無嵌入設定時只用字面臂），以段落雜湊為鍵。
   - `retrieval.prune_terms` 於查詢前略過段落比例超過 `ENVCITE_CANON_LEXICAL_MAX_DF` 的高頻詞（全為高頻詞時保留最稀有的一個）；`retrieval.term_stat` 隨投影整批重算。

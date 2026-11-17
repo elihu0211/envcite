@@ -131,8 +131,12 @@ class LawGraphReader(Protocol):
 class Retrieval(Protocol):
     """混合檢索：字面臂與語意臂、函釋入口，與斷詞用的詞典與法規名稱。"""
 
-    def lexicon(self) -> list[str]:
-        """segmenter 的詞典：語料所有版本的法規標題（不重複）。"""
+    def serving_tokenizer(self) -> str | None:
+        """目前對外服務的分詞器版本；投影還沒建過任何版本時為 None。"""
+        ...
+
+    def tokenizer_terms(self, tokenizer: str) -> list[str]:
+        """這個分詞器版本的詞典：建它的索引時語料所有版本的法規標題。"""
         ...
 
     def law_names(self) -> LawNames:

@@ -5,7 +5,7 @@ from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 from tests.test_incremental import _articles, _first, _law_v1, _next
@@ -17,12 +17,14 @@ def _imported(conn: Conn, tmp_path: Path, *laws: dict[str, object]) -> None:
 
 
 def _tokenizers(conn: Conn) -> set[str]:
-    return {str(t) for (t,) in conn.execute("SELECT DISTINCT tokenizer FROM retrieval.passage")}
+    return {
+        str(t) for (t,) in conn.execute("SELECT DISTINCT tokenizer FROM retrieval.passage_lexical")
+    }
 
 
 def _found(dsn: str, query: str) -> set[tuple[str, str]]:
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         hits = store.retrieval.search(
             segmenter.to_tsvector_input(query),
             tokenizer=segmenter.tokenizer_id,
@@ -54,10 +56,12 @@ def test_a_new_title_changes_the_tokenizer_and_rebuilds_everything(
     (old,) = _tokenizers(conn)
 
     _imported(conn, tmp_path, _law("T0000001", "噪音管制法"), _law("T0000002", "振動管制法"))
-    # 全部重建；兩部法規的段落文字一字不差，內容定址使它們共用同一批索引列，所以列數不增。
+    # 新版本整份重建；兩部法規的段落文字一字不差，內容定址使它們共用同一批索引列，所以列數不增。
     assert projection.rebuild(conn) == first
-    (new,) = _tokenizers(conn)
+    new = str(_scalar(conn, "SELECT tokenizer FROM retrieval.serving"))
     assert new != old
+    # 切換之後舊版本的索引還在（寬限期內，還沒換過來的副本照常查得到）
+    assert _tokenizers(conn) == {old, new}
 
 
 def test_text_no_longer_current_loses_its_index_row(conn: Conn, tmp_path: Path) -> None:
@@ -76,7 +80,7 @@ def test_text_no_longer_current_loses_its_index_row(conn: Conn, tmp_path: Path) 
     conn.commit()
     projection.rebuild(conn)
     row = conn.execute(
-        "SELECT count(*) FROM retrieval.passage"
+        "SELECT count(*) FROM retrieval.passage_lexical"
         " WHERE content_sha256 = sha256(convert_to(%s, 'UTF8'))",
         (content,),
     ).fetchone()
@@ -120,4 +124,4 @@ def test_the_same_text_in_a_new_row_needs_no_rebuild(conn: Conn, tmp_path: Path)
 def test_identical_passages_share_one_index_row(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles("同文", "同文")))
     projection.rebuild(conn)
-    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage") == 1
+    assert _scalar(conn, "SELECT count(*) FROM retrieval.passage_lexical") == 1

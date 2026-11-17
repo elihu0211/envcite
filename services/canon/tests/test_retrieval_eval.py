@@ -10,7 +10,7 @@ from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 from tests.sample import stored_snapshot
 from tests.test_hybrid import FakeEmbedder
 from tests.test_import import _law
@@ -87,7 +87,7 @@ def test_the_report_measures_both_arms(conn: Conn, tmp_path: Path, dsn: str) -> 
         {"id": "n1", "kind": "out_of_scope", "question": "紅燒肉"},
     ]
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         lexical = tool.search_all(store, segmenter, items, None, k=10, on="2019-06-01")
         hybrid = tool.search_all(store, segmenter, items, embedder, k=10, on="2019-06-01")
 

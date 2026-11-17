@@ -18,9 +18,9 @@ from canon.settings import ServerSettings, load
 from canon.store.canon_store import CanonStore
 from canon.telemetry import register_annotation_health
 from canon.verification import config
+from canon.vocabulary import Fixed, Live, VocabularySource, serving
 from envcite.canon.v1 import canon_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
-from envcite_segmenter import Segmenter
 
 SERVICE_NAME = "envcite.canon.v1.CanonService"
 REASONING_SERVICE_NAME = "envcite.canon.v1.ReasoningService"
@@ -45,6 +45,7 @@ def build_server(
     options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
     interceptors: Sequence[grpc.ServerInterceptor] = (),
     health_servicer: health.HealthServicer | None = None,
+    vocabulary: VocabularySource | None = None,
     embedder: Embeds | None = None,
     lexical_max_df: float = 0.0,
     guidance_max_df: float = 0.0,
@@ -54,6 +55,7 @@ def build_server(
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。
 
+    `vocabulary` 是查詢端的詞典來源；沒給就讀目前服務中的分詞器版本、不更新（測試與一次性的用法）。
     `lexical_max_df` 是字面臂略過高頻詞的段落比例上限（見 `ServerSettings`）；0 為不略過。
     `guidance_max_df` 是函釋入口容許的命中函釋占比上限；0 為不限制。
     `reranker` 是請求帶 `rerank` 時用的精排模型（None 為不精排）；`rerank_candidates` 是它看多深。
@@ -65,15 +67,11 @@ def build_server(
         maximum_concurrent_rpcs=MAX_CONCURRENT_RPCS,
         options=options,
     )
-    # lexicon 啟動時只讀一次：新匯入的用語須重啟才進入查詢。
-    segmenter = Segmenter(store.retrieval.lexicon())
-    law_names = store.retrieval.law_names()
     servicer = build_servicer(
         store.laws,
         store.graph,
         store.retrieval,
-        segmenter,
-        law_names,
+        vocabulary or Fixed(serving(store.retrieval)),
         embedder=embedder,
         reranker=reranker,
         tuning=SearchTuning(
@@ -125,11 +123,14 @@ def main() -> None:
     interceptors = configure_telemetry("canon")
     register_annotation_health(store.connections)
     health_servicer = health.HealthServicer()
+    # 詞典隨服務中的分詞器版本更新：投影建好新版本就換，不必重啟（`vocabulary` 模組）。
+    vocabulary = Live(store.retrieval, settings.vocabulary_refresh_seconds)
     server, bound = build_server(
         store,
         f"[::]:{settings.grpc_port}",
         interceptors=interceptors,
         health_servicer=health_servicer,
+        vocabulary=vocabulary,
         # 查詢路徑上不重試、逾時短：取不到向量就只用字面臂，不拖慢查詢
         embedder=config.embedder_from_settings(settings, timeout=5.0),
         lexical_max_df=settings.lexical_max_df,
@@ -140,5 +141,7 @@ def main() -> None:
     )
     stop_on_sigterm(server, health_servicer)
     server.start()
+    vocabulary.start()
     logging.getLogger(__name__).info("canon gRPC server listening on :%d", bound)
     server.wait_for_termination()
+    vocabulary.close()

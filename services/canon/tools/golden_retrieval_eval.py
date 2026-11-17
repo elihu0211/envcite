@@ -75,7 +75,7 @@ from canon.store.canon_store import CanonStore
 from canon.store.records import SearchHit
 from canon.store.retrieval import SEARCH_POOL
 from canon.verification import config
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 
 KS = (1, 5, 10, 20, 50)
 #: consult 向檢索要的條數（`CanonSearch.Limit`）；可答性下界只看這麼多條。
@@ -633,7 +633,8 @@ def corpus_counts(conn: psycopg.Connection[Any]) -> dict[str, int]:
     row = conn.execute(
         "SELECT (SELECT count(*) FROM corpus.legal_resource),"
         " (SELECT count(*) FROM corpus.provision),"
-        " (SELECT count(*) FROM retrieval.passage),"
+        " (SELECT count(*) FROM retrieval.passage_lexical"
+        "   WHERE tokenizer = (SELECT tokenizer FROM retrieval.serving)),"
         " (SELECT count(embedding) FROM retrieval.passage)"
     ).fetchone()
     assert row is not None
@@ -709,7 +710,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
         require_snapshots(qrels_doc, snaps)
         counts = corpus_counts(conn)
     with CanonStore.from_dsn(db.dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         law_names = None if args.no_law_names else store.retrieval.law_names()
         base = "hybrid" if embedder else "lexical"
         specs: list[tuple[str, Embeds | None, int | None]] = [("lexical", None, None)]

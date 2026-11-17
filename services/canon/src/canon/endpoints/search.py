@@ -14,15 +14,14 @@ from canon.guidance_search import CANDIDATES as GUIDANCE_CANDIDATES
 from canon.guidance_search import EXTRA as GUIDANCE_EXTRA
 from canon.guidance_search import fuse, guidance_phrases
 from canon.identifiers import jurisdiction_filter
-from canon.law_names import LawNames
 from canon.reranking import RerankError, Reranks, select
 from canon.search_tuning import SearchTuning
 from canon.store.ports import LawReader, Retrieval
 from canon.store.records import SearchHit
 from canon.telemetry import RerankMetrics
+from canon.vocabulary import VocabularySource
 from envcite.canon.v1 import canon_pb2 as pb
 from envcite_grpc import remaining_seconds
-from envcite_segmenter import Segmenter
 
 log = SERVICE_LOG
 
@@ -38,8 +37,7 @@ class SearchApi:
         self,
         laws: LawReader,
         retrieval: Retrieval,
-        segmenter: Segmenter,
-        law_names: LawNames,
+        vocabulary: VocabularySource,
         *,
         embedder: Embeds | None = None,
         reranker: Reranks | None = None,
@@ -49,9 +47,8 @@ class SearchApi:
         tuning = tuning or SearchTuning()
         self._laws = laws
         self._retrieval = retrieval
-        self._law_names = law_names
+        self._vocabulary = vocabulary
         self._tuning = tuning
-        self._segmenter = segmenter
         self._embedder = embedder
         # 名額滿了就略過語意臂。None 表示不限（測試直接建構、不走伺服器預算時）。
         self._embed_slots = (
@@ -73,7 +70,9 @@ class SearchApi:
         """在 `as_of` 當日有效的條文上做混合檢索，相關度由高到低。"""
         log_call(SERVICE_LOG, context, "SearchArticles", f"query_chars={len(request.query)}")
         v = errors.Validator()
-        terms = self._segmenter.to_tsvector_input(request.query)
+        vocabulary = self._vocabulary.current()  # 整個請求用同一份快照，詞典中途換了也不影響
+        segmenter = vocabulary.segmenter
+        terms = segmenter.to_tsvector_input(request.query)
         if not terms:
             v.add("query", errors.EMPTY, "query must not be empty")
         limit = request.limit or DEFAULT_SEARCH_LIMIT
@@ -89,19 +88,19 @@ class SearchApi:
         depth = max(limit, self._tuning.rerank_candidates) if rerank else limit
         hits = self._retrieval.search(
             terms,
-            tokenizer=self._segmenter.tokenizer_id,
+            tokenizer=segmenter.tokenizer_id,
             as_of=request.as_of,
             limit=depth,
             embedding=self._query_embedding(request.query),
             model=self._embedder.model if self._embedder else "",
             max_df=self._tuning.lexical_max_df,
-            laws=self._law_names.find(request.query),
+            laws=vocabulary.law_names.find(request.query),
             jurisdiction=jurisdiction,
             timeout=remaining_seconds(context),
         )
         searched = self._retrieval.searched_terms(
             terms,
-            tokenizer=self._segmenter.tokenizer_id,
+            tokenizer=segmenter.tokenizer_id,
             max_df=self._tuning.lexical_max_df,
             timeout=remaining_seconds(context),
         )
@@ -138,7 +137,7 @@ class SearchApi:
                     content=h.content,
                     lexical_score=h.lexical_score,
                     semantic_similarity=h.semantic_similarity,
-                    term_coverage=term_coverage(searched, h.content, self._segmenter),
+                    term_coverage=term_coverage(searched, h.content, segmenter),
                     guidance_documents=documents,
                     rerank_score=score,
                 )

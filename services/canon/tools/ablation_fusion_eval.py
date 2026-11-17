@@ -46,7 +46,7 @@ from canon.store.canon_store import CanonStore
 from canon.store.records import LANGUAGE
 from canon.store.retrieval import SEARCH_POOL
 from canon.verification import config
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 
 POOLS = (30, 50, 100)
 KS = (20, 60, 100)
@@ -266,7 +266,7 @@ def cmd_arms(args: argparse.Namespace) -> None:
         if args.ef_search is not None:
             conn.execute("SELECT '[1]'::vector")
             conn.execute("SELECT set_config('hnsw.ef_search', %s, false)", (str(args.ef_search),))
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         law_names = store.retrieval.law_names()
         for done, r in enumerate(rows, 1):
             if done % 20 == 0:

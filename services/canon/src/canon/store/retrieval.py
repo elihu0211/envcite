@@ -13,8 +13,10 @@ from canon.store.records import (
     SearchHit,
 )
 
-#: segmenter 詞典（法規名稱）；須與建索引同源，否則分詞器識別碼不符、字面檢索全落空（04-01 §5）。
-_LEXICON = "SELECT DISTINCT title FROM corpus.legal_expression WHERE title IS NOT NULL"
+#: 對外服務的分詞器版本與它的詞典（`retrieval.serving`、`retrieval.tokenizer`）：查詢端要用建索引
+#: 時的同一份詞典分詞，所以詞典跟著版本存，不從現行標題重算。
+_SERVING = "SELECT tokenizer FROM retrieval.serving"
+_TERMS = "SELECT terms FROM retrieval.tokenizer WHERE id = %s"
 
 #: 標題（含各版本的舊名稱）→ 法規代碼；問句點名法規用（`law_names.LawNames`）。
 _LAW_TITLES = """
@@ -64,8 +66,12 @@ _GUIDANCE = """
 SEARCH_POOL = 50
 
 
-class _TitleRow(NamedTuple):
-    title: str
+class _TokenizerRow(NamedTuple):
+    id: str
+
+
+class _TermsRow(NamedTuple):
+    terms: list[str]
 
 
 class _LawTitleRow(NamedTuple):
@@ -94,10 +100,19 @@ class RetrievalRepository:
     def __init__(self, connections: ConnectionSource) -> None:
         self._connections = connections
 
-    def lexicon(self) -> list[str]:
-        """segmenter 的詞典：語料所有版本的法規標題（不重複）。"""
+    def serving_tokenizer(self) -> str | None:
+        """目前對外服務的分詞器版本；投影還沒建過任何版本時為 None。"""
         with self._connections.connection() as conn:
-            return [row.title for row in fetch(conn, _LEXICON, None, _TitleRow)]
+            row = fetch_one(conn, _SERVING, None, _TokenizerRow)
+            return row.id if row else None
+
+    def tokenizer_terms(self, tokenizer: str) -> list[str]:
+        """這個分詞器版本的詞典：建它的索引時語料所有版本的法規標題。"""
+        with self._connections.connection() as conn:
+            row = fetch_one(conn, _TERMS, (tokenizer,), _TermsRow)
+            if row is None:
+                raise LookupError(f"沒有分詞器版本 {tokenizer}")
+            return row.terms
 
     def law_names(self) -> LawNames:
         """法規標題（含各版本的舊名稱）對法規代碼的對照，供問句點名法規用。"""
