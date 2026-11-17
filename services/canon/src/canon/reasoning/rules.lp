@@ -268,24 +268,24 @@ justify(self_defense) :- yes("ap_self_defense"), not yes("ap_defense_excessive")
 justify(necessity) :- yes("ap_necessity"), not yes("ap_necessity_excessive").
 
 % 第三階：阻卻責任事由（§§7–9、期待可能性）— 行為仍屬不法，但免予非難（excuse）
+% 第 8 條但書不在這裡：不知法規不阻卻責任，只是法律效果層次「得減輕或免除」的裁量（見 discretion）。
 % 原因自由行為（§9 V）：因故意或過失自行招致者（ap_self_induced），不適用 §9 減免。
 excuse(no_fault) :- no("ap_intent"), no("ap_negligence"), not yes("ap_agent_fault").
 excuse(no_fault) :- intent_negated_by_mistake, not yes("ap_negligence"), not yes("ap_agent_fault").
 excuse(under_fourteen) :- fact("ap_age",V), V < 14000.
 excuse(incapable) :- yes("ap_incapable"), no("ap_self_induced").
-excuse(unavoidable_ignorance) :- yes("ap_ignorance_unavoidable").
 excuse(unexpectable) :- yes("ap_unexpectable").
 
 withheld :- justify(_).
 withheld :- excuse(_).
 
-% 刑事優先（第 26 條第 1 項）與微罪不罰（第 19 條：法定最高額 3,000 元以下且情節輕微）
+% 刑事優先（第 26 條第 1 項）與處罰便宜原則（第 19 條）
 criminal :- yes("ap_criminal_offense").
 criminal :- criminal_cleared.
 criminal_first :- criminal, not criminal_cleared.
 blocked(P) :- criminal_first, sanction(P,_,fine,_,_).
 blocked(P) :- criminal_first, sanction(P,_,confiscation,_,_), yes("ap_court_confiscated").
-blocked(P) :- sanction(P,_,fine,_,Max), Max != none, Max <= 3000, yes("ap_petty_minor").
+blocked(P) :- waived(P).
 % 按次處罰時點檢核（釋字 604 號）：尚在限期改善或展延期間內複查者，阻卻「屆期未履行」按次罰則
 blocked(P) :- within_cure_grace_period, trigger(P,_,order_lapsed).
 seizure_open(P) :- criminal_first, sanction(P,_,confiscation,_,_),
@@ -311,17 +311,36 @@ barred(P,J) :- justified_out(P,J).
 barred(P,R) :- excused_out(P,R).
 barred(P,criminal_priority) :- open(P), criminal_first, sanction(P,_,fine,_,_).
 barred(P,criminal_priority) :- open(P), criminal_first, sanction(P,_,confiscation,_,_), yes("ap_court_confiscated").
-barred(P,petty_offense) :- open(P), sanction(P,_,fine,_,Max), Max != none, Max <= 3000, yes("ap_petty_minor").
 barred(P,within_cure_period) :- open(P), within_cure_grace_period, trigger(P,_,order_lapsed).
 active(P) :- open(P), not withheld, not blocked(P).
 mitigation(P,youth) :- active(P), fact("ap_age",V), V >= 14000, V < 18000, no("ap_self_induced").
 mitigation(P,youth) :- active(P), fact("ap_age",V), V >= 14000, V < 18000, not yes("ap_self_induced"), not no("ap_self_induced").
 mitigation(P,reduced_capacity) :- active(P), yes("ap_capacity_reduced"), no("ap_self_induced").
-mitigation(P,ignorance) :- active(P), yes("ap_ignorance_of_law"), not yes("ap_ignorance_unavoidable").
+mitigation(P,ignorance) :- active(P), ignorant.
 mitigation(P,excessive_defense) :- active(P), yes("ap_self_defense"), yes("ap_defense_excessive").
 mitigation(P,excessive_necessity) :- active(P), yes("ap_necessity"), yes("ap_necessity_excessive").
 presumed(P,agent_fault) :- active(P), yes("ap_agent_fault"), not yes("ap_intent"), not yes("ap_negligence").
 
+% 第 8 條但書：不知法規而違反義務，按其情節得減輕或免除其處罰。是否減輕、是否免除，是裁罰機關依個案
+% 裁斷的事，系統只把兩者列為候選，不選。呼叫端說不知，或說無法避免（無法避免必然不知），即視為不知；
+% 表明行為人知悉義務內容（ap_ignorance_of_law 為否）則不列。減輕只及於可量化的處罰，即罰鍰；免除
+% 不限種類。「無法避免」是情節附註：學說認為此時應免除，但不自動套用。
+ignorant :- yes("ap_ignorance_of_law").
+ignorant :- yes("ap_ignorance_unavoidable"), not no("ap_ignorance_of_law").
+discretion(P,ignorance_of_law,exempt) :- mitigation(P,ignorance).
+discretion(P,ignorance_of_law,reduce) :- mitigation(P,ignorance), sanction(P,_,fine,_,_).
+discretion_note(P,ignorance_of_law,unavoidable) :- mitigation(P,ignorance), yes("ap_ignorance_unavoidable").
+
+% 第 19 條：法定最高額在 3,000 元以下的罰鍰，情節輕微而認以不處罰為適當者，得免予處罰（處罰便宜原則）。
+% 前提是處罰要件已成立，所以另有不罰事由（阻卻違法、阻卻責任、刑事優先、限期改善期間內）時不適用；
+% 只免罰鍰，沒入等其他處罰照列。法定最高額由系統核對，呼叫端只陳述「情節輕微而以不處罰為適當」；
+% 沒有數額的最高額無從核對，不適用。同條第 2 項另得糾正或勸導並作成紀錄，列為候選措施。
+petty_bar(P) :- open(P), withheld.
+petty_bar(P) :- open(P), criminal_first, sanction(P,_,fine,_,_).
+petty_bar(P) :- open(P), within_cure_grace_period, trigger(P,_,order_lapsed).
+waived(P) :- open(P), sanction(P,_,fine,_,Max), Max != none, Max <= 3000, yes("ap_petty_minor"),
+             not petty_bar(P).
+discretion(P,petty_offense,correct_or_advise) :- waived(P).
 % 減輕的額度（第 18 條第 3 項）：罰鍰不得逾最高額、亦不得低於最低額的二分之一；事由同時有免除
 % 處罰的規定（第 8、12、13 條「得減輕或免除」）者為三分之一。下限進位、上限捨去到元。是否減輕
 % 不選；法律或自治條例另有規定（但書）不在標註裡。其他種類行政罰定有期間者準用（第 4 項），
@@ -400,6 +419,8 @@ same_kind_non_fine_overlap(ActId,P1,P2) :-
 #show excused_out/2.
 #show mitigation/2.
 #show presumed/2.
+#show discretion/3.
+#show discretion_note/3.
 #show time_barred/1.
 #show reduced/5.
 #show aggravable/1.

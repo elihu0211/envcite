@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from canon.reasoning.engine import Penalty, Result
+from canon.reasoning.engine import Discretion, Penalty, Result
 from canon.reasoning.facts.chains import Chain
 from canon.reasoning.facts.statements import Invalidated
 from canon.reasoning.scoring.audit import DispositionAuditResult
@@ -15,6 +15,9 @@ from canon.reasoning_codec.enums import (
     COURT_DECISION_KIND,
     COURT_INSTANCE,
     DELEGATION_GAP,
+    DISCRETION_BASIS,
+    DISCRETION_MEASURE,
+    DISCRETION_NOTE,
     EXCUSE,
     GUIDANCE_KIND,
     LEGAL_EFFECT,
@@ -86,6 +89,7 @@ def statement_ids(result: Result) -> set[int]:
     ids |= {r[0] for r in result.general.reduced} | {p for p, _ in result.general.raised_caps}
     ids |= {p for p, _ in result.general.deductions}
     ids |= {p for p, _ in result.general.justified} | {p for p, _ in result.general.excused}
+    ids |= {d.penalty for d in result.general.discretion}
     ids |= {s for pair in result.mutatis_applied for s in pair}
     return ids
 
@@ -117,6 +121,15 @@ def _delegation(statement_id: int, chain: Chain) -> pb.DelegationBasis:
             )
             for link in chain.links
         ],
+    )
+
+
+def _discretion(item: Discretion) -> pb.PenaltyDiscretion:
+    return pb.PenaltyDiscretion(
+        penalty_statement_id=item.penalty,
+        basis=DISCRETION_BASIS[item.basis],
+        measures=sorted(DISCRETION_MEASURE[m] for m in item.measures),
+        notes=sorted(DISCRETION_NOTE[n] for n in item.notes),
     )
 
 
@@ -254,6 +267,7 @@ def outcome(
                 pb.PenaltyExcuse(penalty_statement_id=p, excuse=EXCUSE[g])
                 for p, g in result.general.excused
             ],
+            discretion=[_discretion(d) for d in result.general.discretion],
         ),
         sources=[
             pb.StatementSource(statement_id=i, version_iri=sources[i])

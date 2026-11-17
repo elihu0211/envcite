@@ -483,12 +483,8 @@ class _ExcuseEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Excuse.ValueTy
     """一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）：只擋罰鍰，以及法院已宣告沒收時
     的沒入；其他種類行政罰照列。
     """
-    EXCUSE_UNAVOIDABLE_IGNORANCE: _Excuse.ValueType  # 9
-    """不知法規有正當理由且無法避免（第 8 條但書）。"""
     EXCUSE_UNEXPECTABLE: _Excuse.ValueType  # 10
     """欠缺期待可能性。"""
-    EXCUSE_PETTY_OFFENSE: _Excuse.ValueType  # 11
-    """微罪不罰（第 19 條）。"""
     EXCUSE_WITHIN_CURE_PERIOD: _Excuse.ValueType  # 12
     """尚在限期改善期間內（釋字第 604 號）。"""
 
@@ -507,12 +503,8 @@ EXCUSE_CRIMINAL_PRIORITY: Excuse.ValueType  # 8
 """一行為同時觸犯刑事法律，依刑事法律處罰（第 26 條第 1 項）：只擋罰鍰，以及法院已宣告沒收時
 的沒入；其他種類行政罰照列。
 """
-EXCUSE_UNAVOIDABLE_IGNORANCE: Excuse.ValueType  # 9
-"""不知法規有正當理由且無法避免（第 8 條但書）。"""
 EXCUSE_UNEXPECTABLE: Excuse.ValueType  # 10
 """欠缺期待可能性。"""
-EXCUSE_PETTY_OFFENSE: Excuse.ValueType  # 11
-"""微罪不罰（第 19 條）。"""
 EXCUSE_WITHIN_CURE_PERIOD: Excuse.ValueType  # 12
 """尚在限期改善期間內（釋字第 604 號）。"""
 Global___Excuse: _TypeAlias = Excuse  # noqa: Y015
@@ -560,6 +552,80 @@ REDUCTION_SHARE_UNSPECIFIED: ReductionShare.ValueType  # 0
 REDUCTION_SHARE_HALF: ReductionShare.ValueType  # 1
 REDUCTION_SHARE_THIRD: ReductionShare.ValueType  # 2
 Global___ReductionShare: _TypeAlias = ReductionShare  # noqa: Y015
+
+class _DiscretionBasis:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _DiscretionBasisEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_DiscretionBasis.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    DISCRETION_BASIS_UNSPECIFIED: _DiscretionBasis.ValueType  # 0
+    DISCRETION_BASIS_IGNORANCE_OF_LAW: _DiscretionBasis.ValueType  # 1
+    """第 8 條但書：不知法規而違反義務，按其情節得減輕或免除其處罰。減輕只及於可量化的處罰（罰鍰，
+    額度見 GeneralPart.reduced，三分之一）；免除是候選，不自動套用。
+    """
+    DISCRETION_BASIS_PETTY_OFFENSE: _DiscretionBasis.ValueType  # 2
+    """第 19 條（處罰便宜原則）：法定最高額 3,000 元以下的罰鍰，情節輕微，認以不處罰為適當者，得免予
+    處罰；處罰要件已成立為前提，有其他不罰事由時不適用，且只免罰鍰。
+    """
+
+class DiscretionBasis(_DiscretionBasis, metaclass=_DiscretionBasisEnumTypeWrapper):
+    """裁量的依據：同一個處罰同一個依據至多一項。"""
+
+DISCRETION_BASIS_UNSPECIFIED: DiscretionBasis.ValueType  # 0
+DISCRETION_BASIS_IGNORANCE_OF_LAW: DiscretionBasis.ValueType  # 1
+"""第 8 條但書：不知法規而違反義務，按其情節得減輕或免除其處罰。減輕只及於可量化的處罰（罰鍰，
+額度見 GeneralPart.reduced，三分之一）；免除是候選，不自動套用。
+"""
+DISCRETION_BASIS_PETTY_OFFENSE: DiscretionBasis.ValueType  # 2
+"""第 19 條（處罰便宜原則）：法定最高額 3,000 元以下的罰鍰，情節輕微，認以不處罰為適當者，得免予
+處罰；處罰要件已成立為前提，有其他不罰事由時不適用，且只免罰鍰。
+"""
+Global___DiscretionBasis: _TypeAlias = DiscretionBasis  # noqa: Y015
+
+class _DiscretionMeasure:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _DiscretionMeasureEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_DiscretionMeasure.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    DISCRETION_MEASURE_UNSPECIFIED: _DiscretionMeasure.ValueType  # 0
+    DISCRETION_MEASURE_REDUCE: _DiscretionMeasure.ValueType  # 1
+    """減輕處罰（第 8 條但書）。"""
+    DISCRETION_MEASURE_EXEMPT: _DiscretionMeasure.ValueType  # 2
+    """免除處罰（第 8 條但書）。"""
+    DISCRETION_MEASURE_CORRECT_OR_ADVISE: _DiscretionMeasure.ValueType  # 3
+    """糾正或勸導並作成紀錄（第 19 條第 2 項）。"""
+
+class DiscretionMeasure(_DiscretionMeasure, metaclass=_DiscretionMeasureEnumTypeWrapper):
+    """裁量的候選措施，由裁罰機關擇一或不採。"""
+
+DISCRETION_MEASURE_UNSPECIFIED: DiscretionMeasure.ValueType  # 0
+DISCRETION_MEASURE_REDUCE: DiscretionMeasure.ValueType  # 1
+"""減輕處罰（第 8 條但書）。"""
+DISCRETION_MEASURE_EXEMPT: DiscretionMeasure.ValueType  # 2
+"""免除處罰（第 8 條但書）。"""
+DISCRETION_MEASURE_CORRECT_OR_ADVISE: DiscretionMeasure.ValueType  # 3
+"""糾正或勸導並作成紀錄（第 19 條第 2 項）。"""
+Global___DiscretionMeasure: _TypeAlias = DiscretionMeasure  # noqa: Y015
+
+class _DiscretionNote:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _DiscretionNoteEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_DiscretionNote.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    DISCRETION_NOTE_UNSPECIFIED: _DiscretionNote.ValueType  # 0
+    DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE: _DiscretionNote.ValueType  # 1
+    """不知法規有正當理由而無法避免：學說認為此時應免除處罰，但系統不自動套用。"""
+
+class DiscretionNote(_DiscretionNote, metaclass=_DiscretionNoteEnumTypeWrapper):
+    """裁量的情節附註：說明情節對裁量的意義，不改變候選。"""
+
+DISCRETION_NOTE_UNSPECIFIED: DiscretionNote.ValueType  # 0
+DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE: DiscretionNote.ValueType  # 1
+"""不知法規有正當理由而無法避免：學說認為此時應免除處罰，但系統不自動套用。"""
+Global___DiscretionNote: _TypeAlias = DiscretionNote  # noqa: Y015
 
 @_typing.final
 class Decimal(_message.Message):
@@ -1263,11 +1329,16 @@ class AdministrativePenaltyFacts(_message.Message):
     fact_mistake: _builtins.bool
     """構成要件錯誤（Tatbestandsirrtum）：不知客觀構成要件事實，阻卻故意。"""
     ignorance_unavoidable: _builtins.bool
-    """不知法規有正當理由而無法避免（第 8 條但書）。"""
+    """不知法規有正當理由而無法避免（第 8 條但書）。只是情節附註，不阻卻責任也不自動免除：
+    GeneralPart.discretion 的第 8 條項目帶 DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE。這個值為真，
+    也視為不知法規；ignorance_of_law 明確為假（行為人知悉義務內容）則不列第 8 條。
+    """
     unexpectable: _builtins.bool
     """欠缺期待可能性。"""
     petty_minor: _builtins.bool
-    """法定最高額 3,000 元以下且情節輕微以不處罰為適當（第 19 條）。"""
+    """情節輕微，認以不處罰為適當（第 19 條第 1 項）。這是呼叫端的裁量陳述；罰鍰的法定最高額是否
+    在 3,000 元以下由系統核對，不由呼叫端陳述，最高額沒有數額者不適用。
+    """
     @_builtins.property
     def criminal_payment(self) -> Global___Decimal:
         """緩起訴或緩刑命支付的金額（元；第 26 條第 3 項），自罰鍰扣抵。"""
@@ -2245,6 +2316,7 @@ class GeneralPart(_message.Message):
     CRIMINAL_DEDUCTIONS_FIELD_NUMBER: _builtins.int
     JUSTIFIED_FIELD_NUMBER: _builtins.int
     EXCUSED_FIELD_NUMBER: _builtins.int
+    DISCRETION_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def unpunished(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyExcuse]: ...
     @_builtins.property
@@ -2281,7 +2353,14 @@ class GeneralPart(_message.Message):
 
     @_builtins.property
     def excused(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyExcuse]:
-        """第三階阻卻責任事由（§§7–9、期待可能性）：行為仍屬不法，但免予非難。"""
+        """第三階阻卻責任事由（§§7、9、期待可能性）：行為仍屬不法，但免予非難。"""
+
+    @_builtins.property
+    def discretion(self) -> _containers.RepeatedCompositeFieldContainer[Global___PenaltyDiscretion]:
+        """法律效果層次的裁量（第 8 條但書、第 19 條）：處罰要件已成立，是否及如何減輕、免除由裁罰機關
+        依個案裁斷（「得」），系統只列候選，不選，也不是阻卻責任。第 19 條適用時罰鍰不在 penalties，
+        其他種類的處罰照列。
+        """
 
     def __init__(
         self,
@@ -2295,10 +2374,11 @@ class GeneralPart(_message.Message):
         criminal_deductions: _abc.Iterable[Global___CriminalDeduction] | None = ...,
         justified: _abc.Iterable[Global___PenaltyExcuse] | None = ...,
         excused: _abc.Iterable[Global___PenaltyExcuse] | None = ...,
+        discretion: _abc.Iterable[Global___PenaltyDiscretion] | None = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["criminal_deductions", b"criminal_deductions", "excused", b"excused", "justified", b"justified", "mitigation", b"mitigation", "presumed_agent_fault", b"presumed_agent_fault", "raised_caps", b"raised_caps", "reduced", b"reduced", "time_barred", b"time_barred", "unpunished", b"unpunished"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["criminal_deductions", b"criminal_deductions", "discretion", b"discretion", "excused", b"excused", "justified", b"justified", "mitigation", b"mitigation", "presumed_agent_fault", b"presumed_agent_fault", "raised_caps", b"raised_caps", "reduced", b"reduced", "time_barred", b"time_barred", "unpunished", b"unpunished"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -2437,6 +2517,36 @@ class PenaltyMitigation(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___PenaltyMitigation: _TypeAlias = PenaltyMitigation  # noqa: Y015
+
+@_typing.final
+class PenaltyDiscretion(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    PENALTY_STATEMENT_ID_FIELD_NUMBER: _builtins.int
+    BASIS_FIELD_NUMBER: _builtins.int
+    MEASURES_FIELD_NUMBER: _builtins.int
+    NOTES_FIELD_NUMBER: _builtins.int
+    penalty_statement_id: _builtins.int
+    basis: Global___DiscretionBasis.ValueType
+    @_builtins.property
+    def measures(self) -> _containers.RepeatedScalarFieldContainer[Global___DiscretionMeasure.ValueType]: ...
+    @_builtins.property
+    def notes(self) -> _containers.RepeatedScalarFieldContainer[Global___DiscretionNote.ValueType]: ...
+    def __init__(
+        self,
+        *,
+        penalty_statement_id: _builtins.int = ...,
+        basis: Global___DiscretionBasis.ValueType = ...,
+        measures: _abc.Iterable[Global___DiscretionMeasure.ValueType] | None = ...,
+        notes: _abc.Iterable[Global___DiscretionNote.ValueType] | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["basis", b"basis", "measures", b"measures", "notes", b"notes", "penalty_statement_id", b"penalty_statement_id"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___PenaltyDiscretion: _TypeAlias = PenaltyDiscretion  # noqa: Y015
 
 @_typing.final
 class ActGroup(_message.Message):

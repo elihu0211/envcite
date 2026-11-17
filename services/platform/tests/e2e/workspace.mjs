@@ -246,6 +246,16 @@ const scenarios = {
             await until("關閉後抽屜應收起", async () => (await page.locator(".ep-drawer-panel").count()) === 0);
             await lastTurn.locator(".ep-answer-action", { hasText: "法源依據" }).click();
             await until("再次開啟右側條文抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 1);
+            await page.locator("body").click({ position: { x: 5, y: 300 } });
+            await until("點抽屜外面應收起", async () => (await page.locator(".ep-drawer-panel").count()) === 0);
+            await lastTurn.locator(".ep-answer-action", { hasText: "法源依據" }).click();
+            await until("再次開啟右側條文抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 1);
+            await until("開啟後焦點應在抽屜裡", async () =>
+                await page.evaluate(() => document.querySelector(".ep-drawer-panel")?.contains(document.activeElement) ?? false));
+            await page.keyboard.press("Escape");
+            await until("Esc 應收起抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 0);
+            await lastTurn.locator(".ep-answer-action", { hasText: "法源依據" }).click();
+            await until("再次開啟右側條文抽屜", async () => (await page.locator(".ep-drawer-panel").count()) === 1);
             await page.click(".ep-drawer-followup");
             await until("針對本條追問應收起抽屜並預填輸入框", async () =>
                 (await page.locator(".ep-drawer-panel").count()) === 0 &&

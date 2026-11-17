@@ -268,7 +268,7 @@ def test_three_tier_jurisprudence_justified_excused_and_self_induced(
     )
     assert (pen_id, "reduced_capacity") not in res_self_induced.general.mitigation
 
-    # 4e. §8 不可避免不知法規（第三階阻卻責任 -> excused）
+    # 4e. §8 但書：無法避免的不知法規不阻卻責任，罰則照列，免除只是候選（裁量），不自動套用
     res_ignorance = evaluate(
         conn,
         BEFORE,
@@ -279,8 +279,9 @@ def test_three_tier_jurisprudence_justified_excused_and_self_induced(
             "ap_ignorance_unavoidable": 1.0,
         },
     )
-    assert (pen_id, "unavoidable_ignorance") in res_ignorance.general.excused
-    assert not any(p.statement_id == pen_id for p in res_ignorance.penalties)
+    assert res_ignorance.general.excused == ()
+    assert any(p.statement_id == pen_id for p in res_ignorance.penalties)
+    assert (pen_id, "ignorance") in res_ignorance.general.mitigation
 
 
 def test_per_occasion_grace_period_and_multi_act_groups(conn: Conn, tmp_path: Path) -> None:
