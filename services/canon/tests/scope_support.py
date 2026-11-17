@@ -9,9 +9,7 @@ import time
 from datetime import date
 from typing import Any, LiteralString
 
-import psycopg
-
-Conn = psycopg.Connection[tuple[object, ...]]
+from canon.db import Conn
 
 ON = date(2019, 1, 1)  # 範本法規第一版生效中
 PARAMS = {"lang": "zho", "language": "zho", "on": ON}

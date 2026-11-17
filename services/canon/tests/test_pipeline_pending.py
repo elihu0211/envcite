@@ -5,12 +5,13 @@ from pathlib import Path
 
 import psycopg
 
+from canon.db import Conn
 from canon.verification.run import run
 from canon.verification.selection import pending_laws, try_lock
 from tests.test_annotation import LAW
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import DETERMINISTIC, EXTRACTED, Conn, FakeModel
+from tests.verification_support import DETERMINISTIC, EXTRACTED, FakeModel
 
 TEXT = "排放廢水者應符合標準"
 

@@ -4,23 +4,24 @@ Files are served over `file://`, so the engine downloads, hashes and stores them
 exactly as it would from the API, without the network.
 """
 
+import http.client
 import json
+import ssl
 import urllib.error
 import urllib.request
 import zipfile
 from datetime import date
+from email.message import Message
 from pathlib import Path
 
-import psycopg
 import pytest
 
 from canon.acquire import cli
 from canon.acquire.engine import Feed, InvalidSnapshot, Outcome, acquire
+from canon.db import Conn
 from canon.law.moj import Moj
 from canon.net import HttpStatus
 from envcite_jobkit import ExitCode, Policy
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 class LocalMoj(Moj):
@@ -159,11 +160,14 @@ def _failing_first(monkeypatch: pytest.MonkeyPatch, status: int, times: int) -> 
     real = urllib.request.urlopen
     tried: list[str] = []
 
-    def urlopen(url: str, **kwargs: object) -> object:
-        tried.append(url)
+    def urlopen(
+        request: urllib.request.Request, *, timeout: float, context: ssl.SSLContext | None = None
+    ) -> http.client.HTTPResponse:
+        tried.append(request.full_url)
         if len(tried) <= times:
-            raise urllib.error.HTTPError(url, status, "x", None, None)  # type: ignore[arg-type]
-        return real(url, **kwargs)  # type: ignore[arg-type]
+            raise urllib.error.HTTPError(request.full_url, status, "x", Message(), None)
+        response: http.client.HTTPResponse = real(request, timeout=timeout, context=context)
+        return response
 
     monkeypatch.setattr(urllib.request, "urlopen", urlopen)
     return tried

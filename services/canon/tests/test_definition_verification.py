@@ -10,6 +10,7 @@ import psycopg
 import pytest
 
 from canon.annotate import load
+from canon.db import Conn
 from canon.reasoning.engine import evaluate
 from canon.verification import definition_gates as dg
 from canon.verification.definitions import extract_definitions
@@ -19,7 +20,7 @@ from tests.test_definitions_extraction import ARTICLE_2, ITEM_1, PATH_1
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
 from tests.test_reasoning import _belonging_rule
-from tests.verification_support import Conn, FakeModel
+from tests.verification_support import FakeModel
 
 EXTRACTOR = "alpha:extractor"
 READER_OK = {"term": "事業", "members": ["工廠", "礦場"]}

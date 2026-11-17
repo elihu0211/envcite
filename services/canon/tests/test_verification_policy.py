@@ -5,12 +5,8 @@ from pathlib import Path
 import psycopg
 import pytest
 
-from tests.verification_support import (
-    Conn,
-    _record,
-    _review,
-    _two_statements,
-)
+from canon.db import Conn
+from tests.verification_support import _record, _review, _two_statements
 
 
 def test_the_extractor_cannot_verify_its_own_statement(conn: Conn, tmp_path: Path) -> None:

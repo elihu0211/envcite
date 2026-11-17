@@ -5,10 +5,11 @@
 
 from datetime import date
 from pathlib import Path
+from typing import NamedTuple
 
-import psycopg
 import pytest
 
+from canon.db import Conn, fetch
 from canon.reasoning.transition import _APPLICABLE, _statement_ids
 from tests.scope_support import (
     FILLER_LAWS,
@@ -21,7 +22,10 @@ from tests.scope_support import (
 )
 from tests.test_reasoning_transition import DECIDED, _amended
 
-Conn = psycopg.Connection[tuple[object, ...]]
+
+class _Id(NamedTuple):
+    id: int
+
 
 #: 改寫前的查詢，一字不改：對全部法規各解析一次（只用於比對與計時，生產環境不再執行）。
 LEGACY = """
@@ -56,10 +60,7 @@ def test_the_scoped_query_returns_exactly_the_rows_of_the_full_scan(
 @pytest.mark.parametrize("day", DAYS)
 def test_the_statement_set_of_every_day_is_unchanged(amended_among_many: Conn, day: date) -> None:
     conn = amended_among_many
-    old = {
-        int(row[0])  # type: ignore[call-overload]
-        for row in conn.execute(LEGACY, {"lang": "zho", "on": day})
-    }
+    old = {row.id for row in fetch(conn, LEGACY, {"lang": "zho", "on": day}, _Id)}
 
     assert _statement_ids(conn, "zho", day) == old
 

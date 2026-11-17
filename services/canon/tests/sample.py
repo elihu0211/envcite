@@ -9,11 +9,8 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-import psycopg
-
+from canon.db import Conn
 from canon.law.moj import content_sha256, pcode
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 #: 空氣污染防制法：2018-08-01 修正公布全文，自公布日施行；第 1、100 條。
 AIR = "O0020001"

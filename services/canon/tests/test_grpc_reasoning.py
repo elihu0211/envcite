@@ -11,6 +11,7 @@ from grpc_status import rpc_status
 
 from canon import errors
 from canon.annotate import load
+from canon.db import Conn
 from canon.law.judgment import load as load_decision
 from canon.reasoning.facts.chains import Chain, Link
 from canon.reasoning_codec import outcome as outcome_codec
@@ -18,7 +19,8 @@ from canon.reasoning_service import ReasoningServicer
 from canon.store.canon_store import CanonStore
 from envcite.canon.v1 import canon_pb2, canon_pb2_grpc, reasoning_pb2, reasoning_pb2_grpc
 from tests.conftest import call_metadata, identifier
-from tests.reasoning_support import Conn, _plain_duty
+from tests.grpc_support import Aborted, FakeContext
+from tests.reasoning_support import _plain_duty
 from tests.test_annotation import LAW, _doc, _duty, _limit
 from tests.test_incremental import _articles, _first, _law_v1
 from tests.test_reasoning_transition import _amended
@@ -36,7 +38,8 @@ def _committed(conn: Conn, tmp_path: Path) -> tuple[int, int]:
 
 def _details(error: grpc.RpcError) -> tuple[error_details_pb2.ErrorInfo, list[str]]:
     """錯誤的 ErrorInfo，與 BadRequest 裡每個違規欄位的路徑。"""
-    status = rpc_status.from_call(error)  # type: ignore[arg-type]
+    assert isinstance(error, grpc.Call)  # stub 丟出的錯誤同時是 Call
+    status = rpc_status.from_call(error)
     assert status is not None
     info = error_details_pb2.ErrorInfo()
     fields: list[str] = []
@@ -319,36 +322,12 @@ def test_the_existing_service_uses_the_same_error_model(
     assert _details(error.value)[0].reason == errors.INVALID_REQUEST
 
 
-class _Aborted(Exception):
-    def __init__(self, status: Any) -> None:
-        self.status = status
-
-
-class _Context:
-    """`Evaluate` 在名額用盡時只用到這幾個方法。"""
-
-    def __init__(self, remaining: float | None) -> None:
-        self._remaining = remaining
-
-    def invocation_metadata(self) -> tuple[()]:
-        return ()
-
-    def time_remaining(self) -> float | None:
-        return self._remaining
-
-    def is_active(self) -> bool:
-        return True
-
-    def abort_with_status(self, status: Any) -> None:
-        raise _Aborted(status)
-
-
 def test_a_call_that_cannot_get_a_slot_in_its_budget_fails_fast(store: CanonStore) -> None:
     servicer = ReasoningServicer(store.connections, store.laws, evaluate_slots=1)
     assert servicer._slots.acquire()  # 名額被占著
 
-    with pytest.raises(_Aborted) as aborted:
-        servicer.Evaluate(_case(), _Context(remaining=0.05))  # type: ignore[arg-type]
+    with pytest.raises(Aborted) as aborted:
+        servicer.Evaluate(_case(), FakeContext(0.05))
 
     assert aborted.value.status.code == grpc.StatusCode.RESOURCE_EXHAUSTED
 
@@ -635,5 +614,5 @@ def test_the_default_day_of_a_listing_is_the_injected_today(
     now = ReasoningServicer(store.connections, store.laws)
     long_ago = ReasoningServicer(store.connections, store.laws, today=lambda: date(1900, 1, 1))
 
-    assert now.ListStatements(request, _Context(remaining=5.0)).statements  # type: ignore[arg-type]
-    assert not long_ago.ListStatements(request, _Context(remaining=5.0)).statements  # type: ignore[arg-type]
+    assert now.ListStatements(request, FakeContext(5.0)).statements
+    assert not long_ago.ListStatements(request, FakeContext(5.0)).statements

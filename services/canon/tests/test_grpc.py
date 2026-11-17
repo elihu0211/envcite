@@ -5,13 +5,13 @@ import signal
 from collections.abc import Callable, Iterator
 
 import grpc
-import psycopg
 import pytest
 from google.rpc import error_details_pb2
-from grpc_health.v1 import health_pb2, health_pb2_grpc
+from grpc_health.v1 import health_pb2
 from grpc_status import rpc_status
 
 from canon import errors, projection
+from canon.db import Conn
 from canon.law.ruling import load
 from canon.server import build_server
 from canon.store.canon_store import CanonStore
@@ -26,7 +26,8 @@ Stub = canon_pb2_grpc.CanonServiceStub
 
 
 def _failure(error: grpc.RpcError) -> tuple[str, list[tuple[str, str]]]:
-    status = rpc_status.from_call(error)  # type: ignore[arg-type]
+    assert isinstance(error, grpc.Call)  # stub 丟出的錯誤同時是 Call
+    status = rpc_status.from_call(error)
     assert status is not None
     reason = ""
     violations: list[tuple[str, str]] = []
@@ -116,7 +117,7 @@ class TestIdentifierIsRequired:
 
 
 @pytest.fixture
-def search_stub(conn: psycopg.Connection[tuple[object, ...]], store: CanonStore) -> Iterator[Stub]:
+def search_stub(conn: Conn, store: CanonStore) -> Iterator[Stub]:
     """詞典啟動時讀一次，所以伺服器要在匯入與建索引之後才起。"""
     assert projection.rebuild(conn) > 0
     conn.commit()
@@ -179,7 +180,7 @@ def test_unknown_law_is_not_found(stub: Stub) -> None:
     assert _failure(error.value)[0] == errors.LAW_NOT_FOUND
 
 
-def _ruling_on_air_article_1(conn: psycopg.Connection[tuple[object, ...]]) -> None:
+def _ruling_on_air_article_1(conn: Conn) -> None:
     load(
         conn,
         {
@@ -204,9 +205,7 @@ def _ruling_on_air_article_1(conn: psycopg.Connection[tuple[object, ...]]) -> No
     )
 
 
-def test_list_invalidations_answers_by_the_date_asked(
-    stub: Stub, conn: psycopg.Connection[tuple[object, ...]]
-) -> None:
+def test_list_invalidations_answers_by_the_date_asked(stub: Stub, conn: Conn) -> None:
     _ruling_on_air_article_1(conn)
 
     def ask(as_of: str, article: str = "") -> canon_pb2.ListInvalidationsResponse:
@@ -252,11 +251,14 @@ def test_list_invalidations_without_a_ruling_is_empty_and_unknown_law_is_not_fou
     "service", ["envcite.canon.v1.CanonService", "envcite.canon.v1.ReasoningService"]
 )
 def test_health_check_reports_serving(channel: grpc.Channel, service: str) -> None:
-    health_stub = health_pb2_grpc.HealthStub(channel)
-
-    response = health_stub.Check(  # type: ignore[attr-defined]
-        health_pb2.HealthCheckRequest(service=service)
+    # `HealthStub` 的型別資訊沒有 `Check`；直接以通道建同一個呼叫，請求與回應才有型別。
+    check = channel.unary_unary(
+        "/grpc.health.v1.Health/Check",
+        request_serializer=health_pb2.HealthCheckRequest.SerializeToString,
+        response_deserializer=health_pb2.HealthCheckResponse.FromString,
     )
+
+    response = check(health_pb2.HealthCheckRequest(service=service))
 
     assert response.status == health_pb2.HealthCheckResponse.SERVING
 

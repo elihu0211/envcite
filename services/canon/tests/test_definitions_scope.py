@@ -7,10 +7,10 @@
 
 from pathlib import Path
 
-import psycopg
 import pytest
 
 from canon.annotation_read import _DEFINITION_SOURCES
+from canon.db import Conn
 from canon.reasoning.facts.vocabulary_facts import _DEFINITIONS
 from canon.verification import definition_gates as dg
 from tests.model_gates_support import Scripted
@@ -23,8 +23,6 @@ from tests.scope_support import (
     timed,
 )
 from tests.test_definition_verification import READER_OK, _extracted
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 #: 改寫前的兩條查詢，一字不改：對全部法規各解析一次（只用於比對與計時，生產環境不再執行）。
 LEGACY_DEFINITIONS = """

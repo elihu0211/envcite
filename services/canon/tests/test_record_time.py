@@ -10,9 +10,8 @@ from datetime import date
 import psycopg
 import pytest
 
+from canon.db import Conn, scalar
 from tests.test_corpus import _article, _at, _id, _law, _version
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 D = date
 
@@ -125,14 +124,15 @@ def test_the_content_hash_follows_the_content_and_cannot_be_forged(conn: Conn) -
     version = _current_version(conn, article)
 
     def sha() -> bytes:
-        row = conn.execute(
-            "SELECT content_sha256 FROM corpus.provision_version WHERE id = %s", (version,)
-        ).fetchone()
-        assert row is not None and isinstance(row[0], bytes)
-        return row[0]
+        return scalar(
+            conn,
+            "SELECT content_sha256 FROM corpus.provision_version WHERE id = %s",
+            (version,),
+            bytes,
+        )
 
     first = sha()
-    assert first == conn.execute("SELECT sha256('甲'::bytea)").fetchone()[0] or len(first) == 32  # type: ignore[index]
+    assert first == scalar(conn, "SELECT sha256('甲'::bytea)", None, bytes) or len(first) == 32
     conn.execute(
         "UPDATE corpus.provision_version SET content = '乙', content_sha256 = %s WHERE id = %s",
         (bytes(32), version),

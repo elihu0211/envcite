@@ -9,13 +9,12 @@ import psycopg
 import pytest
 
 from canon.annotate import load as load_annotations
+from canon.db import Conn
 from canon.law.judgment import JudgmentError, load, take_down
 from tests.test_annotation import LAW, _duty, _limit
 from tests.test_annotation import _doc as annotation_doc
 from tests.test_import import _scalar
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 JID = "TPAA,110,上,1,20210101,1"  # 最高行政法院；類別碼 A
 

@@ -7,9 +7,8 @@ from datetime import date
 from pathlib import Path
 from types import ModuleType
 
-import psycopg
-
 from canon import projection
+from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
@@ -19,7 +18,6 @@ from tests.test_hybrid import FakeEmbedder
 from tests.test_import import _law
 from tests.test_incremental import _articles, _first, _law_v1
 
-Conn = psycopg.Connection[tuple[object, ...]]
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "retrieval_eval.py"
 NOISE = "管制區內任何人不得於夜間製造噪音，違者由主管機關限期改善並得按次處罰以維護居民安寧"
 WATER = "事業排放廢水於地面水體者，應符合放流水標準；主管機關得依水體特性另定較嚴之標準管制"

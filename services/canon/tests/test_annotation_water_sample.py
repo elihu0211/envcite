@@ -8,24 +8,30 @@ that real wording fits the schema and the loader, and that nothing unreviewed be
 import json
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
-import psycopg
 import pytest
 
 from canon.annotate import Loaded, load
+from canon.db import Conn, fetch
 from tests.sample import WATER
 from tests.test_import import _scalar
 from tests.verification_support import _with_penalties
 
-Conn = psycopg.Connection[tuple[object, ...]]
+
+class _Span(NamedTuple):
+    lower: int
+    upper: int
+    content: str
+
 
 DATA = Path(__file__).parent / "data" / "water_art7_art40.json"
 ON = date(2019, 1, 1)  # after the 2018-06-13 amendment, "並自公布日施行"
 
 
 def _doc() -> dict[str, Any]:
-    return json.loads(DATA.read_text(encoding="utf-8"))  # type: ignore[no-any-return]
+    doc: dict[str, Any] = json.loads(DATA.read_text(encoding="utf-8"))
+    return doc
 
 
 def _resource(conn: Conn) -> int:
@@ -74,13 +80,16 @@ def test_the_penalties_are_written_once_the_duty_is_confirmed(conn: Conn, loaded
 
 
 def test_spans_select_the_sentence_each_statement_is_about(conn: Conn, loaded: Loaded) -> None:
-    rows = conn.execute(
+    rows = fetch(
+        conn,
         "SELECT lower(s.span), upper(s.span), v.content FROM annotation.statement AS s"
         "  JOIN corpus.provision_version AS v ON v.provision_id = s.provision_id"
         "   AND v.content_sha256 = s.content_sha256 AND v.superseded_at IS NULL"
-        " WHERE s.span IS NOT NULL"
-    ).fetchall()
-    quoted = {str(text)[int(lo) : int(hi)] for lo, hi, text in rows}  # type: ignore[call-overload]
+        " WHERE s.span IS NOT NULL",
+        None,
+        _Span,
+    )
+    quoted = {text[lo:hi] for lo, hi, text in rows}
 
     assert "處新臺幣六萬元以上二千萬元以下罰鍰" in quoted
     assert "情節重大者，得令其停工或停業" in quoted

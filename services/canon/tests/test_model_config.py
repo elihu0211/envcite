@@ -22,6 +22,10 @@ from canon.verification.config import (
 )
 from canon.verification.distinct import SameModel
 from canon.verification.methods import gates_from
+from canon.verification.model_gates.independent import IndependentTestGate
+from canon.verification.model_gates.panel import PanelGate
+from canon.verification.model_gates.roundtrip import RoundtripGate
+from canon.verification.models import ChatCompletionsModel, Model
 from canon.verification.run import main
 from tests.test_chat_adapter import Endpoint
 
@@ -55,6 +59,12 @@ roundtrip = "b"
 independent_test = "b"
 panel = ["b"]
 """
+
+
+def _api_key(model: Model) -> str | None:
+    """設定檔解析出的金鑰；只有 OpenAI 相容的轉接器帶金鑰。"""
+    assert isinstance(model, ChatCompletionsModel)
+    return model._api_key
 
 
 def test_the_example_file_loads_and_assigns_every_role() -> None:
@@ -91,9 +101,13 @@ def test_the_gates_follow_the_roles_not_the_order() -> None:
 
     by_method = {g.method: g for g in gates_from(models)}
 
-    assert by_method["roundtrip"].reformalizer.name == "nvidia:nemotron-3.5-super-vl"  # type: ignore[attr-defined]
-    assert by_method["independent_test"].tester.name == "meta:muse-spark-open"  # type: ignore[attr-defined]
-    assert len(by_method["panel"].judges) == 2  # type: ignore[attr-defined]
+    roundtrip, tester, panel = (by_method[m] for m in ("roundtrip", "independent_test", "panel"))
+    assert isinstance(roundtrip, RoundtripGate)
+    assert isinstance(tester, IndependentTestGate)
+    assert isinstance(panel, PanelGate)
+    assert roundtrip.reformalizer.name == "nvidia:nemotron-3.5-super-vl"
+    assert tester.tester.name == "meta:muse-spark-open"
+    assert len(panel.judges) == 2
 
 
 def test_a_secret_never_appears_in_what_a_model_prints() -> None:
@@ -309,8 +323,10 @@ def test_a_model_can_declare_constrained_extraction() -> None:
 
     models = parse(text, ENV)
 
-    assert models.extractor.constrained_extraction is True  # type: ignore[attr-defined]
-    assert models.roundtrip.constrained_extraction is False  # type: ignore[attr-defined]
+    assert isinstance(models.extractor, ChatCompletionsModel)
+    assert isinstance(models.roundtrip, ChatCompletionsModel)
+    assert models.extractor.constrained_extraction is True
+    assert models.roundtrip.constrained_extraction is False
 
 
 def test_constrained_extraction_must_be_a_boolean() -> None:
@@ -329,7 +345,7 @@ def test_constrained_extraction_must_be_a_boolean() -> None:
 def test_the_key_comes_from_the_variable_of_the_same_name() -> None:
     models = load(EXAMPLE, ENV, keychain=no_keychain)
 
-    assert models.extractor._api_key == "secret-value"  # type: ignore[attr-defined]
+    assert _api_key(models.extractor) == "secret-value"
 
 
 def test_the_environment_wins_and_the_keychain_is_not_asked() -> None:
@@ -354,7 +370,7 @@ def test_the_keychain_is_used_when_the_variable_is_missing_or_empty() -> None:
     assert resolve_secret(KEY, {KEY: ""}, keychain=keychain) == "from-keychain"
     assert seen == [KEY, KEY]
     models = load(EXAMPLE, {}, keychain=keychain)
-    assert models.extractor._api_key == "from-keychain"  # type: ignore[attr-defined]
+    assert _api_key(models.extractor) == "from-keychain"
 
 
 def test_a_missing_key_is_refused_naming_it_and_where_it_was_looked_for() -> None:
@@ -370,7 +386,7 @@ def test_a_missing_key_is_refused_naming_it_and_where_it_was_looked_for() -> Non
 def test_the_secret_name_is_derived_from_the_endpoint_name() -> None:
     assert secret_name("llm") == "ENVCITE_LLM_API_KEY"
     assert secret_name("self_hosted2") == "ENVCITE_SELF_HOSTED2_API_KEY"
-    assert load(EXAMPLE, {KEY: "k"}, keychain=no_keychain).extractor._api_key == "k"  # type: ignore[attr-defined]
+    assert _api_key(load(EXAMPLE, {KEY: "k"}, keychain=no_keychain).extractor) == "k"
 
 
 @pytest.mark.parametrize("name", ["my-llm", "LLM", "1llm", "_llm", "a.b", "llm "])

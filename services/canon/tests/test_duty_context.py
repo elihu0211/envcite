@@ -10,12 +10,13 @@ import pytest
 
 from canon import annotation_read
 from canon.annotate import AnnotationError, load
+from canon.db import Conn
 from canon.verification.extract import extract_unit
 from canon.verification.model_gates.render import render_annotation
 from tests.test_annotation import LAW, _doc, _duty
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_id, _law_v1
-from tests.verification_support import EXTRACTED, Conn, FakeModel
+from tests.verification_support import EXTRACTED, FakeModel
 
 ON = date(2019, 1, 1)
 

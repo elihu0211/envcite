@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from canon.annotate import load
+from canon.db import Conn
 from canon.reasoning.transition import evaluate_across
-from tests.reasoning_support import Conn
 from tests.test_annotation import LAW, _doc, _duty, _limit
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
 

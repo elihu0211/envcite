@@ -5,12 +5,12 @@
 
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
-import psycopg
 import pytest
 from psycopg.types.range import Range
 
+from canon.db import Conn, fetch, fetch_one
 from canon.law import importer, ly_law
 from canon.law.history_sources import Ly, Moenv, Target
 from canon.law.history_sync.run import sync
@@ -22,7 +22,16 @@ from tests.history_support import relax_limits
 from tests.sample import stored_snapshot
 from tests.test_import import _law
 
-Conn = psycopg.Connection[tuple[object, ...]]
+
+class _Expression(NamedTuple):
+    version_date: date
+    text_period: Range[date]
+    text_authority: str
+
+
+class _Text(NamedTuple):
+    text: str | None
+
 
 PCODE = "T0000001"
 TITLE = "噪音管制法"
@@ -76,21 +85,26 @@ def _sync(conn: Conn, root: Path, web: FakeWeb, source: Any = None) -> int:
     return sync(conn, source or Ly(), root, web, policy=POLICY, sleep=lambda _: None)
 
 
-def _expressions(conn: Conn) -> list[tuple[date, Range[date], str]]:
-    return conn.execute(  # type: ignore[return-value]
+def _expressions(conn: Conn) -> list[_Expression]:
+    return fetch(
+        conn,
         "SELECT version_date, text_period, text_authority::text FROM corpus.legal_expression"
-        " ORDER BY version_date"
-    ).fetchall()
+        " ORDER BY version_date",
+        None,
+        _Expression,
+    )
 
 
 def _article(conn: Conn, path: str, on: date) -> str | None:
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT corpus.article_text(a.version_id)"
         "  FROM corpus.legal_resource AS r, LATERAL corpus.provisions_at(r.id, 'zho', %s) AS a"
         " WHERE r.local_id = %s AND a.path = %s",
         (on, PCODE, path),
-    ).fetchone()
-    return None if row is None else row[0]  # type: ignore[return-value]
+        _Text,
+    )
+    return None if row is None else row.text
 
 
 def test_past_versions_are_dated_by_promulgation_and_chained_to_the_anchor(

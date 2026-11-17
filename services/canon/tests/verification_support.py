@@ -6,17 +6,13 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-import psycopg
-
 from canon.annotate import Loaded, load
+from canon.db import Conn
 from canon.verification.link import link_penalties
 from tests.reasoning_support import WATER, _plain_duty
 from tests.test_annotation import _doc
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-
-Conn = psycopg.Connection[tuple[object, ...]]
-
 
 DETERMINISTIC = ["numbers", "references", "executable"]
 

@@ -2,16 +2,14 @@
 
 from pathlib import Path
 
-import psycopg
 import pytest
 
 from canon import projection
+from canon.db import Conn
 from canon.store.canon_store import CanonStore
 from envcite_segmenter import Segmenter
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 ON = "2019-06-01"
 #: 「common」在每一段都有；其餘各只出現一段。拉丁字母詞不被切成二字詞，詞頻好算。

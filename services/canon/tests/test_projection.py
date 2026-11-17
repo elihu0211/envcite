@@ -1,8 +1,7 @@
 from pathlib import Path
 
-import psycopg
-
 from canon import projection
+from canon.db import Conn
 from canon.law import importer
 from canon.law.moj import Moj
 from canon.store.canon_store import CanonStore
@@ -10,8 +9,6 @@ from envcite_segmenter import Segmenter
 from tests.sample import stored_snapshot
 from tests.test_import import _law, _scalar
 from tests.test_incremental import _articles, _first, _law_v1, _next
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 def _imported(conn: Conn, tmp_path: Path, *laws: dict[str, object]) -> None:

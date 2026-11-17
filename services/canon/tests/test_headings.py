@@ -2,8 +2,7 @@
 
 from datetime import date
 
-import psycopg
-
+from canon.db import Conn
 from canon.law import articles, headings, parsing, write
 from canon.store.canon_store import CanonStore
 from canon.store.records import LawKey
@@ -64,9 +63,7 @@ def test_law_parse_populates_headings() -> None:
     assert parsed.headings[0].title == "總則"
 
 
-def test_write_and_list_headings_round_trip(
-    conn: psycopg.Connection[tuple[object, ...]], store: CanonStore
-) -> None:
+def test_write_and_list_headings_round_trip(conn: Conn, store: CanonStore) -> None:
     payload = {
         "LawLevel": "法律",
         "LawName": "結構章節測試法",

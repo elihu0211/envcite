@@ -7,10 +7,10 @@
 from pathlib import Path
 from typing import LiteralString
 
-import psycopg
 import pytest
 
 from canon.annotate import load
+from canon.db import Conn
 from canon.reasoning.facts.statements import _STATEMENTS, statement_facts
 from tests.scope_support import (
     FILLER_LAWS,
@@ -23,8 +23,6 @@ from tests.scope_support import (
 )
 from tests.test_annotation import _doc, _duty, _limit
 from tests.test_incremental import _first, _law_v1
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 #: 改寫前的查詢，一字不改：對全部法規各解析一次（只用於比對與計時，生產環境不再執行）。
 LEGACY = """

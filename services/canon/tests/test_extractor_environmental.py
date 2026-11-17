@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from canon.annotate import AnnotationError, load
+from canon.db import Conn
 from canon.verification.checks.shape import shape_issues, tidy
 from canon.verification.extract import extract_unit
 from canon.verification.link import link_penalties
@@ -13,7 +14,7 @@ from canon.verification.statements_format import STATEMENTS_FORMAT
 from tests.test_annotation import LAW, _doc
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
-from tests.verification_support import Conn, FakeModel
+from tests.verification_support import FakeModel
 
 TEXT = "排放廢水者應符合許可量，違反者限期改善，屆期未改善者按次處罰"
 

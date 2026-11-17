@@ -6,13 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from canon.annotate import load
+from canon.db import Conn
 from canon.reasoning.engine import evaluate
-from tests.reasoning_support import (
-    Conn,
-    _plain_duty,
-    _scope,
-    _with,
-)
+from tests.reasoning_support import _plain_duty, _scope, _with
 from tests.test_annotation import AFTER, BEFORE, LAW, _doc, _duty, _duty_condition, _limit
 from tests.test_incremental import _first, _law_v1, _law_v2, _next
 

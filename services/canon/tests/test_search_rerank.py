@@ -9,12 +9,12 @@ from contextlib import AbstractContextManager, contextmanager
 from typing import Any
 
 import grpc
-import psycopg
 import pytest
 from opentelemetry.metrics import Meter
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
+from canon.db import Conn
 from canon.law_names import LawNames
 from canon.reranking import RerankError
 from canon.search_tuning import SearchTuning
@@ -23,6 +23,7 @@ from canon.service import build_servicer
 from canon.store.canon_store import CanonStore
 from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 from envcite_segmenter import Segmenter
+from tests.grpc_support import FakeContext
 
 from .conftest import call_metadata
 
@@ -57,7 +58,7 @@ class FakeReranker:
 
 
 @pytest.fixture
-def serve(conn: psycopg.Connection[tuple[object, ...]], store: CanonStore) -> Iterator[Serve]:
+def serve(conn: Conn, store: CanonStore) -> Iterator[Serve]:
     law = conn.execute(
         "INSERT INTO corpus.legal_resource"
         " (jurisdiction, id_scheme, local_id, norm_kind, document_type)"
@@ -128,9 +129,11 @@ def _numbers(response: canon_pb2.SearchArticlesResponse) -> list[str]:
     return [h.number for h in response.hits]
 
 
-def _search(stub: Stub, **fields: object) -> canon_pb2.SearchArticlesResponse:
+def _search(
+    stub: Stub, *, rerank: bool = False, limit: int = 0
+) -> canon_pb2.SearchArticlesResponse:
     return stub.SearchArticles(
-        canon_pb2.SearchArticlesRequest(query="噪音", **fields),  # type: ignore[arg-type]
+        canon_pb2.SearchArticlesRequest(query="噪音", rerank=rerank, limit=limit),
         metadata=call_metadata(),
         timeout=10,
     )
@@ -203,13 +206,6 @@ def test_asking_to_rerank_without_a_reranker_is_the_same_as_not_asking(
 
 
 def test_full_rerank_slots_fall_back_instead_of_waiting(store: CanonStore, serve: Serve) -> None:
-    class Context:
-        def invocation_metadata(self) -> tuple[()]:
-            return ()
-
-        def time_remaining(self) -> float:
-            return 5.0
-
     reranker = FakeReranker()
     servicer = build_servicer(
         store.laws,
@@ -223,7 +219,7 @@ def test_full_rerank_slots_fall_back_instead_of_waiting(store: CanonStore, serve
 
     response = servicer.SearchArticles(
         canon_pb2.SearchArticlesRequest(query="噪音", rerank=True, limit=2),
-        Context(),  # type: ignore[arg-type]
+        FakeContext(),
     )
 
     assert reranker.calls == []
@@ -300,13 +296,6 @@ def test_nothing_is_counted_when_rerank_was_not_asked_for_or_there_is_nothing_to
 def test_full_slots_are_counted_as_busy_without_an_endpoint_time(
     store: CanonStore, serve: Serve
 ) -> None:
-    class Context:
-        def invocation_metadata(self) -> tuple[()]:
-            return ()
-
-        def time_remaining(self) -> float:
-            return 5.0
-
     reader, meter = _metered()
     servicer = build_servicer(
         store.laws,
@@ -321,7 +310,7 @@ def test_full_slots_are_counted_as_busy_without_an_endpoint_time(
 
     servicer.SearchArticles(
         canon_pb2.SearchArticlesRequest(query="噪音", rerank=True, limit=2),
-        Context(),  # type: ignore[arg-type]
+        FakeContext(),
     )
 
     assert _by_outcome(reader, OUTCOMES) == {"busy": 1}

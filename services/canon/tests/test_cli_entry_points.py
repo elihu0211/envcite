@@ -7,13 +7,11 @@ import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
-import psycopg
 import pytest
 
 from canon.cli import SUBCOMMANDS
 from canon.cli import main as canon
-
-Conn = psycopg.Connection[tuple[object, ...]]
+from canon.db import Conn
 
 SCRIPTS: dict[str, str] = tomllib.loads(
     (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")

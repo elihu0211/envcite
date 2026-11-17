@@ -1,14 +1,12 @@
 """The deterministic-rule extractors share one identity, one result type and one runner."""
 
-import psycopg
 import pytest
 
 from canon import rules, sync, violation
+from canon.db import Conn
 from canon.law import delegation, judgment_anchor, judgment_sync
 from canon.law.guidance_sync import provenance
 from canon.rules import Extracted, Extractor, Rule
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 
 def test_an_extractor_names_the_derivation_it_records() -> None:

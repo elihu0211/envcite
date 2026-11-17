@@ -12,6 +12,7 @@ import psycopg
 import pytest
 from psycopg.types.range import Range
 
+from canon.db import Conn
 from canon.law import importer, moenv_law
 from canon.law.backfill import writer
 from canon.law.backfill.models import Anchor
@@ -26,8 +27,6 @@ from tests.moenv_site import listing, site
 from tests.sample import stored_snapshot
 from tests.test_backfill import HISTORY, V1, V1_TEXT, V2, V2_TEXT, V3, V3_TEXT
 from tests.test_import import _law
-
-Conn = psycopg.Connection[tuple[object, ...]]
 
 FIRST = ("T0000001", "FL000001", "噪音管制法施行細則")
 SECOND = ("T0000002", "FL000002", "空氣污染防制法施行細則")

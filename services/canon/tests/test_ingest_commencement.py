@@ -29,17 +29,24 @@ def test_touched_lists_and_ranges() -> None:
 V = date(2024, 5, 1)
 
 
-def d(**kw: object) -> Commencement:
-    args: dict[str, object] = {
-        "version_date": V,
-        "entry": "",
-        "last_article": "",
-        "last_article_touched": True,
-        "deferred": False,
-        "touched": True,
-    }
-    args.update(kw)
-    return derive(**args)  # type: ignore[arg-type]
+def d(
+    *,
+    entry: str = "",
+    last_article: str = "",
+    last_article_touched: bool = True,
+    deferred: bool = False,
+    touched: bool = True,
+    note: Commencement | None = None,
+) -> Commencement:
+    return derive(
+        version_date=V,
+        entry=entry,
+        last_article=last_article,
+        last_article_touched=last_article_touched,
+        deferred=deferred,
+        touched=touched,
+        note=note,
+    )
 
 
 def test_a_commencement_note_makes_the_whole_law_unconfirmed() -> None:
