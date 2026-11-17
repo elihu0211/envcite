@@ -527,7 +527,7 @@ public static partial class DesignTokenTests
         Assert.Matches(@"html\[data-side=""collapsed""\] \.ep-portal\.ep-console \.ep-recent,\s*html\[data-side=""collapsed""\] \.ep-portal\.ep-console \.ep-history-empty \{\s*display: none", css); // 窄欄只剩圖示
     }
 
-    // 營運後台頂欄左邊的品牌（雲端主控台那一型）：常規字重、次要文字色、放大的圖形，沒有副標；入口（.ep-portal）不跟。
+    // 營運後台頂欄左邊的品牌（雲端主控台那一型）：常規字重、次要文字色、只有文字字標（沒有圖形），沒有副標；入口（.ep-portal）不跟。
     [Fact]
     public static void TheOperatorBrandIsALightweightProductNameWithoutASubtitle()
     {
@@ -536,7 +536,8 @@ public static partial class DesignTokenTests
 
         Assert.Contains("font-weight: var(--ep-body-l-weight)", brand, StringComparison.Ordinal);
         Assert.Contains("color: var(--ep-text-secondary)", brand, StringComparison.Ordinal);
-        Assert.Contains("inline-size: 1.5em", CssBlock(css, ".ep-console:not(.ep-portal) .ep-shell-top .ep-brand-mark"), StringComparison.Ordinal);
+        Assert.DoesNotContain(".ep-console:not(.ep-portal) .ep-shell-top .ep-brand-mark", css, StringComparison.Ordinal); // 字標旁不放圖形
+        Assert.DoesNotContain(".ep-side-head .ep-brand-mark", css, StringComparison.Ordinal);
         Assert.DoesNotContain("ep-console-product", css, StringComparison.Ordinal); // 副標（「營運後台」）已移除
     }
 

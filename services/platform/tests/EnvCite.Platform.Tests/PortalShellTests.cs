@@ -87,6 +87,14 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
             Assert.Contains($"<a class=\"ep-brand\" href=\"{prefix}\">", page, StringComparison.Ordinal);
             Assert.Contains("<a class=\"ep-skip-link\" href=\"#main\"", page, StringComparison.Ordinal);
             Assert.Single(Regex.Matches(page, "id=\"main\""));
+
+            // 已登入的外殼頂列是工具列：側欄頂列與舞台頂欄的品牌只有文字字標，品牌圖形留給回答頭像與空白頁問候。
+            var sideHead = Regex.Match(page, "<div class=\"ep-side-head\">.*?</div>", RegexOptions.Singleline).Value;
+            var stageHeader = Regex.Match(page, "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
+            Assert.Contains("ep-brand", sideHead, StringComparison.Ordinal);
+            Assert.Contains("ep-brand", stageHeader, StringComparison.Ordinal);
+            Assert.DoesNotContain("ep-brand-mark", sideHead, StringComparison.Ordinal);
+            Assert.DoesNotContain("ep-brand-mark", stageHeader, StringComparison.Ordinal);
         }
 
         // 目前頁標示：首頁只在首頁算數，不因為其他頁都在它底下就一直亮著；舞台頂欄跟著呈現目前頁面脈絡。
@@ -279,9 +287,10 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Equal(4, Regex.Count(nav, "class=\"ep-side-label\""));
         Assert.Contains("class=\"ep-side-toggle\" aria-controls=\"ep-side\"", page, StringComparison.Ordinal);
 
-        // 頂欄左邊只有品牌（點它回總覽），不掛「營運後台」之類的副標；是哪一種外殼由側欄與頁面標題說明。
+        // 頂欄左邊只有品牌的文字字標（點它回總覽，不放圖形），不掛「營運後台」之類的副標；是哪一種外殼由側欄與頁面標題說明。
         var top = Regex.Match(page, "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
         Assert.Contains("<a class=\"ep-brand\" href=\"/ui\">", top, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-brand-mark", top, StringComparison.Ordinal);
         Assert.DoesNotContain("營運後台", top, StringComparison.Ordinal);
         Assert.DoesNotContain("ep-console-product", page, StringComparison.Ordinal);
 
