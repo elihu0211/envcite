@@ -19,7 +19,7 @@ from envcite.canon.v1 import reasoning_pb2 as pb
 def scoring_inputs(request: pb.EvaluateRequest, validator: errors.Validator) -> list[ScoringInput]:
     """將請求內的 `scoring_inputs` 轉成確定性裁罰計算引擎輸入。"""
     out: list[ScoringInput] = []
-    for i, item in enumerate(getattr(request, "scoring_inputs", ())):
+    for i, item in enumerate(request.scoring_inputs):
         if not item.matrix_code:
             validator.add(f"scoring_inputs[{i}].matrix_code", errors.EMPTY, "matrix_code required")
             continue
