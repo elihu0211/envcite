@@ -6,9 +6,10 @@ from decimal import Decimal
 from typing import Any, NamedTuple
 
 from canon.db import Conn, fetch
-from canon.reasoning import evaluate
+from canon.reasoning.engine import evaluate
 from canon.verification import prompts
-from canon.verification.gates import GateResult, Verdict, statement_as_of, unit_of
+from canon.verification.gates.base import GateResult, Verdict, unit_of
+from canon.verification.gates.conditions import statement_as_of
 from canon.verification.jsonutil import object_from
 from canon.verification.model_gates.common import eligible, extractor_of
 from canon.verification.models import Model

@@ -6,7 +6,7 @@ import json
 import pytest
 
 from canon.annotate import Loaded
-from canon.reasoning import Result, evaluate
+from canon.reasoning.engine import Result, evaluate
 from tests.reasoning_support import (
     WATER,
     WATER_DAY,

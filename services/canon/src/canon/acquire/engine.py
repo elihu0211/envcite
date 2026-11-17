@@ -19,8 +19,7 @@ from http.client import HTTPException
 from pathlib import Path
 from typing import Protocol
 
-from psycopg import Connection
-
+from canon.db import Conn, scalar
 from canon.exit_codes import Unretryable
 from canon.net import HttpStatus, endpoint, urlopen
 from envcite_jobkit import Policy, backoff_delay
@@ -92,7 +91,7 @@ class Outcome:
 def acquire(
     source: Source,
     root: Path,
-    conn: Connection[tuple[object, ...]],
+    conn: Conn,
     policy: Policy | None = None,
 ) -> list[Outcome]:
     """逐一取得來源的每個全量檔並存成快照；回傳各檔的結果，依 `source.feeds` 的次序。
@@ -107,7 +106,7 @@ def _acquire_feed(
     source: Source,
     feed: Feed,
     root: Path,
-    conn: Connection[tuple[object, ...]],
+    conn: Conn,
     policy: Policy,
 ) -> Outcome:
     partial = root / ".partial" / feed.name
@@ -181,7 +180,7 @@ def _fetch(url: str, dest: Path, context: ssl.SSLContext) -> tuple[bytes, int]:
     return h.digest(), size
 
 
-def _known(conn: Connection[tuple[object, ...]], feed: str, digest: bytes) -> bool:
+def _known(conn: Conn, feed: str, digest: bytes) -> bool:
     row = conn.execute(
         "SELECT 1 FROM source.snapshot WHERE feed = %s AND sha256 = %s", (feed, digest)
     ).fetchone()
@@ -190,7 +189,7 @@ def _known(conn: Connection[tuple[object, ...]], feed: str, digest: bytes) -> bo
 
 
 def _record(
-    conn: Connection[tuple[object, ...]],
+    conn: Conn,
     source: Source,
     feed: str,
     contents: Contents,
@@ -199,14 +198,14 @@ def _record(
     location: str,
 ) -> int:
     with conn.transaction():
-        row = conn.execute(
+        snapshot_id = scalar(
+            conn,
             "INSERT INTO source.snapshot"
             " (feed, data_date, sha256, size_bytes, location, license_notice)"
             " VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
             (feed, contents.data_date, digest, size, location, source.attribution),
-        ).fetchone()
-        assert row is not None and isinstance(row[0], int)
-        snapshot_id = row[0]
+            int,
+        )
         _record_items(conn, feed, snapshot_id, contents.items)
         # 連續兩份全量快照都未出現：前一份快照之前就再也沒見過。
         conn.execute(
@@ -222,7 +221,7 @@ def _record(
 
 
 def _record_items(
-    conn: Connection[tuple[object, ...]],
+    conn: Conn,
     feed: str,
     snapshot_id: int,
     items: Iterable[tuple[str, bytes]],

@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from canon.annotate import load
-from canon.reasoning import Result, evaluate
+from canon.reasoning.engine import Result, evaluate
 from tests.reasoning_support import Conn, _plain_duty, _scope, _with
 from tests.test_annotation import BEFORE, LAW, _doc
 from tests.test_incremental import _articles, _first, _law_v1

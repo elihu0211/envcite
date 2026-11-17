@@ -28,8 +28,6 @@
 請求呼叫嵌入端點一次，總次數記在報告裡。
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import os

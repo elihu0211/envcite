@@ -15,7 +15,7 @@ import pytest
 
 from canon.verification.config import parse
 from canon.verification.extract import extract_unit
-from canon.verification.gates import GateResult
+from canon.verification.gates.base import GateResult
 from canon.verification.models import ChatCompletionsModel, ModelError
 from canon.verification.pipeline import verify
 from tests.test_annotation import LAW

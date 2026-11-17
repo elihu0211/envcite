@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from canon.reasoning import evaluate
+from canon.reasoning.engine import evaluate
 from canon.verification.methods import ALL_METHODS
 from canon.verification.run import run
 from canon.verification.selection import units_of

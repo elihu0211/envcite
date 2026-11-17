@@ -7,31 +7,3 @@
 
 語意、種類、義務方向是否忠於原文須由模型閘門（`model_gates`）判定。
 """
-
-from canon.verification.gates.base import Gate, GateResult, Unit, Verdict, unit_of
-from canon.verification.gates.cn_number import NUMBER, amounts, cn_number, numbers_in
-from canon.verification.gates.conditions import statement_as_of
-from canon.verification.gates.executable_gate import ExecutableGate
-from canon.verification.gates.numbers_gate import NumbersGate
-from canon.verification.gates.proviso_gate import ProvisoGate
-from canon.verification.gates.references_gate import ReferencesGate
-
-DEFAULT_GATES: tuple[Gate, ...] = (NumbersGate(), ReferencesGate(), ExecutableGate(), ProvisoGate())
-
-__all__ = [
-    "DEFAULT_GATES",
-    "NUMBER",
-    "ExecutableGate",
-    "Gate",
-    "GateResult",
-    "NumbersGate",
-    "ProvisoGate",
-    "ReferencesGate",
-    "Unit",
-    "Verdict",
-    "amounts",
-    "cn_number",
-    "numbers_in",
-    "statement_as_of",
-    "unit_of",
-]

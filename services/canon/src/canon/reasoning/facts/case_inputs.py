@@ -4,8 +4,9 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import NamedTuple
 
-from canon.db import Conn
+from canon.db import Conn, fetch
 from canon.reasoning import units
 from canon.reasoning.facts.asp import milli, q
 
@@ -13,6 +14,11 @@ from canon.reasoning.facts.asp import milli, q
 type CaseValue = float | str
 
 type Case = Mapping[str, CaseValue | Sequence[CaseValue]]
+
+
+class _UnitRow(NamedTuple):
+    code: str
+    canonical_unit: str
 
 
 @dataclass(frozen=True)
@@ -109,12 +115,14 @@ def normalize_case_units(
     """依詞彙標準量綱單位換算案件數值；物理量綱不相容者排除該數值並回報 `unit_mismatch` 問題。"""
     if not measurements and not fact_units:
         return case, []
-    canonical = {
-        str(code): str(unit)
-        for code, unit in conn.execute(
-            "SELECT code, canonical_unit FROM vocab.concept WHERE canonical_unit IS NOT NULL"
+    canonical = dict(
+        fetch(
+            conn,
+            "SELECT code, canonical_unit FROM vocab.concept WHERE canonical_unit IS NOT NULL",
+            None,
+            _UnitRow,
         )
-    }
+    )
     if not canonical:
         return case, []
     normalized: dict[str, CaseValue | Sequence[CaseValue]] = dict(case)

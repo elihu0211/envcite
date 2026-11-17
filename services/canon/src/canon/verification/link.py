@@ -18,7 +18,7 @@ from canon.claims.errors import AnnotationError
 from canon.claims.loader import load
 from canon.db import Conn, fetch
 from canon.verification import prompts
-from canon.verification.gates import unit_of
+from canon.verification.gates.base import unit_of
 from canon.verification.jsonutil import object_from
 from canon.verification.models import Model, ModelError
 from canon.verification.prompts import Candidate

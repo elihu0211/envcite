@@ -9,8 +9,6 @@
     uv run python tools/subsumption_eval.py --out report.json --markdown report.md
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import os
@@ -24,10 +22,7 @@ import psycopg
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from canon.reasoning import (
-    SubsumptionCase,
-    evaluate_subsumption,
-)
+from canon.reasoning.subsumption import SubsumptionCase, evaluate_subsumption
 
 DEFAULT_BENCHMARK = Path(__file__).resolve().parents[1] / "eval" / "subsumption_benchmark.json"
 

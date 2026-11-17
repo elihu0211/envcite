@@ -10,10 +10,11 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import NamedTuple
 
 from canon import import_problems
 from canon.acquire.engine import Source
-from canon.db import Conn
+from canon.db import Conn, fetch, fetch_one
 from canon.exit_codes import Unretryable
 from canon.import_problems import Problem
 from canon.law import parsing
@@ -57,13 +58,19 @@ class _Batch:
     parsed: list[Parsed]
 
 
-@dataclass(frozen=True)
-class _Stored:
+class _SnapshotRow(NamedTuple):
+    id: int
+    data_date: date
+    location: str
+
+
+class _Stored(NamedTuple):
     """來源項目已記下的匯入狀態；從未匯入者的雜湊與版本為空。"""
 
-    item_id: object
-    sha256: object
-    parser_version: object
+    item_id: int
+    key: str
+    sha256: bytes | None
+    parser_version: int | None
 
 
 def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False) -> Outcome:
@@ -95,36 +102,38 @@ def run(conn: Conn, snapshot_dir: Path, source: Source, *, dry_run: bool = False
 
 def _parse_feed(conn: Conn, snapshot_dir: Path, feed_name: str, metrics: Metrics) -> _Batch | None:
     """解析來源檔最新的快照並計入 `metrics`；沒有快照為 None。"""
-    row = conn.execute(
+    snapshot = fetch_one(
+        conn,
         "SELECT id, data_date, location FROM source.snapshot"
         " WHERE feed = %s ORDER BY data_date DESC, id DESC LIMIT 1",
         (feed_name,),
-    ).fetchone()
-    if row is None:
+        _SnapshotRow,
+    )
+    if snapshot is None:
         log.info("%s: 沒有快照", feed_name)
         return None
-    snapshot_id, data_date, location = row
-    assert isinstance(snapshot_id, int) and isinstance(data_date, date)
-    _, laws = load_laws(snapshot_dir / str(location))  # 檔案不存在：InvalidSnapshot
+    _, laws = load_laws(snapshot_dir / snapshot.location)  # 檔案不存在：InvalidSnapshot
     parsed = [
         Parsed(
             pcode(raw),
             content_sha256(raw),
-            parsing.parse(raw, pcode=pcode(raw), data_date=data_date),
+            parsing.parse(raw, pcode=pcode(raw), data_date=snapshot.data_date),
         )
         for raw in laws
     ]
     for p in parsed:
         metrics.add(p.law)
-    return _Batch(feed_name, snapshot_id, parsed)
+    return _Batch(feed_name, snapshot.id, parsed)
 
 
 def _write_batch(conn: Conn, batch: _Batch, actions: Counter[str]) -> None:
     state = {
-        str(key): _Stored(item_id, sha, version)
-        for item_id, key, sha, version in conn.execute(
+        stored.key: stored
+        for stored in fetch(
+            conn,
             "SELECT id, key, imported_sha256, parser_version FROM source.item WHERE feed = %s",
             (batch.feed,),
+            _Stored,
         )
     }
     # 結束讀取用的交易：之後每部法規是自己的交易，不是同一個交易裡的存檔點。

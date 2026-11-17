@@ -1,4 +1,4 @@
-"""結構守門：模組不得長成巨石，邏輯不直接讀系統時鐘，核心不匯入來源子包。
+"""結構守門：模組不得長成巨石，套件不再匯出，邏輯不直接讀系統時鐘，核心不匯入來源子包。
 
 單一模組超過 `MAX_LINES` 行，就是在一個檔案裡放了不只一個職責：把職責拆到各自的模組，
 不要調高上限。
@@ -36,6 +36,22 @@ def test_no_module_outgrows_the_limit() -> None:
     assert not too_big, (
         f"超過 {MAX_LINES} 行的模組（行數）：{too_big}。把職責拆到各自的模組；不要調高上限。"
     )
+
+
+def test_a_package_init_holds_only_its_docstring() -> None:
+    """消費端從定義處匯入：`__init__` 再匯出會讓匯入一個名字就載入整個套件，也讓定義處有兩個。"""
+    busy = [
+        path.relative_to(SRC).as_posix()
+        for path in _modules()
+        if path.name == "__init__.py"
+        and any(not _is_docstring(node) for node in ast.parse(path.read_text()).body)
+    ]
+
+    assert not busy, f"`__init__.py` 只放套件說明：{busy}。名稱放在子模組，消費端從那裡匯入。"
+
+
+def _is_docstring(node: ast.stmt) -> bool:
+    return isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
 
 
 def _clock_reads(path: Path) -> list[int]:

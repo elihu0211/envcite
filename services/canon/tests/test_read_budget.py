@@ -1,7 +1,5 @@
 """請求路徑的讀取預算：期限取消查詢、池子耗盡回 BUSY、嵌入名額滿了仍走字面臂。"""
 
-from __future__ import annotations
-
 import grpc
 import psycopg
 import pytest

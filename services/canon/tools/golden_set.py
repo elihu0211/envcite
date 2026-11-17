@@ -25,8 +25,6 @@ judged by models (`relevance_judge.py`); `judge` merges the sealed judgement fil
 and records its hash, judges, date and prompt hash.
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

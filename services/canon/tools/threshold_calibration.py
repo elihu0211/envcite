@@ -22,8 +22,6 @@ for the depth consult reads, the answerable pass rate against the share of unans
 that pass.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import math

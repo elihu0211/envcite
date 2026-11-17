@@ -19,8 +19,6 @@ Database and embedder come from the environment (ENVCITE_CANON_DSN, ENVCITE_CANO
 the question writer from `models.toml`. This script never reads or writes a key itself.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

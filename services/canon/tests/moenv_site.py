@@ -1,7 +1,5 @@
 """環境部主管法規查詢系統的頁面，照真實頁面的形狀（2026-11-03 取樣）縮成測試用的最小頁。"""
 
-from __future__ import annotations
-
 from datetime import date
 
 from canon.law import moenv_law

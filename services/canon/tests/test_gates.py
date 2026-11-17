@@ -8,16 +8,11 @@ from typing import Any
 import pytest
 
 from canon.annotate import load
-from canon.verification import gates
-from canon.verification.gates import (
-    ExecutableGate,
-    NumbersGate,
-    ReferencesGate,
-    amounts,
-    cn_number,
-)
-from canon.verification.gates.cn_number import numbers_in, qualified_numbers
+from canon.verification.gates.cn_number import amounts, cn_number, numbers_in, qualified_numbers
+from canon.verification.gates.executable_gate import ExecutableGate
+from canon.verification.gates.numbers_gate import NumbersGate
 from canon.verification.gates.proviso_gate import ProvisoGate, provisos
+from canon.verification.gates.references_gate import ReferencesGate
 from canon.verification.pipeline import settle
 from canon.violation import citations, delegated_rules, violations
 from tests.reasoning_support import _plain_duty, _scope, _with
@@ -394,8 +389,3 @@ def test_text_without_a_proviso_does_not_apply(conn: Conn, tmp_path: Path) -> No
     sid = load(conn, _doc(_plain_duty())).ids["duty"]
 
     assert ProvisoGate().check(conn, sid) is None
-
-
-def test_every_exported_gate_name_exists() -> None:
-    """`__all__` 列的名稱都要真的存在，`import *` 才不會失敗。"""
-    assert [n for n in gates.__all__ if not hasattr(gates, n)] == []

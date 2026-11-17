@@ -561,7 +561,7 @@ def test_an_unparseable_number_is_reported_with_its_path(reasoning_stub: Stub) -
 
 def test_codec_carries_the_identifiers_of_central_and_local_laws() -> None:
     """測試推論編碼器原生支援中央與地方雙軌授權鏈與未涵蓋法規識別碼。"""
-    from canon.reasoning import Result
+    from canon.reasoning.engine import Result
 
     central_act = Link(
         command_jurisdiction="TW-TPE",

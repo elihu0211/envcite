@@ -12,11 +12,11 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, NamedTuple
 
 from canon.claims.errors import AnnotationError
 from canon.claims.loader import Loaded, load
-from canon.db import Conn
+from canon.db import Conn, fetch, fetch_one
 from canon.verification import prompts
 from canon.verification.context import ancestors_text
 from canon.verification.jsonutil import object_from
@@ -49,9 +49,25 @@ def is_definition_unit(conn: Conn, provision_id: int) -> bool:
     return DEFINITION_CLAUSE.search(ancestors_text(conn, provision_id)) is not None
 
 
+class _PathRow(NamedTuple):
+    id: int
+    path: str
+
+
+class _TermRow(NamedTuple):
+    code: str
+    name: str
+
+
+class _UnitRow(NamedTuple):
+    id: int
+    content: str
+
+
 def definition_paths(conn: Conn, law: str) -> list[str]:
     """法規現行、有文字、屬於用語定義項的單元路徑，依閱讀順序。"""
-    rows = conn.execute(
+    rows = fetch(
+        conn,
         "SELECT p.id, p.path FROM corpus.provision AS p"
         "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND p.parent_id IS NOT NULL"
@@ -60,21 +76,24 @@ def definition_paths(conn: Conn, law: str) -> list[str]:
         "                  AND v.content IS NOT NULL)"
         " ORDER BY p.sort_key, p.path",
         (law,),
-    ).fetchall()
-    return [str(path) for pid, path in rows if is_definition_unit(conn, int(str(pid)))]
+        _PathRow,
+    )
+    return [row.path for row in rows if is_definition_unit(conn, row.id)]
 
 
 def defined_terms(conn: Conn, law: str) -> dict[str, str]:
     """該法已有定義的用語：代碼 → 名稱，供陳述抽取指名。"""
-    rows = conn.execute(
+    rows = fetch(
+        conn,
         "SELECT DISTINCT k.code, k.name FROM annotation.term_definition AS t"
         "  JOIN annotation.assertion AS tc ON tc.id = t.id"
         "  JOIN vocab.concept AS k ON k.id = t.term_concept_id"
         "  JOIN vocab.concept_scheme AS s ON s.id = k.scheme_id"
         " WHERE s.code = %s AND tc.confirm_state <> 'rejected' ORDER BY k.code",
         (scheme_code(law),),
+        _TermRow,
     )
-    return {str(code): str(name) for code, name in rows}
+    return dict(rows)
 
 
 def issues_of(answer: Mapping[str, Any], text: str) -> list[str]:
@@ -112,17 +131,19 @@ def issues_of(answer: Mapping[str, Any], text: str) -> list[str]:
 
 
 def _unit(conn: Conn, law: str, path: str) -> tuple[int, str]:
-    row = conn.execute(
+    row = fetch_one(
+        conn,
         "SELECT p.id, v.content FROM corpus.provision AS p"
         "  JOIN corpus.legal_resource AS r ON r.id = p.resource_id"
         "  JOIN corpus.provision_version AS v ON v.provision_id = p.id AND v.superseded_at IS NULL"
         " WHERE r.id_scheme = 'moj_pcode' AND r.local_id = %s AND p.path = %s"
         "   AND v.content IS NOT NULL ORDER BY v.id DESC LIMIT 1",
         (law, path),
-    ).fetchone()
+        _UnitRow,
+    )
     if row is None:
         raise LookupError(f"no current text for {law} {path}")
-    return int(str(row[0])), str(row[1])
+    return row.id, row.content
 
 
 def extract_definitions(

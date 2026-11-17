@@ -16,8 +16,9 @@
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
+from typing import NamedTuple
 
-from canon.db import Conn
+from canon.db import Conn, fetch
 from canon.reasoning.engine import Result, evaluate
 from canon.reasoning.facts.case_inputs import (
     Case,
@@ -108,11 +109,18 @@ class Transition:
         return bool(self.earlier)
 
 
+class _StatementRow(NamedTuple):
+    statement_id: int
+
+
+class _DayRow(NamedTuple):
+    #: 效力區間的上界；沒有上界（仍現行）為 None。
+    day: date | None
+
+
 def _statement_ids(conn: Conn, language: str, day: date) -> frozenset[int]:
-    return frozenset(
-        int(row[0])  # type: ignore[call-overload]
-        for row in conn.execute(_APPLICABLE, {"lang": language, "on": day})
-    )
+    rows = fetch(conn, _APPLICABLE, {"lang": language, "on": day}, _StatementRow)
+    return frozenset(row.statement_id for row in rows)
 
 
 def _uncovered(
@@ -141,10 +149,8 @@ def evaluate_across(
     """裁處時之法律，加行為日到裁處日之間每組不同的陳述；裁處權時效一律對裁處日。"""
     if conduct_on > decided_on:
         raise ValueError("conduct_on must not be after decided_on")
-    days = [conduct_on]
-    for row in conn.execute(_CHANGE_DATES, {"conduct": conduct_on, "decided": decided_on}):
-        if isinstance(row[0], date):
-            days.append(row[0])
+    changes = fetch(conn, _CHANGE_DATES, {"conduct": conduct_on, "decided": decided_on}, _DayRow)
+    days = [conduct_on, *(row.day for row in changes if row.day is not None)]
     final = _statement_ids(conn, language, decided_on)
     seen = {final}
     earlier: list[Candidate] = []

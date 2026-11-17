@@ -7,8 +7,6 @@
 開發集的報告；選定的下界在測試集上的表現由端到端量測報告。只印出結果，不改任何下界。
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

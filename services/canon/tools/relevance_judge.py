@@ -42,8 +42,6 @@ external); each row keeps the sha256 of the article text it was judged on. Calls
 JSONL file outside the repository so a run that stops can resume; the cache holds question text.
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

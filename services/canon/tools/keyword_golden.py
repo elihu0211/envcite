@@ -20,8 +20,6 @@
 其他條文是不是相關」，所以雜訊以「不含查詢詞字面」的命中占比近似，標明是近似。
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

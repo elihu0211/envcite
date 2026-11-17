@@ -12,7 +12,8 @@ from typing import NamedTuple
 from psycopg.types.json import Jsonb
 
 from canon.db import Conn, fetch, fetch_one
-from canon.verification.gates import DEFAULT_GATES, Gate, GateResult
+from canon.verification.gates.base import Gate, GateResult
+from canon.verification.methods import DEFAULT_GATES
 from canon.verification.models import ModelError
 
 log = logging.getLogger(__name__)

@@ -19,9 +19,10 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
+from typing import NamedTuple
 
 from canon import numerals
-from canon.db import Conn
+from canon.db import Conn, fetch
 from canon.import_problems import Problem
 from canon.law import moenv
 
@@ -51,15 +52,27 @@ class Resolved:
     problem: str | None
 
 
+class _NameRow(NamedTuple):
+    name: str
+    #: 名稱對到兩部以上法規時為 None。
+    pcode: str | None
+    alias: bool
+
+
+class _TextRow(NamedTuple):
+    path: str
+    content: str | None
+
+
 class Resolver:
     """一次同步讀一次語料的標題與更名紀錄；對到的法規以 pcode 表示。"""
 
     def __init__(self, conn: Conn) -> None:
         self._conn = conn
-        rows = conn.execute("SELECT name, pcode, alias FROM guidance.law_name").fetchall()
+        rows = fetch(conn, "SELECT name, pcode, alias FROM guidance.law_name", None, _NameRow)
         conn.rollback()
-        self._names = {str(n): None if p is None else str(p) for n, p, _ in rows}
-        self._aliases = sum(1 for *_, alias in rows if alias)
+        self._names = {row.name: row.pcode for row in rows}
+        self._aliases = sum(row.alias for row in rows)
         self._longest = max(map(len, self._names), default=0)
 
     @property
@@ -93,7 +106,8 @@ class Resolver:
             return [], [Problem("warning", resolved.problem, cited)]
         if c.path is None:
             return [], [Problem("warning", "no_article", cited)]
-        rows = self._conn.execute(
+        rows = fetch(
+            self._conn,
             """
             SELECT p.path, v.content
               FROM corpus.provision AS p
@@ -106,13 +120,14 @@ class Resolver:
              ORDER BY p.sort_key
             """,
             {"pcode": resolved.pcode, "path": c.path, "on": on},
-        ).fetchall()
+            _TextRow,
+        )
         if not rows:
             return [], [Problem("warning", "provision_unresolved", cited)]
         found = [
-            {"law": resolved.pcode, "path": str(path), "text": str(text)}
-            for path, text in rows
-            if text is not None
+            {"law": resolved.pcode, "path": row.path, "text": row.content}
+            for row in rows
+            if row.content is not None
         ]
         if not found:
             return [], [Problem("warning", "no_version_at_issue", f"{cited}（{on}）")]

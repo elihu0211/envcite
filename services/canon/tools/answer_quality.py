@@ -13,8 +13,6 @@
 - 兩者分母不同、意義不同，所以不合算成單一比率。
 """
 
-from __future__ import annotations
-
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass

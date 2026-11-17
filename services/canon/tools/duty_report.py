@@ -7,8 +7,6 @@
 與抽取端的確定性檢查（`checks.coverage.coverage_gaps`）同一個算法。
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import re
