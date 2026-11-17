@@ -5183,7 +5183,7 @@ html[data-reveal]::view-transition-new(root) {
 
 /* ── 檢視面板：浮在畫布上的側面板，不占版面 ─────────────────────────────────────────────
  * 畫布外框是一格 grid：群組列在第 1 列，畫布與面板疊在第 2 列。面板不再是並排的欄位，
- * 開關不會改變畫布寬度，所以不會觸發重新適應、圖也不會跳。預設收起，點節點或「法學檢視」才打開；
+ * 開關不會改變畫布寬度，所以不會觸發重新適應、圖也不會跳。預設收起，點節點或「節點詳情」才打開；
  * 窄容器改成從底部升起的面板（position: fixed）。 */
 .ep-graph-canvas-wrap {
     display: grid;
@@ -5333,6 +5333,96 @@ html[data-reveal]::view-transition-new(root) {
     block-size: var(--ep-space-8);
     padding-block: var(--ep-space-1);
     font-size: var(--ep-label-s-size);
+}
+
+/* 怎麼讀這張圖：畫布上方的一行說明，第一次看到就在；關掉後由工具列的「怎麼讀」叫回來。
+ * display 是 flex，會蓋掉 hidden 屬性，所以要另外寫 [hidden]。 */
+.ep-graph-guide {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2) var(--ep-space-4);
+    padding: var(--ep-space-2) var(--ep-space-3);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface);
+    font-size: var(--ep-label-s-size);
+    color: var(--ep-text-secondary);
+}
+
+.ep-graph-guide[hidden] {
+    display: none;
+}
+
+.ep-graph-guide-title {
+    color: var(--ep-text);
+    font-weight: var(--ep-label-s-weight);
+    white-space: nowrap;
+}
+
+.ep-graph-guide-steps {
+    flex: 1 1 24rem;
+    min-inline-size: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ep-space-1) var(--ep-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ep-graph-guide .ep-drawer-close {
+    margin-inline-start: auto;
+}
+
+/* 檢視選項：排版、授權條號、全螢幕收在這裡，首屏只留搜尋與三個入口。 */
+.ep-graph-options {
+    position: relative;
+}
+
+.ep-graph-options > summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+.ep-graph-options > summary::-webkit-details-marker {
+    display: none;
+}
+
+.ep-graph-options > summary::after {
+    content: "▾";
+    margin-inline-start: var(--ep-space-1);
+}
+
+.ep-graph-options[open] > summary::after {
+    content: "▴";
+}
+
+.ep-graph-options-panel {
+    position: absolute;
+    inset-block-start: calc(100% + var(--ep-space-1));
+    inset-inline-end: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+    inline-size: max-content;
+    max-inline-size: min(26rem, 90vw);
+    padding: var(--ep-space-3);
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface-raised);
+    box-shadow: var(--ep-elevation-3);
+}
+
+.ep-graph-options-panel .ep-hint {
+    margin: 0;
+}
+
+.ep-graph-options-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-1);
 }
 
 .ep-graph-canvas-wrap {
@@ -5654,13 +5744,6 @@ html[data-reveal]::view-transition-new(root) {
     margin: 0;
     font-size: var(--ep-label-s-size);
     color: var(--ep-text-secondary);
-}
-
-.ep-graph-wheel-hint {
-    margin-inline-start: var(--ep-space-1);
-    font-size: var(--ep-label-s-size);
-    color: var(--ep-text-secondary);
-    white-space: nowrap;
 }
 
 .ep-inspector-guide-list {

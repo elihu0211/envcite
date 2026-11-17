@@ -362,6 +362,8 @@ public sealed partial class LawCorpus(
             legendEdges = L["連線"].Value,
             legendShowAll = L["全部顯示"].Value,
             legendLastTier = L["至少要保留一個層級"].Value,
+            disclosureCollapsed = L["授權 {n} 部子法規 · 點擊展開"].Value,
+            disclosureExpanded = L["授權 {n} 部子法規 · 收合"].Value,
         };
 
         return JsonSerializer.Serialize(new { nodes, edges, labels });

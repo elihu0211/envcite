@@ -1923,8 +1923,8 @@
   <data name="法律授權知識圖譜" xml:space="preserve">
     <value>Legal Delegation Knowledge Graph</value>
   </data>
-  <data name="適應視窗" xml:space="preserve">
-    <value>Fit</value>
+  <data name="重設視角" xml:space="preserve">
+    <value>Reset view</value>
   </data>
   <data name="合規推論試算" xml:space="preserve">
     <value>Compliance Reasoning</value>
@@ -2154,8 +2154,8 @@
   <data name="直接授權子法" xml:space="preserve">
     <value>Direct Child Regulations</value>
   </data>
-  <data name="節點法學檢視" xml:space="preserve">
-    <value>Node Legal Inspector</value>
+  <data name="節點詳情面板" xml:space="preserve">
+    <value>Node details panel</value>
   </data>
   <data name="結構章節" xml:space="preserve">
     <value>Structure Headings</value>
@@ -2712,8 +2712,38 @@
   <data name="Ctrl / ⌘ + 滾輪縮放 · 一般滾輪捲動頁面" xml:space="preserve">
     <value>Ctrl / ⌘ + wheel to zoom · wheel scrolls page</value>
   </data>
-  <data name="法學檢視" xml:space="preserve">
-    <value>Legal Inspector</value>
+  <data name="節點詳情" xml:space="preserve">
+    <value>Node details</value>
+  </data>
+  <data name="怎麼讀這張圖" xml:space="preserve">
+    <value>How to read this graph</value>
+  </data>
+  <data name="由左至右依位階排列：法律 → 法規命令 → 細則／辦法。" xml:space="preserve">
+    <value>Left to right by rank: statutes → regulations → rules and measures.</value>
+  </data>
+  <data name="點「▶ 授權 N 部子法規」逐層展開，不必一次看全部。" xml:space="preserve">
+    <value>Click "▶ Delegates to N regulations" to open one layer at a time; there is no need to see everything at once.</value>
+  </data>
+  <data name="點節點看授權條文依據；雙擊以它為中心重建圖譜。" xml:space="preserve">
+    <value>Click a node to see the authorizing articles; double-click to rebuild the graph around it.</value>
+  </data>
+  <data name="怎麼讀" xml:space="preserve">
+    <value>How to read</value>
+  </data>
+  <data name="檢視選項" xml:space="preserve">
+    <value>View options</value>
+  </data>
+  <data name="圖譜排版" xml:space="preserve">
+    <value>Graph layout</value>
+  </data>
+  <data name="排版：" xml:space="preserve">
+    <value>Layout:</value>
+  </data>
+  <data name="授權 {n} 部子法規 · 點擊展開" xml:space="preserve">
+    <value>Delegates to {n} regulations · click to open</value>
+  </data>
+  <data name="授權 {n} 部子法規 · 收合" xml:space="preserve">
+    <value>Delegates to {n} regulations · collapse</value>
   </data>
   <data name="授權圖譜導讀" xml:space="preserve">
     <value>Legal Delegation Guide</value>
