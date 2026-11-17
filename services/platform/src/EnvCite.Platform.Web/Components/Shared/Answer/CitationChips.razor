@@ -8,6 +8,7 @@
             {
                 <button type="button"
                         class="ep-cite-inline"
+                        data-drawer-trigger
                         title="@matched.Citation"
                         aria-label="@L["檢視 {0} 條文內容", $"{citeCode} {matched.Citation}"]"
                         @onclick="() => Citations.SelectAsync(matched)">@citeCode</button>

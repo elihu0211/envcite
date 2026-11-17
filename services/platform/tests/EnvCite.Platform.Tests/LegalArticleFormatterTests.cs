@@ -6,6 +6,7 @@ using EnvCite.Platform.Web.Presentation;
 using EnvCite.Platform.Web.Resources;
 
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -311,6 +312,73 @@ public sealed class LegalArticleFormatterTests
         Assert.Contains("data-copy-target=\"ep-drawer-iri-value\"", markup, StringComparison.Ordinal);
         Assert.Contains(sources[0].Uri, markup, StringComparison.Ordinal);
         Assert.Contains("針對本條追問", markup, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CitationDrawerPlaysItsExitBeforeLeavingThePageAndCanBeReopenedMidway()
+    {
+        var localizer = new EchoLocalizer();
+        var services = new ServiceCollection()
+            .AddSingleton<IStringLocalizer<Ui>>(localizer)
+            .AddSingleton<BrandText>(new BrandText(Options.Create(new BrandOptions()), localizer))
+            .BuildServiceProvider();
+        var exitWait = TimeSpan.FromMilliseconds(600); // 離場過渡加緩衝（CitationDrawer.ExitDuration）之後
+
+        await using var renderer = new HtmlRenderer(services, NullLoggerFactory.Instance);
+        var state = new DrawerHostState();
+        var root = await renderer.Dispatcher.InvokeAsync(() => renderer.RenderComponentAsync<DrawerHost>(
+            ParameterView.FromDictionary(new Dictionary<string, object?> { [nameof(DrawerHost.State)] = state })));
+        string Html() => WebUtility.HtmlDecode(root.ToHtmlString());
+
+        Assert.Contains("data-state=\"open\"", await renderer.Dispatcher.InvokeAsync(Html), StringComparison.Ordinal);
+        Assert.DoesNotContain("inert", await renderer.Dispatcher.InvokeAsync(Html), StringComparison.Ordinal);
+
+        // 關閉：面板留在畫面上走離場、不能再操作；過渡跑完才真的拿掉。
+        state.Open = false;
+        await renderer.Dispatcher.InvokeAsync(state.Refresh);
+        var closing = await renderer.Dispatcher.InvokeAsync(Html);
+        Assert.Contains("data-state=\"closing\"", closing, StringComparison.Ordinal);
+        Assert.Contains("inert", closing, StringComparison.Ordinal);
+        Assert.Contains("廢棄物清理法 第 28 條", closing, StringComparison.Ordinal);
+
+        await Task.Delay(exitWait, TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("ep-drawer-panel", await renderer.Dispatcher.InvokeAsync(Html), StringComparison.Ordinal);
+
+        // 再開，離場途中又被開啟：掉頭回到開啟，等超過離場時間也不會被舊的計時拿掉。
+        state.Open = true;
+        await renderer.Dispatcher.InvokeAsync(state.Refresh);
+        state.Open = false;
+        await renderer.Dispatcher.InvokeAsync(state.Refresh);
+        state.Open = true;
+        await renderer.Dispatcher.InvokeAsync(state.Refresh);
+        await Task.Delay(exitWait, TestContext.Current.CancellationToken);
+        var reopened = await renderer.Dispatcher.InvokeAsync(Html);
+        Assert.Contains("data-state=\"open\"", reopened, StringComparison.Ordinal);
+        Assert.DoesNotContain("inert", reopened, StringComparison.Ordinal);
+    }
+
+    private sealed class DrawerHostState
+    {
+        public bool Open { get; set; } = true;
+
+        public Func<Task> Refresh { get; set; } = () => Task.CompletedTask;
+    }
+
+    private sealed class DrawerHost : ComponentBase
+    {
+        [Parameter, EditorRequired]
+        public DrawerHostState State { get; set; } = null!;
+
+        protected override void OnInitialized() => State.Refresh = () => InvokeAsync(StateHasChanged);
+
+        protected override void BuildRenderTree(RenderTreeBuilder builder)
+        {
+            builder.OpenComponent<CitationDrawer>(0);
+            builder.AddComponentParameter(1, nameof(CitationDrawer.IsOpen), State.Open);
+            builder.AddComponentParameter(2, nameof(CitationDrawer.Title), "廢棄物清理法 第 28 條");
+            builder.AddComponentParameter(3, nameof(CitationDrawer.Content), "條文內容");
+            builder.CloseComponent();
+        }
     }
 
     private sealed class EchoLocalizer : IStringLocalizer<Ui>
