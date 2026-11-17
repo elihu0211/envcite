@@ -309,7 +309,6 @@ def _result(
 
 def main() -> None:
     """`canon judgment sync`：讀密鑰檔，在服務時段取異動。"""
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="canon judgment")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("sync", help="取裁判書異動清單與全文（每日 0 時至 6 時）")

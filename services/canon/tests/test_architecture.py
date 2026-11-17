@@ -80,6 +80,33 @@ def test_logic_takes_today_instead_of_reading_the_clock() -> None:
     assert not reads, f"直接讀系統時鐘：{reads}。改收注入的 `clock.Today`（預設 `date.today`）。"
 
 
+#: 設定日誌的地方：分派器統一設定，長駐的伺服器另需帶記錄器名稱的格式。
+LOGGING_CONFIGURERS = {"cli.py", "server.py"}
+
+
+def _configures_logging(path: Path) -> bool:
+    return any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "basicConfig"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "logging"
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+    )
+
+
+def test_logging_is_configured_where_the_process_starts_and_nowhere_else() -> None:
+    """子指令各自 `basicConfig` 會讓格式各寫一份；改格式要動十幾個檔，也容易漏。"""
+    scattered = [
+        rel
+        for path in _modules()
+        if (rel := path.relative_to(SRC).as_posix()) not in LOGGING_CONFIGURERS
+        and _configures_logging(path)
+    ]
+
+    assert not scattered, f"在入口以外設定日誌：{scattered}。日誌由 `cli.main` 統一設定。"
+
+
 def _imported_sources(path: Path) -> set[str]:
     """這個檔案匯入的來源子包代號。"""
     found: set[str] = set()

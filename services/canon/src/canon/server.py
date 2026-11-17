@@ -112,7 +112,12 @@ def main() -> None:
 
     收到 SIGTERM 時先排空進行中的呼叫再結束。
     """
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    # 長駐的伺服器多記錄器名稱；`force` 取代分派器已設的格式。
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        force=True,
+    )
     settings = load(ServerSettings)
     store = CanonStore.from_dsn(settings.dsn)
 

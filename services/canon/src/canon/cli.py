@@ -5,8 +5,12 @@
 """
 
 import importlib
+import logging
 import sys
 from collections.abc import Callable, Sequence
+
+#: 日誌格式是與日誌管線的契約，在這裡設定一次；子指令不再各自設定。
+LOG_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 
 #: 子指令 → （模組，一句話說明）。新增入口在此登記。
 SUBCOMMANDS: dict[str, tuple[str, str]] = {
@@ -47,6 +51,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(f"canon: 沒有子指令 {name!r}\n\n{_usage()}", file=sys.stderr)
         raise SystemExit(EXIT_USAGE)
     module, _ = SUBCOMMANDS[name]
+    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
     sys.argv = [f"canon {name}", *rest]
     entry: Callable[[], None] = importlib.import_module(module).main
     entry()

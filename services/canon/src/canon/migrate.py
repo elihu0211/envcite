@@ -78,7 +78,6 @@ def main() -> None:
 
     from canon.settings import DatabaseSettings, load
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     settings = load(DatabaseSettings)
 
     with psycopg.connect(settings.dsn) as conn:
