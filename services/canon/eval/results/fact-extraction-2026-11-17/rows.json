@@ -26,8 +26,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5915,
+   "got": 0.5671
   }
  },
  {
@@ -45,8 +45,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5913,
+   "got": 0.6585
   }
  },
  {
@@ -87,11 +87,15 @@
    "location_in_protection_zone_or_intake_area",
    "pollution_behavior"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "105": "compliant"
+  },
+  "got_verdicts": {
+   "105": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6475,
+   "got": 0.5803
   }
  },
  {
@@ -106,11 +110,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "105": "undetermined"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.612,
+   "got": 0.5774
   }
  },
  {
@@ -140,11 +146,15 @@
   "unsupported": [
    "pollution_behavior"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "105": "not_applicable"
+  },
+  "got_verdicts": {
+   "105": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.568,
+   "got": 0.5635
   }
  },
  {
@@ -174,11 +184,15 @@
   "unsupported": [
    "obstruction_action"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "151": "violation"
+  },
+  "got_verdicts": {
+   "151": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6183,
+   "got": 0.5842
   }
  },
  {
@@ -205,11 +219,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "151": "undetermined"
+  },
+  "got_verdicts": {
+   "151": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5945,
+   "got": 0.5633
   }
  },
  {
@@ -239,11 +257,15 @@
   "unsupported": [
    "obstruction_action"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "151": "not_applicable"
+  },
+  "got_verdicts": {
+   "151": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5897,
+   "got": 0.5723
   }
  },
  {
@@ -286,8 +308,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5772,
+   "got": 0.5641
   }
  },
  {
@@ -305,8 +327,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5896,
+   "got": 0.5766
   }
  },
  {
@@ -347,8 +369,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5988,
+   "got": 0.5843
   }
  },
  {
@@ -400,10 +422,12 @@
    "water_quality_affected"
   ],
   "gold_verdicts": {},
-  "got_verdicts": {},
+  "got_verdicts": {
+   "105": "not_applicable"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5791,
+   "got": 0.616
   }
  },
  {
@@ -433,8 +457,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5846,
+   "got": 0.5768
   }
  },
  {
@@ -477,8 +501,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5759,
+   "got": 0.5603
   }
  },
  {
@@ -506,11 +530,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "224": "compliant"
+  },
+  "got_verdicts": {
+   "224": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.581,
+   "got": 0.5685
   }
  },
  {
@@ -550,11 +578,15 @@
    "obtain_permit_before_operation",
    "inspection_determination_agency"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "224": "undetermined"
+  },
+  "got_verdicts": {
+   "224": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5799,
+   "got": 0.5723
   }
  },
  {
@@ -582,11 +614,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "224": "not_applicable"
+  },
+  "got_verdicts": {
+   "224": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5896,
+   "got": 0.578
   }
  },
  {
@@ -602,11 +638,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "232": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5756,
+   "got": 0.585
   }
  },
  {
@@ -633,11 +671,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "232": "undetermined"
+  },
+  "got_verdicts": {
+   "232": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6007,
+   "got": 0.6027
   }
  },
  {
@@ -675,11 +717,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "232": "violation"
+  },
+  "got_verdicts": {
+   "232": "violation"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6285,
+   "got": 0.5849
   }
  },
  {
@@ -707,11 +753,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "233": "compliant"
+  },
+  "got_verdicts": {
+   "233": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6313,
+   "got": 0.5799
   }
  },
  {
@@ -740,11 +790,15 @@
   "unsupported": [
    "報告義務"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "233": "undetermined"
+  },
+  "got_verdicts": {
+   "233": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5964,
+   "got": 0.578
   }
  },
  {
@@ -774,11 +828,15 @@
   "unsupported": [
    "報告義務"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "233": "violation"
+  },
+  "got_verdicts": {
+   "233": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5725,
+   "got": 0.5942
   }
  },
  {
@@ -807,11 +865,15 @@
   "unsupported": [
    "obstruction_action"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "237": "compliant"
+  },
+  "got_verdicts": {
+   "151": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6288,
+   "got": 0.5983
   }
  },
  {
@@ -838,11 +900,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "237": "violation"
+  },
+  "got_verdicts": {
+   "151": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5935,
+   "got": 0.5947
   }
  },
  {
@@ -886,8 +952,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5647,
+   "got": 0.5624
   }
  },
  {
@@ -906,8 +972,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5639,
+   "got": 0.5671
   }
  },
  {
@@ -945,11 +1011,16 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "289": "compliant"
+  },
+  "got_verdicts": {
+   "289": "undetermined",
+   "585": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5581,
+   "got": 0.5777
   }
  },
  {
@@ -976,11 +1047,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "289": "undetermined"
+  },
+  "got_verdicts": {
+   "289": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5693,
+   "got": 0.6009
   }
  },
  {
@@ -1018,11 +1093,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "289": "not_applicable"
+  },
+  "got_verdicts": {
+   "585": "not_applicable"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5755,
+   "got": 0.5659
   }
  },
  {
@@ -1062,11 +1141,15 @@
   "unsupported": [
    "establishment_or_change"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "339": "compliant"
+  },
+  "got_verdicts": {
+   "339": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5693,
+   "got": 0.556
   }
  },
  {
@@ -1106,11 +1189,16 @@
    "establishment_or_change",
    "submit_plan"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "339": "undetermined"
+  },
+  "got_verdicts": {
+   "339": "undetermined",
+   "635": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5628,
+   "got": 0.5684
   }
  },
  {
@@ -1151,11 +1239,15 @@
    "establishment_or_change",
    "submit_for_review"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "339": "not_applicable"
+  },
+  "got_verdicts": {
+   "339": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5575,
+   "got": 0.5726
   }
  },
  {
@@ -1193,11 +1285,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "344": "compliant"
+  },
+  "got_verdicts": {
+   "344": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5666,
+   "got": 0.5692
   }
  },
  {
@@ -1224,11 +1320,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "344": "undetermined"
+  },
+  "got_verdicts": {
+   "344": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5685,
+   "got": 0.5652
   }
  },
  {
@@ -1266,11 +1366,16 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "344": "violation"
+  },
+  "got_verdicts": {
+   "339": "undetermined",
+   "344": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5693,
+   "got": 0.5738
   }
  },
  {
@@ -1286,11 +1391,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "350": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5652,
+   "got": 0.6119
   }
  },
  {
@@ -1305,11 +1412,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "350": "undetermined"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5923,
+   "got": 0.5922
   }
  },
  {
@@ -1325,11 +1434,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "350": "violation"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6125,
+   "got": 0.6093
   }
  },
  {
@@ -1355,8 +1466,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6014,
+   "got": 0.6187
   }
  },
  {
@@ -1396,11 +1507,15 @@
   "unsupported": [
    "wastewater_retention_dilution_permit"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "375": "compliant"
+  },
+  "got_verdicts": {
+   "375": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5968,
+   "got": 0.577
   }
  },
  {
@@ -1427,11 +1542,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "375": "undetermined"
+  },
+  "got_verdicts": {
+   "375": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5785,
+   "got": 0.5656
   }
  },
  {
@@ -1471,11 +1590,15 @@
   "unsupported": [
    "wastewater_retention_dilution_permit"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "375": "violation"
+  },
+  "got_verdicts": {
+   "375": "violation"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6023,
+   "got": 0.5827
   }
  },
  {
@@ -1505,8 +1628,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5774,
+   "got": 0.5711
   }
  },
  {
@@ -1536,8 +1659,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5838,
+   "got": 0.5746
   }
  },
  {
@@ -1577,11 +1700,15 @@
   "unsupported": [
    "equipment_leakage_risk"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "401": "compliant"
+  },
+  "got_verdicts": {
+   "401": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6011,
+   "got": 0.6063
   }
  },
  {
@@ -1618,11 +1745,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "401": "undetermined"
+  },
+  "got_verdicts": {
+   "401": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5764,
+   "got": 0.5892
   }
  },
  {
@@ -1660,11 +1791,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "401": "not_applicable"
+  },
+  "got_verdicts": {
+   "401": "not_applicable"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5782,
+   "got": 0.573
   }
  },
  {
@@ -1690,8 +1825,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5755,
+   "got": 0.5642
   }
  },
  {
@@ -1734,8 +1869,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5863,
+   "got": 0.5749
   }
  },
  {
@@ -1774,8 +1909,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5847,
+   "got": 0.5635
   }
  },
  {
@@ -1806,8 +1941,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5685,
+   "got": 0.5686
   }
  },
  {
@@ -1825,8 +1960,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5629,
+   "got": 0.6113
   }
  },
  {
@@ -1844,8 +1979,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5726,
+   "got": 0.5512
   }
  },
  {
@@ -1863,8 +1998,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5825,
+   "got": 0.5733
   }
  },
  {
@@ -1882,8 +2017,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5653,
+   "got": 0.5627
   }
  },
  {
@@ -1901,8 +2036,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5753,
+   "got": 0.571
   }
  },
  {
@@ -1953,10 +2088,13 @@
    "obstruction_action"
   ],
   "gold_verdicts": {},
-  "got_verdicts": {},
+  "got_verdicts": {
+   "151": "undetermined",
+   "585": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5736,
+   "got": 0.5655
   }
  },
  {
@@ -1986,8 +2124,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5729,
+   "got": 0.5675
   }
  },
  {
@@ -2005,8 +2143,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.572,
+   "got": 0.5798
   }
  },
  {
@@ -2044,11 +2182,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "585": "compliant"
+  },
+  "got_verdicts": {
+   "289": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6033,
+   "got": 0.5771
   }
  },
  {
@@ -2085,11 +2227,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "585": "undetermined"
+  },
+  "got_verdicts": {
+   "289": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5767,
+   "got": 0.5834
   }
  },
  {
@@ -2127,11 +2273,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "585": "violation"
+  },
+  "got_verdicts": {
+   "585": "violation"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.576,
+   "got": 0.5761
   }
  },
  {
@@ -2171,11 +2321,16 @@
   "unsupported": [
    "establishment_or_change"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "635": "compliant"
+  },
+  "got_verdicts": {
+   "339": "undetermined",
+   "635": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5869,
+   "got": 0.6048
   }
  },
  {
@@ -2215,11 +2370,16 @@
    "establishment_or_change",
    "submit_plan"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "635": "undetermined"
+  },
+  "got_verdicts": {
+   "339": "undetermined",
+   "635": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5608,
+   "got": 0.5759
   }
  },
  {
@@ -2257,11 +2417,16 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "635": "not_applicable"
+  },
+  "got_verdicts": {
+   "339": "not_applicable",
+   "635": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.574,
+   "got": 0.5672
   }
  },
  {
@@ -2292,8 +2457,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5809,
+   "got": 0.5724
   }
  },
  {
@@ -2325,8 +2490,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5719,
+   "got": 0.5717
   }
  },
  {
@@ -2367,8 +2532,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5728,
+   "got": 0.5807
   }
  },
  {
@@ -2395,11 +2560,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "665": "compliant"
+  },
+  "got_verdicts": {
+   "665": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5742,
+   "got": 0.6173
   }
  },
  {
@@ -2426,11 +2595,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "665": "violation"
+  },
+  "got_verdicts": {
+   "665": "violation"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.584,
+   "got": 0.602
   }
  },
  {
@@ -2456,8 +2629,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6035,
+   "got": 0.6282
   }
  },
  {
@@ -2484,11 +2657,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "708": "violation"
+  },
+  "got_verdicts": {
+   "708": "violation"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6445,
+   "got": 0.7147
   }
  },
  {
@@ -2515,11 +2692,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "708": "compliant"
+  },
+  "got_verdicts": {
+   "708": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6878,
+   "got": 0.6235
   }
  },
  {
@@ -2569,11 +2750,16 @@
   "unsupported": [
    "直轄市縣市主管機關"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "728": "compliant"
+  },
+  "got_verdicts": {
+   "233": "undetermined",
+   "728": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6129,
+   "got": 0.6307
   }
  },
  {
@@ -2600,11 +2786,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "728": "undetermined"
+  },
+  "got_verdicts": {
+   "728": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6412,
+   "got": 0.6217
   }
  },
  {
@@ -2642,11 +2832,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "728": "violation"
+  },
+  "got_verdicts": {
+   "728": "violation"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5992,
+   "got": 0.6494
   }
  },
  {
@@ -2684,11 +2878,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "806": "compliant"
+  },
+  "got_verdicts": {
+   "806": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6017,
+   "got": 0.5725
   }
  },
  {
@@ -2715,11 +2913,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "806": "undetermined"
+  },
+  "got_verdicts": {
+   "806": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5725,
+   "got": 0.5742
   }
  },
  {
@@ -2757,11 +2959,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "806": "not_applicable"
+  },
+  "got_verdicts": {
+   "806": "not_applicable"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5783,
+   "got": 0.5725
   }
  },
  {
@@ -2788,11 +2994,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "807": "compliant"
+  },
+  "got_verdicts": {
+   "807": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5926,
+   "got": 0.5683
   }
  },
  {
@@ -2819,11 +3029,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "807": "not_applicable"
+  },
+  "got_verdicts": {
+   "807": "not_applicable"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6137,
+   "got": 0.5774
   }
  },
  {
@@ -2853,8 +3067,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5749,
+   "got": 0.5766
   }
  },
  {
@@ -2872,8 +3086,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5903,
+   "got": 0.5811
   }
  },
  {
@@ -2891,8 +3105,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.572,
+   "got": 0.5715
   }
  },
  {
@@ -2910,8 +3124,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5757,
+   "got": 0.5778
   }
  },
  {
@@ -2971,11 +3185,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "105": "compliant"
+  },
+  "got_verdicts": {
+   "105": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6594,
+   "got": 0.6316
   }
  },
  {
@@ -2992,11 +3210,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "344": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6258,
+   "got": 0.6152
   }
  },
  {
@@ -3013,11 +3233,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "350": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6139,
+   "got": 0.6333
   }
  },
  {
@@ -3035,11 +3257,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "350": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6134,
+   "got": 0.6155
   }
  },
  {
@@ -3079,11 +3303,15 @@
   "unsupported": [
    "use_toxic_chemicals_to_kill_aquatic_organisms"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "708": "violation"
+  },
+  "got_verdicts": {
+   "708": "violation"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6271,
+   "got": 0.6057
   }
  },
  {
@@ -3135,8 +3363,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.605,
+   "got": 0.6011
   }
  },
  {
@@ -3169,8 +3397,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.646,
+   "got": 0.5992
   }
  },
  {
@@ -3187,11 +3415,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "728": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6063,
+   "got": 0.6158
   }
  },
  {
@@ -3232,11 +3462,17 @@
   "unsupported": [
    "reporting_wastewater_treatment_status"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "233": "compliant",
+   "807": "compliant"
+  },
+  "got_verdicts": {
+   "375": "undetermined",
+   "807": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.599,
+   "got": 0.5917
   }
  },
  {
@@ -3254,11 +3490,14 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "635": "compliant",
+   "728": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5841,
+   "got": 0.6009
   }
  },
  {
@@ -3275,11 +3514,14 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "237": "compliant",
+   "339": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5875,
+   "got": 0.5947
   }
  },
  {
@@ -3299,8 +3541,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6288,
+   "got": 0.5946
   }
  },
  {
@@ -3316,11 +3558,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "237": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6034,
+   "got": 0.6139
   }
  },
  {
@@ -3382,11 +3626,17 @@
   "unsupported": [
    "wastewater_retention_dilution_permit"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "289": "compliant",
+   "375": "compliant"
+  },
+  "got_verdicts": {
+   "375": "compliant",
+   "585": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6117,
+   "got": 0.5983
   }
  },
  {
@@ -3447,11 +3697,16 @@
   "unsupported": [
    "precast_sewage_treatment_facility"
   ],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "344": "compliant"
+  },
+  "got_verdicts": {
+   "339": "compliant",
+   "344": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5966,
+   "got": 0.6148
   }
  },
  {
@@ -3468,11 +3723,14 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "232": "compliant",
+   "237": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6107,
+   "got": 0.5704
   }
  },
  {
@@ -3490,11 +3748,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "224": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5723,
+   "got": 0.5833
   }
  },
  {
@@ -3511,11 +3771,14 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "233": "compliant",
+   "237": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5734,
+   "got": 0.5884
   }
  },
  {
@@ -3564,11 +3827,17 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "339": "compliant",
+   "807": "compliant"
+  },
+  "got_verdicts": {
+   "339": "compliant",
+   "807": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5814,
+   "got": 0.5862
   }
  },
  {
@@ -3607,11 +3876,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "233": "compliant"
+  },
+  "got_verdicts": {
+   "233": "undetermined"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5819,
+   "got": 0.6021
   }
  },
  {
@@ -3629,11 +3902,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "289": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6019,
+   "got": 0.5929
   }
  },
  {
@@ -3653,8 +3928,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5771,
+   "got": 0.6552
   }
  },
  {
@@ -3672,11 +3947,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "289": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6265,
+   "got": 0.6803
   }
  },
  {
@@ -3730,8 +4007,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.621,
+   "got": 0.6125
   }
  },
  {
@@ -3748,11 +4025,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "806": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6003,
+   "got": 0.6185
   }
  },
  {
@@ -3770,11 +4049,14 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "233": "compliant",
+   "585": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6075,
+   "got": 0.605
   }
  },
  {
@@ -3792,11 +4074,14 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "289": "compliant",
+   "635": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6211,
+   "got": 0.6308
   }
  },
  {
@@ -3813,11 +4098,13 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "807": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6162,
+   "got": 0.6322
   }
  },
  {
@@ -3835,11 +4122,14 @@
   "kept_facts": [],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "350": "compliant",
+   "806": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6269,
+   "got": 0.6235
   }
  },
  {
@@ -3880,8 +4170,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.618,
+   "got": 0.6199
   }
  },
  {
@@ -3910,11 +4200,13 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
+  "gold_verdicts": {
+   "585": "compliant"
+  },
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6246,
+   "got": 0.6155
   }
  },
  {
@@ -3963,11 +4255,17 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "344": "compliant",
+   "665": "compliant"
+  },
+  "got_verdicts": {
+   "344": "compliant",
+   "665": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6177,
+   "got": 0.6206
   }
  },
  {
@@ -4005,11 +4303,15 @@
   ],
   "rejected": {},
   "unsupported": [],
-  "gold_verdicts": {},
-  "got_verdicts": {},
+  "gold_verdicts": {
+   "665": "compliant"
+  },
+  "got_verdicts": {
+   "665": "compliant"
+  },
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6133,
+   "got": 0.6214
   }
  },
  {
@@ -4042,8 +4344,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6355,
+   "got": 0.6111
   }
  },
  {
@@ -4084,8 +4386,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.619,
+   "got": 0.618
   }
  },
  {
@@ -4101,8 +4403,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6339,
+   "got": 0.6283
   }
  },
  {
@@ -4118,8 +4420,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6344,
+   "got": 0.6297
   }
  },
  {
@@ -4135,8 +4437,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6268,
+   "got": 0.6329
   }
  },
  {
@@ -4152,8 +4454,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6419,
+   "got": 0.6259
   }
  },
  {
@@ -4169,8 +4471,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.612,
+   "got": 0.6427
   }
  },
  {
@@ -4186,8 +4488,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6268,
+   "got": 0.6364
   }
  },
  {
@@ -4203,8 +4505,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6142,
+   "got": 0.6154
   }
  },
  {
@@ -4220,8 +4522,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.611,
+   "got": 0.6088
   }
  },
  {
@@ -4237,8 +4539,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.7086,
+   "got": 0.6259
   }
  },
  {
@@ -4254,8 +4556,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6595,
+   "got": 0.6642
   }
  },
  {
@@ -4271,8 +4573,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6302,
+   "got": 0.6406
   }
  },
  {
@@ -4288,8 +4590,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6509,
+   "got": 0.6164
   }
  },
  {
@@ -4305,8 +4607,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6292,
+   "got": 0.5836
   }
  },
  {
@@ -4322,8 +4624,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5813,
+   "got": 0.5876
   }
  },
  {
@@ -4339,8 +4641,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5789,
+   "got": 0.5985
   }
  },
  {
@@ -4356,8 +4658,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6127,
+   "got": 0.6101
   }
  },
  {
@@ -4373,8 +4675,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6314,
+   "got": 0.6483
   }
  },
  {
@@ -4390,8 +4692,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6341,
+   "got": 0.5844
   }
  },
  {
@@ -4407,8 +4709,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.5971,
+   "got": 0.578
   }
  },
  {
@@ -4424,8 +4726,8 @@
   "gold_verdicts": {},
   "got_verdicts": {},
   "seconds": {
-   "gold": 0.0,
-   "got": 0.0
+   "gold": 0.6255,
+   "got": 0.5744
   }
  }
 ]

@@ -14,9 +14,9 @@
   "unsupported_by_verifier": 39
  },
  "downstream_same_verdicts": {
-  "reasoner_ran": false,
-  "scored": 0,
-  "same": 0
+  "reasoner_ran": true,
+  "scored": 121,
+  "same": 71
  },
  "by_variant": {
   "combined": {
@@ -53,7 +53,8 @@
    "verbatim_facts": 0,
    "gold_facts": 0,
    "with_any_fact": 0,
-   "exact": 20
+   "exact": 20,
+   "verdict_entries_if_run_anyway": 0
   },
   "partial": {
    "unsupported_facts": 9,
@@ -64,5 +65,7 @@
    "with_any_fact": 16,
    "exact": 11
   }
- }
+ },
+ "reasoner_code_commit": "d5bb34f",
+ "reasoner_note": "開發資料庫的綱要停在遷移合併基線之前，推理機以與該綱要相符的舊版程式（d5bb34f）執行；不改共用資料庫。抽取結果與快取同上一次。"
 }
