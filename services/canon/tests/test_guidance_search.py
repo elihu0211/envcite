@@ -7,6 +7,7 @@ from typing import Any, NamedTuple
 import grpc
 import pytest
 
+from canon import violation
 from canon.db import Conn, fetch
 from canon.guidance_search import EXTRA, fuse, guidance_phrases
 from canon.law.guidance import load
@@ -17,6 +18,7 @@ from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
 from tests.conftest import call_metadata
 from tests.test_annotation import LAW
 from tests.test_guidance import _doc, _letter
+from tests.test_incremental import _articles as law_articles
 from tests.test_incremental import _first, _law_v1
 from tests.test_reasoning_transition import _amended
 
@@ -54,6 +56,81 @@ def test_a_letter_naming_the_phrase_brings_out_the_article_it_interprets(
     assert _articles(conn, [PHRASE]) == [("1", 2)]  # 兩件函釋提到、都解釋第 1 條
     assert _articles(conn, ["不相干的詞"]) == []
     assert _articles(conn, []) == []
+
+
+def test_an_interpreted_duty_brings_its_sanction_chain_with_no_letter_count(
+    conn: Conn, tmp_path: Path
+) -> None:
+    """函釋解釋義務條：處罰它的條與處罰的處罰跟著出來，與混合檢索命中義務條時同一份展開。
+    處罰條沒有函釋提到它，件數為 0；次序緊跟在來源之後。"""
+    _first(
+        conn,
+        tmp_path,
+        _law_v1(
+            LawArticles=law_articles(
+                "甲一",
+                "違反第一條規定者，處新臺幣一萬元以上罰鍰。\r\n依前項處罰者，得令其停止作為。",
+                "不遵行主管機關依第二條第二項所為停止作為之命令者，處一年以下有期徒刑。",
+                "無關的條文",
+            )
+        ),
+    )
+    violation.extract(conn)
+    load(conn, _doc(_burning("甲字第1號", "2019-03-01")))
+    conn.commit()
+
+    rows = fetch(
+        conn,
+        "SELECT corpus.article_number(g.path), g.documents"
+        "  FROM retrieval.guidance_articles(%s, %s, 'zho', 10, 0) AS g",
+        ([PHRASE], ON),
+        _Article,
+    )
+
+    assert rows == [("1", 1), ("2", 0), ("3", 0)]  # 義務、罰鍰、不遵行命令的刑責；第 4 條不相干
+
+
+def test_an_article_that_is_both_interpreted_and_a_sanction_keeps_its_letter_count(
+    conn: Conn, tmp_path: Path
+) -> None:
+    _first(
+        conn,
+        tmp_path,
+        _law_v1(LawArticles=law_articles("甲一", "違反第一條規定者，處新臺幣一萬元以上罰鍰。")),
+    )
+    violation.extract(conn)
+    # 兩件函釋各解釋第 1 條與第 2 條（第 2 條的原文是處罰句，同時是第 1 條的處罰條）
+    load(
+        conn,
+        _doc(
+            _burning("甲字第1號", "2019-03-01"),
+            _burning(
+                "甲字第2號",
+                "2019-04-01",
+                interprets=[
+                    {
+                        "law": LAW,
+                        "path": "art_2",
+                        "text": "違反第一條規定者，處新臺幣一萬元以上罰鍰。",
+                    }
+                ],
+            ),
+        ),
+    )
+    conn.commit()
+
+    rows = fetch(
+        conn,
+        "SELECT corpus.article_number(g.path), g.documents"
+        "  FROM retrieval.guidance_articles(%s, %s, 'zho', 10, 0) AS g",
+        ([PHRASE], ON),
+        _Article,
+    )
+
+    assert sorted(rows) == [
+        ("1", 1),
+        ("2", 1),
+    ]  # 第 2 條是處罰條、也被函釋直接解釋：件數不被展開蓋成 0
 
 
 def test_every_phrase_must_appear_in_the_letter(conn: Conn, tmp_path: Path) -> None:
