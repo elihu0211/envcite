@@ -268,14 +268,9 @@ public sealed class LegalArticleFormatterTests
     }
 
     [Fact]
-    public async Task CitationDrawerRendersAppleSourceSwitcherAndCopyableIriFooter()
+    public async Task CitationDrawerShowsOnlyItsOwnSourceAndHasACopyableIriFooter()
     {
-        IReadOnlyList<AnswerSource> sources =
-        [
-            new("L1", "廢棄物清理法 第 28 條", "https://envcite/tw/law/00050001/2017-06-14/zho/art_28", "事業廢棄物清理規定"),
-            new("L6", "營建廢棄物共同清除處理機構管理辦法 第 12 條", "https://envcite/tw/order/O0050012/2020-01-01/zho/art_12", "共同清除處理機構"),
-            new("L2", "事業委託清理之相當注意義務認定準則 第 5 條", "https://envcite/tw/order/O0050099/2021-01-01/zho/art_5", "相當注意義務"),
-        ];
+        AnswerSource source = new("L1", "廢棄物清理法 第 28 條", "https://envcite/tw/law/00050001/2017-06-14/zho/art_28", "事業廢棄物清理規定");
 
         var localizer = new EchoLocalizer();
         var services = new ServiceCollection()
@@ -291,9 +286,8 @@ public sealed class LegalArticleFormatterTests
                 [nameof(CitationDrawer.IsOpen)] = true,
                 [nameof(CitationDrawer.Code)] = "L1",
                 [nameof(CitationDrawer.Title)] = "廢棄物清理法 第 28 條",
-                [nameof(CitationDrawer.Uri)] = sources[0].Uri,
-                [nameof(CitationDrawer.Content)] = sources[0].Text,
-                [nameof(CitationDrawer.Sources)] = sources,
+                [nameof(CitationDrawer.Uri)] = source.Uri,
+                [nameof(CitationDrawer.Content)] = source.Text,
                 [nameof(CitationDrawer.OnAskFollowUp)] = Microsoft.AspNetCore.Components.EventCallback.Factory.Create<string>(this, _ => Task.CompletedTask),
             });
             var output = await renderer.RenderComponentAsync<CitationDrawer>(parameters);
@@ -301,16 +295,16 @@ public sealed class LegalArticleFormatterTests
         });
         var markup = WebUtility.HtmlDecode(rawMarkup);
 
-        Assert.Contains("引用法源切換", markup, StringComparison.Ordinal);
-        Assert.Contains("第 1 / 3 筆", markup, StringComparison.Ordinal);
-        Assert.Matches(@"class=""ep-drawer-step-btn""[^>]*disabled[^>]*aria-label=""上一筆引用法源""", markup);
-        Assert.Matches(@"class=""ep-drawer-step-btn""[^>]*aria-label=""下一筆引用法源""", markup);
-        Assert.Contains("data-drawer-sources-track", markup, StringComparison.Ordinal);
+        // 抽屜只呈現被點開的這一條：沒有切到同一回合其他法源的軌道、計數與前後步進鈕。
+        Assert.DoesNotContain("ep-drawer-sources", markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-drawer-source-pill", markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep-drawer-step-btn", markup, StringComparison.Ordinal);
+        Assert.DoesNotContain("引用法源切換", markup, StringComparison.Ordinal);
         Assert.Contains("條文唯一索引碼（IRI）", markup, StringComparison.Ordinal);
         Assert.Contains("固定標記此版本條文，供稽核比對或 API 引用", markup, StringComparison.Ordinal);
         Assert.Contains("ep-drawer-iri-btn", markup, StringComparison.Ordinal);
         Assert.Contains("data-copy-target=\"ep-drawer-iri-value\"", markup, StringComparison.Ordinal);
-        Assert.Contains(sources[0].Uri, markup, StringComparison.Ordinal);
+        Assert.Contains(source.Uri, markup, StringComparison.Ordinal);
         Assert.Contains("針對本條追問", markup, StringComparison.Ordinal);
     }
 

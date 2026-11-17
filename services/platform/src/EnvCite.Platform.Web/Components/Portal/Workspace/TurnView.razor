@@ -125,7 +125,7 @@
         _copyText = string.IsNullOrWhiteSpace(Turn.CopyText) ? null : Turn.CopyText;
     }
 
-    private Task OpenAsync(AnswerSource source) => OnOpenSource.InvokeAsync(new SourceRequest(source, Turn.AsOfLabel, _sources));
+    private Task OpenAsync(AnswerSource source) => OnOpenSource.InvokeAsync(new SourceRequest(source, Turn.AsOfLabel));
 
     /// <summary>等結果時說明進行到哪一步：找到幾條法源、正在寫、正在核對出處。搜尋沒有步驟，維持「正在查找法源」。</summary>
     private string PendingText => Turn.Progress switch

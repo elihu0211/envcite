@@ -794,8 +794,8 @@
             return;
         }
 
-        // 內容自己要橫向捲動或選取的地方（法源軌道、表格、程式碼、輸入）不接手。
-        if (event.target.closest("[data-drawer-sources-track], table, pre, input, textarea, select, [contenteditable]")) {
+        // 內容自己要橫向捲動或選取的地方（表格、程式碼、輸入）不接手。
+        if (event.target.closest("table, pre, input, textarea, select, [contenteditable]")) {
             return;
         }
 
@@ -1111,51 +1111,6 @@
             confirmCopy(button, box.querySelector("[data-recovery-status]"));
         }
     });
-
-    // ---- 法條抽屜頂部引用軌道：將選中的法條平滑置中，支援垂直滾輪轉橫向捲動 ------------------------------
-    let activeDrawerPill = null;
-    let drawerSyncFrame = 0;
-
-    const syncDrawerSourcesTrack = () => {
-        drawerSyncFrame = 0;
-        const track = document.querySelector("[data-drawer-sources-track]");
-        if (!track) {
-            activeDrawerPill = null;
-            return;
-        }
-
-        const pill = track.querySelector(".ep-drawer-source-pill.is-active");
-        if (pill && pill !== activeDrawerPill) {
-            activeDrawerPill = pill;
-            const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-            pill.scrollIntoView({ behavior, block: "nearest", inline: "center" });
-        }
-    };
-
-    const scheduleDrawerSync = () => {
-        if (!drawerSyncFrame && document.querySelector("[data-drawer-sources-track]")) {
-            drawerSyncFrame = requestAnimationFrame(syncDrawerSourcesTrack);
-        }
-    };
-
-    new MutationObserver(scheduleDrawerSync).observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ["class", "aria-current"],
-    });
-
-    document.addEventListener("wheel", (event) => {
-        const track = event.target.closest?.("[data-drawer-sources-track]");
-        if (!track || event.ctrlKey || track.scrollWidth <= track.clientWidth) {
-            return;
-        }
-
-        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-            track.scrollLeft += event.deltaY;
-            event.preventDefault();
-        }
-    }, { passive: false });
 
     // ---- 大頭貼裁切（Cropper.js v2 Web Components 漸進增強；無 JS 時原生 multipart POST 仍由伺服器置中裁切） ----
     const cropperSrc = document.currentScript?.dataset?.cropperSrc || "/_content/EnvCite.Platform.Web/design/cropper.min.js";

@@ -47,57 +47,6 @@
             </button>
         </header>
 
-        @if (Sources.Count > 1)
-        {
-            var activeIndex = FindActiveSourceIndex(effectiveUri);
-            var hasPrev = activeIndex > 0;
-            var hasNext = activeIndex >= 0 && activeIndex < Sources.Count - 1;
-            <nav class="ep-drawer-sources" aria-label="@L["切換引用法條"]">
-                <div class="ep-drawer-sources-head">
-                    <div class="ep-drawer-sources-meta">
-                        <span class="ep-drawer-sources-heading">@L["引用法源切換"]</span>
-                        <span class="ep-drawer-sources-count" aria-live="polite">
-                            @(activeIndex >= 0
-                                ? L["第 {0} / {1} 筆", activeIndex + 1, Sources.Count]
-                                : L["共 {0} 筆", Sources.Count])
-                        </span>
-                    </div>
-                    <div class="ep-drawer-source-steppers">
-                        <button type="button"
-                                class="ep-drawer-step-btn"
-                                disabled="@(!hasPrev)"
-                                aria-label="@L["上一筆引用法源"]"
-                                title="@L["上一筆引用法源"]"
-                                @onclick="() => StepSourceAsync(activeIndex - 1)">
-                            <span aria-hidden="true">‹</span>
-                        </button>
-                        <button type="button"
-                                class="ep-drawer-step-btn"
-                                disabled="@(!hasNext)"
-                                aria-label="@L["下一筆引用法源"]"
-                                title="@L["下一筆引用法源"]"
-                                @onclick="() => StepSourceAsync(activeIndex + 1)">
-                            <span aria-hidden="true">›</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="ep-drawer-sources-track" data-drawer-sources-track>
-                    @foreach (var src in Sources)
-                    {
-                        var isCurrent = IsCurrentSource(src, effectiveUri);
-                        <button type="button"
-                                class="ep-drawer-source-pill @(isCurrent ? "is-active" : string.Empty)"
-                                aria-current="@(isCurrent ? "true" : null)"
-                                title="@src.Citation"
-                                @onclick="() => OnSelectSource.InvokeAsync(src)">
-                            <span class="ep-citation-badge">@src.Code</span>
-                            <span class="ep-drawer-source-label">@src.Citation</span>
-                        </button>
-                    }
-                </div>
-            </nav>
-        }
-
         @if (Article is not null)
         {
             var officialCitation = LegalCitationFormat.FormatOfficialCitation(Article.LawTitle, Article.Number);
@@ -307,8 +256,6 @@
     [Parameter] public PortalArticleDetail? Article { get; set; }
     [Parameter] public bool IsLoading { get; set; }
     [Parameter] public string? ErrorMessage { get; set; }
-    [Parameter] public IReadOnlyList<AnswerSource> Sources { get; set; } = [];
-    [Parameter] public EventCallback<AnswerSource> OnSelectSource { get; set; }
     [Parameter] public EventCallback<string> OnAskFollowUp { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
@@ -370,29 +317,6 @@
     private Task CloseAsync() => OnClose.InvokeAsync();
 
     private Task FollowUpAsync(string title) => OnAskFollowUp.InvokeAsync(title);
-
-    private int FindActiveSourceIndex(string? effectiveUri)
-    {
-        for (var i = 0; i < Sources.Count; i++)
-        {
-            if (IsCurrentSource(Sources[i], effectiveUri))
-                return i;
-        }
-
-        return -1;
-    }
-
-    private bool IsCurrentSource(AnswerSource src, string? effectiveUri) =>
-        string.Equals(src.Uri, effectiveUri, StringComparison.Ordinal) ||
-        (!string.IsNullOrEmpty(Code) && string.Equals(src.Code, Code, StringComparison.OrdinalIgnoreCase));
-
-    private Task StepSourceAsync(int targetIndex)
-    {
-        if (targetIndex < 0 || targetIndex >= Sources.Count)
-            return Task.CompletedTask;
-
-        return OnSelectSource.InvokeAsync(Sources[targetIndex]);
-    }
 
     private string FormatCategoryLabel(string normKind, string documentType)
     {
