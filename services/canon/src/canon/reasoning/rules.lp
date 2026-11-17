@@ -37,13 +37,10 @@ problem(contradictory_fact, M) :- conflicting_c(M).
 given(M) :- fact_in(M,_).
 given(M) :- cfact_in(M,_).
 
-% 「甲屬於乙」的依據：本法現行用語定義，以及受控詞彙法定上位關係（vocab.concept_relation）。
+% 「甲屬於乙」的依據只有本法現行用語定義；跨法只以外部識別碼等同（same），不推上位。
 isa(L,X,X) :- stmt_law(_,L), cfact_in(_,X).
 isa(L,X,Y) :- isa(L,X,Z), same(Z,Y).
 isa(L,X,T) :- defmember(L,T,Y), isa(L,X,Y).
-isa(L,X,T) :- concept_broader(Y,T), isa(L,X,Y).
-% 受控上位詞彙（broader）：子概念正向成立時，上位概念事實一併成立（例如甲苯排放 -> 揮發性有機物排放）。
-fact_in(T,V) :- concept_broader(C,T), fact_in(C,V), V > 0.
 
 % 準用關係（中央法規標準法第 17 條）：source 準用 target 時，將 target 的條件結構視為可映射至 source。
 mutatis_applied(Src,Tgt) :- mutatis_mutandis(Src,Tgt), outcome(Tgt,violation).

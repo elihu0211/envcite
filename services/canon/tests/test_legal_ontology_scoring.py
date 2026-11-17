@@ -169,10 +169,12 @@ def test_multi_scope_delegated_limits_select_by_scope_and_surface_ambiguity(
     )
 
 
-# ── 3. 跨法概念階層（vocab.concept_relation broader / exact_match）─────────
+# ── 3. 跨法不推上位：子概念的量測值不當成上位概念的值 ──────────────────────
 
 
-def test_cross_law_concept_broader_infers_parent_concept(conn: Conn, tmp_path: Path) -> None:
+def test_child_concept_facts_are_not_lifted_to_a_broader_concept(
+    conn: Conn, tmp_path: Path
+) -> None:
     _first(conn, tmp_path, _law_v1())
     doc = _water_and_air_doc(
         _stmt(
@@ -181,30 +183,23 @@ def test_cross_law_concept_broader_infers_parent_concept(conn: Conn, tmp_path: P
             "甲一",
             kind="prescriptive",
             deontic="prohibition",
-            conditions=[_scope("voc_emission")],
+            conditions=[_scope("discharging"), _scope("voc_emission")],
         )
     )
     doc["concepts"] += [
         {"code": "voc_emission", "label": "揮發性有機物排放"},
         {"code": "toluene_emission", "label": "甲苯排放"},
+        {"code": "benzene_emission", "label": "苯排放"},
     ]
     loaded = load(conn, doc)
-    child_row = conn.execute(
-        "SELECT id FROM vocab.concept WHERE code = 'toluene_emission'"
-    ).fetchone()
-    parent_row = conn.execute("SELECT id FROM vocab.concept WHERE code = 'voc_emission'").fetchone()
-    assert child_row is not None and parent_row is not None
-    conn.execute(
-        """
-        INSERT INTO vocab.concept_relation (source_concept_id, target_concept_id, relation_kind)
-        VALUES (%s, %s, 'broader')
-        """,
-        (child_row[0], parent_row[0]),
-    )
-    conn.commit()
+    duty = loaded.ids["duty_voc"]
 
-    res = evaluate(conn, BEFORE, {"toluene_emission": 1.0})
-    assert loaded.ids["duty_voc"] in res.verdicts
+    res = evaluate(
+        conn, BEFORE, {"discharging": 1.0, "toluene_emission": 1.0, "benzene_emission": 2.0}
+    )
+    assert res.verdicts == {duty: "undetermined"}
+    assert res.missing == ((duty, "voc_emission"),)
+    assert res.problems == ()
 
 
 # ── 4. 行政罰法三階審查、原因自由行為、釋字 604 與多行為群組 ───────────────

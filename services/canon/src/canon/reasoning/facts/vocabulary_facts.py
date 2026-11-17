@@ -1,4 +1,4 @@
-"""用語定義的成員、等同的概念，與跨法受控詞彙的階層關係。"""
+"""用語定義的成員與等同的概念。"""
 
 from collections.abc import Mapping
 from typing import NamedTuple
@@ -59,26 +59,10 @@ class _MatchRow(NamedTuple):
     used: str
 
 
-# 跨法受控詞彙上位／等同關係（vocab.concept_relation）。
-_CONCEPT_RELATIONS = """
-    SELECT src.code, tgt.code, r.relation_kind::text
-      FROM vocab.concept_relation AS r
-      JOIN vocab.concept AS src ON src.id = r.source_concept_id
-      JOIN vocab.concept AS tgt ON tgt.id = r.target_concept_id
-     ORDER BY src.code, tgt.code
-"""
-
-
-class _ConceptRelRow(NamedTuple):
-    source: str
-    target: str
-    kind: str
-
-
 def vocabulary_facts(
     conn: Conn, params: Mapping[str, object], ids_param: Mapping[str, list[int]]
 ) -> list[str]:
-    """用語定義的成員、等同的概念與跨法受控詞彙階層關係。"""
+    """用語定義的成員與等同的概念。"""
     out: list[str] = []
     # 用語定義只及於本法：成員關係帶法規編號，推論只在要件所屬的法規內使用。
     definitions = fetch(conn, _DEFINITIONS, params, _DefinitionRow)
@@ -88,7 +72,4 @@ def vocabulary_facts(
     definition_ids = sorted({defn.definition_id for defn in definitions})
     matches = fetch(conn, _MATCHES, {**ids_param, "definitions": definition_ids}, _MatchRow)
     out += [f"same({q(match.other)},{q(match.used)})." for match in matches]
-    for rel in fetch(conn, _CONCEPT_RELATIONS, (), _ConceptRelRow):
-        pred = "same" if rel.kind == "exact_match" else "concept_broader"
-        out.append(f"{pred}({q(rel.source)},{q(rel.target)}).")
     return out
