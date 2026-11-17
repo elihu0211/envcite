@@ -112,6 +112,108 @@ def test_classify(text: str, kind: str | None) -> None:
     assert classify(text) == kind
 
 
+@pytest.mark.parametrize(
+    ("text", "kind"),
+    [
+        # 中央法規標準法第 19 條的用語；法律依第 2 項準用廢止程序，由總統公布。
+        ("中華民國七十年一月十二日總統令公布暫停適用", "suspension"),
+        ("中華民國六十一年三月二十日公布停止適用", "suspension"),
+        ("中華民國六十二年二月二十日行政院（62）臺規1505號函核准暫停適用", "suspension"),
+        ("中華民國九十八年十月二十二日國史館國審字第0980004056A號函自即日起停止適用", "suspension"),
+        (
+            "中華民國八十八年二月十一日教育部台（八八）陸字第88016332號函即日起停止適用",
+            "suspension",
+        ),
+        (
+            "中華民國九十一年十一月二十九日行政院環境保護署環署水字第0910084141號公告停止適用",
+            "suspension",
+        ),
+        (
+            "中華民國七十六年七月九日行政院第2039次會議決議：「為維持國內金融穩定，對於匯入款項"
+            "及支付有形、無形貿易以外之鉅額匯出匯款仍予繼續適度管理外，自本（76）年七月十五日起"
+            "停止管理外匯條例第6-1、7、13及17條條文適用」",
+            "suspension",
+        ),
+        ("中華民國七十五年一月一日總統令公布自七十五年一月三日起恢復適用", "resumption"),
+        ("中華民國八十年一月一日行政院令自即日起恢復管理外匯條例第7條條文適用", "resumption"),
+        ("中華民國八十年一月一日內政部令發布第24～26條條文自發布日恢復適用", "resumption"),
+        # 恢復適用準用制定程序（第 19 條第 2 項）；沒寫施行日不推定第 13 條。
+        ("中華民國七十五年一月一日總統令公布恢復適用", "unknown"),
+        # 通過不是公布：法律的停止適用自公布起算（第 22 條第 3 項），同一部另有公布那一筆。
+        ("中華民國六十一年三月七日立法院通過停止適用", "unknown"),
+        # 範圍不是整部、也不是列出的條。
+        ("中華民國三十七年十一月十五日總統令公庫法中關於國庫條文應予停止適用", "unknown"),
+        ("中華民國三十七年十二月二十一日總統令第12條但書暫行停止適用", "unknown"),
+        # 動作之前另有分句：停止適用的是原來那件函，不一定是這部法規。
+        ("中華民國九十年一月一日財政部令發布解釋，原八十六年函自即日起停止適用", "unknown"),
+        # 有期限的暫停：期滿後是否、何時恢復，沿革沒有另記一筆。
+        (
+            "中華民國六十四年六月十七日經濟部（64）經農字第13403號令公告第28條暫停適用一年",
+            "unknown",
+        ),
+        # 一筆裡的主要動作是修正；附帶的停止適用說的是別的條或別的公文。
+        (
+            "中華民國一百零四年十二月十八日經濟部經水字第10404606060號令修正發布第17條條文；"
+            "增訂第17-1條條文；刪除第13條條文；另第17條自一百零五年六月三十日起停止適用",
+            "partial_amendment",
+        ),
+        (
+            "中華民國八十九年十月二日財政部（89）台財保字第0890750911號令修正發布名稱及全文6條；"
+            "並自發布日起施行（財政部八十六年六月二十七日（86）台財保字第862395476號函，"
+            "自本準則施行日起同時停止適用）",
+            "full_amendment",
+        ),
+    ],
+)
+def test_classify_suspension_and_resumption(text: str, kind: str) -> None:
+    assert classify(text) == kind
+
+
+@pytest.mark.parametrize(
+    ("text", "effective"),
+    [
+        # 停止適用準用廢止：沒寫日期時自公布或發布之日起算至第三日（第 22 條第 3 項）。
+        ("中華民國七十年一月十二日總統令公布暫停適用", date(1981, 1, 14)),
+        ("中華民國九十八年十月二十二日國史館函自即日起停止適用", date(2009, 10, 22)),
+        (
+            "中華民國一百十一年一月二十五日考試院函發布自一百十一年二月一日停止適用",
+            date(2022, 2, 1),
+        ),
+        ("中華民國七十五年一月一日總統令公布自七十五年一月三日起恢復適用", date(1986, 1, 3)),
+        ("中華民國八十年一月一日內政部令發布第2條條文自發布日恢復適用", date(1991, 1, 3)),
+        (
+            "中華民國七十六年七月九日行政院會議決議：「自本（76）年七月十五日起停止管理外匯條例"
+            "第7條條文適用」",
+            date(1987, 7, 15),
+        ),
+    ],
+)
+def test_a_change_in_applicability_takes_effect_on_its_own_date(text: str, effective: date) -> None:
+    (e,) = parse(text)
+    assert e.effective == effective
+
+
+def test_a_suspension_lists_the_articles_it_covers_or_none_for_the_whole_law() -> None:
+    known = [f"art_{n}" for n in (23, 24, 25, "25-1", 26, 27)]
+    listed, whole = parse(
+        "1.中華民國六十五年二月十六日內政部令發布第24～26條條文停用\r\n"
+        "2.中華民國七十年一月十二日總統令公布暫停適用",
+        known=known,
+    )
+    assert listed.articles == frozenset({"art_24", "art_25", "art_25-1", "art_26"})
+    assert whole.articles is None
+
+
+def test_a_partial_amendment_lists_the_articles_it_touches() -> None:
+    amended, full = parse(
+        "1.中華民國八十四年八月二日總統令增訂公布第19-1條及第19-2條；並修正第6-1條、第20條條文\r\n"
+        "2.中華民國九十年一月一日總統令修正公布全文 30 條"
+    )
+    assert amended.articles == frozenset({"art_19-1", "art_19-2", "art_6-1", "art_20"})
+    # 全文修正及於整部；不列條號的事件沒有範圍。
+    assert full.articles is None and full.effective is None
+
+
 def test_the_first_entry_with_an_unspecified_promulgation_is_the_enactment() -> None:
     first, later = parse(
         "1.中華民國二十九年六月二十九日國民政府公布施行\r\n2.中華民國三十年六月二十九日國民政府公布"
