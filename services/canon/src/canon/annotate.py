@@ -17,6 +17,7 @@ from canon.claims.errors import AnnotationError
 from canon.claims.loader import Loaded, load
 from canon.settings import DatabaseSettings
 from canon.settings import load as load_settings
+from envcite_jobkit import ExitCode
 
 __all__ = [
     "LEGAL_EFFECTS",
@@ -27,8 +28,6 @@ __all__ = [
     "anchor",
     "load",
 ]
-
-EXIT_INVALID = 2
 
 
 def main() -> None:
@@ -48,4 +47,4 @@ def main() -> None:
             load(conn, doc)
     except (AnnotationError, json.JSONDecodeError) as e:
         logging.getLogger(__name__).error("annotation rejected: %s", e)
-        raise SystemExit(EXIT_INVALID) from e
+        raise SystemExit(ExitCode.FATAL) from e

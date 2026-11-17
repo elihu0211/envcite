@@ -18,7 +18,7 @@ from canon.acquire import cli
 from canon.acquire.engine import Feed, InvalidSnapshot, Outcome, acquire
 from canon.law.moj import Moj
 from canon.net import HttpStatus
-from envcite_jobkit import Policy
+from envcite_jobkit import ExitCode, Policy
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -147,7 +147,8 @@ def test_invalid_data_exits_with_the_code_the_cronjob_does_not_retry(
     with pytest.raises(SystemExit) as exit_:
         cli.main()
 
-    assert exit_.value.code == cli.EXIT_INVALID == 2
+    assert exit_.value.code == 2
+    assert int(ExitCode.FATAL) == 2
 
 
 NO_WAIT = Policy(max_attempts=3, backoff_base_seconds=0.0)

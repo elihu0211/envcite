@@ -9,9 +9,9 @@ import logging
 
 import psycopg
 
-from canon.acquire.cli import EXIT_INVALID, SOURCES
-from canon.acquire.engine import InvalidSnapshot
-from canon.law.importer import BatchRejected, run
+from canon.acquire.cli import SOURCES
+from canon.exit_codes import Unretryable, exit_code
+from canon.law.importer import run
 from canon.projection import rebuild
 from canon.settings import SnapshotSettings, load
 
@@ -34,6 +34,6 @@ def main() -> None:
             run(conn, settings.snapshot_dir, SOURCES[args.source], dry_run=args.dry_run)
             if not args.dry_run:
                 rebuild(conn)
-    except (BatchRejected, InvalidSnapshot) as e:
+    except Unretryable as e:
         logging.getLogger(__name__).error("import rejected: %s", e)
-        raise SystemExit(EXIT_INVALID) from e
+        raise SystemExit(exit_code(e)) from e

@@ -10,13 +10,12 @@ import logging
 import psycopg
 
 from canon.acquire.engine import InvalidSnapshot, Source, acquire
+from canon.exit_codes import exit_code
 from canon.law.moj import Moj
 from canon.settings import SnapshotSettings, load
 
 #: 新來源在此登記。
 SOURCES: dict[str, Source] = {s.name: s for s in (Moj(),)}
-
-EXIT_INVALID = 2
 
 
 def main() -> None:
@@ -33,4 +32,4 @@ def main() -> None:
             acquire(SOURCES[args.source], settings.snapshot_dir, conn)
     except InvalidSnapshot as e:
         logging.getLogger(__name__).error("invalid snapshot: %s", e)
-        raise SystemExit(EXIT_INVALID) from e
+        raise SystemExit(exit_code(e)) from e

@@ -16,21 +16,18 @@ from pathlib import Path
 import psycopg
 
 from canon import projection, violation
-from canon.acquire.cli import EXIT_INVALID, SOURCES
-from canon.acquire.engine import InvalidSnapshot, Source, acquire
+from canon.acquire.cli import SOURCES
+from canon.acquire.engine import Source, acquire
 from canon.db import Conn
 from canon.embedding import Embedder
+from canon.exit_codes import exit_code
 from canon.law import delegation, importer
-from canon.law.importer import BatchRejected
-from canon.projection import EmbeddingStopped
 from canon.settings import SnapshotSettings, load
 from canon.verification import config
-from envcite_jobkit import Policy
+from envcite_jobkit import ExitCode, Policy
 
 log = logging.getLogger(__name__)
 
-
-EXIT_TRANSIENT = 1
 
 POLICY = Policy(
     name="sync",
@@ -39,13 +36,6 @@ POLICY = Policy(
     backoff_base_seconds=2.0,
     backoff_max_seconds=60.0,
 )
-
-
-def exit_code(error: BaseException) -> int:
-    """資料不合預期或整批越線為 2（重試無益）；嵌入中止沿用 jobkit 的結束碼；其餘為 1。"""
-    if isinstance(error, EmbeddingStopped):
-        return error.code
-    return EXIT_INVALID if isinstance(error, InvalidSnapshot | BatchRejected) else EXIT_TRANSIENT
 
 
 def sync(
@@ -67,8 +57,8 @@ def sync(
         conn.rollback()
         code = exit_code(e)
         log.error("sync failed (exit %d): %s", code, e)
-        return code
-    return 0
+        return int(code)
+    return int(ExitCode.OK)
 
 
 def main() -> None:

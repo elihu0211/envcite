@@ -12,10 +12,7 @@ from canon.law import guidance
 from canon.law.guidance_sync.run import POLICY, sync
 from canon.settings import DatabaseSettings, SnapshotSettings
 from canon.settings import load as load_settings
-from envcite_jobkit import Policy
-
-EXIT_INVALID = 2
-
+from envcite_jobkit import ExitCode, Policy
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +43,7 @@ def main() -> None:
             guidance.load(conn, doc)
     except (guidance.GuidanceError, json.JSONDecodeError) as e:
         log.error("guidance rejected: %s", e)
-        raise SystemExit(EXIT_INVALID) from e
+        raise SystemExit(ExitCode.FATAL) from e
 
 
 def _run(source: str, *, since: date | None, rescan: bool) -> int:
