@@ -289,3 +289,47 @@ def test_a_download_failure_stays_pending_for_the_next_night(conn: Conn) -> None
 
     assert (result.stored, result.file_only, result.pending) == (0, 0, 1)
     assert _scalar(conn, "SELECT status::text FROM judgment.fetch") == "pending"
+
+
+@pytest.mark.parametrize("code", ["TPTA", "TCTA", "KSTA"])
+def test_a_district_administrative_court_is_stored_as_district(conn: Conn, code: str) -> None:
+    jid = f"{code},113,地訴,5,20240102,1"
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": [jid]}]
+    api.docs[jid] = {**_text(jid), "JDATE": "20240102"}
+
+    result = _sync(conn, api, 1)
+
+    assert (result.stored, result.exit_code) == (1, 0)
+    assert _scalar(conn, "SELECT instance::text FROM judgment.decision") == "district"
+
+
+def test_a_row_once_unmapped_is_fetched_when_its_court_becomes_known(conn: Conn) -> None:
+    jid = "TPTA,113,地訴,6,20240102,1"
+    conn.execute(
+        "INSERT INTO judgment.fetch (jid, listed_on, status, last_error)"
+        " VALUES (%s, '2026-11-09', 'unmapped', 'unknown_court')",
+        (jid,),
+    )
+    conn.commit()
+    api = _Api()
+    api.docs[jid] = {**_text(jid), "JDATE": "20240102"}
+
+    result = _sync(conn, api, 1)
+
+    assert result.stored == 1
+    assert _scalar(conn, "SELECT status::text FROM judgment.fetch") == "stored"
+
+
+def test_a_row_with_a_court_still_unknown_stays_unmapped(conn: Conn) -> None:
+    jid = "XXXA,113,訴,1,20240102,1"
+    conn.execute(
+        "INSERT INTO judgment.fetch (jid, listed_on, status, last_error)"
+        " VALUES (%s, '2026-11-09', 'unmapped', 'unknown_court')",
+        (jid,),
+    )
+    conn.commit()
+
+    _sync(conn, _Api(), 1)
+
+    assert _scalar(conn, "SELECT status::text FROM judgment.fetch") == "unmapped"

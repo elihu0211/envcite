@@ -6,7 +6,8 @@
 同一 jid 再出現改回 `pending`，因為內容可能已改。
 
 審級代碼取自司法陽光網公開的法院表：TPA 最高、TPB 臺北高等、TCB 臺中高等、KSB 高雄高等。
-112 年以後的地方行政法院不在該表，對不上就不猜。
+112 年起的地方行政訴訟庭（地方行政法院）：TPT 臺北、TCT 臺中、KST 高雄，由司法院裁判書網址的檔名
+（FILES/TPTA/…）與判決抬頭「高等行政法院地方行政訴訟庭」對照而得；其餘對不上的不猜。
 """
 
 import argparse
@@ -44,7 +45,15 @@ _WINDOW_END = time(6, 0)
 RULE = Rule("canon-judicial-sync", judgment_anchor.RULE_VERSION)
 
 #: 法院代碼（jid 第一欄去掉末位類別碼）→ 審級。
-COURTS: Mapping[str, str] = {"TPA": "supreme", "TPB": "high", "TCB": "high", "KSB": "high"}
+COURTS: Mapping[str, str] = {
+    "TPA": "supreme",
+    "TPB": "high",
+    "TCB": "high",
+    "KSB": "high",
+    "TPT": "district",
+    "TCT": "district",
+    "KST": "district",
+}
 
 type Clock = Callable[[], datetime]
 type Sleep = Callable[[float], None]
@@ -91,6 +100,7 @@ def sync(
         return SyncResult(skipped=True)
     stored = taken = filed = listed = 0
     try:
+        _requeue_mapped(conn)
         stored, taken, filed = _drain(
             conn, client, now, sleep, pause, files, (stored, taken, filed)
         )
@@ -105,6 +115,24 @@ def sync(
         code = fail(conn, e, "judgment sync")
         return _result(conn, stored, taken, filed, code)
     return _result(conn, stored, taken, filed, listed=listed)
+
+
+def _requeue_mapped(conn: Conn) -> None:
+    """過去因法院代碼不在表上記 `unmapped` 的，表補上後改回待取；仍對不上的不動。"""
+    rows = fetch(
+        conn,
+        "SELECT jid FROM judgment.fetch WHERE status = 'unmapped' AND last_error = 'unknown_court'",
+        None,
+        _JidRow,
+    )
+    for row in rows:
+        if _court(row.jid) is not None:
+            conn.execute(
+                "UPDATE judgment.fetch SET status = 'pending', last_error = NULL,"
+                " updated_on = CURRENT_DATE WHERE jid = %s",
+                (row.jid,),
+            )
+    conn.commit()
 
 
 def _drain(
