@@ -9,19 +9,31 @@ import ssl
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import PackageNotFoundError, metadata
 from typing import cast
 
 import httpx
 
 from envcite_jobkit import Disposition, classify_http_status
 
-# urllib／httpx 預設的 User-Agent 會被端點前面的 WAF（如 Cloudflare 的 error 1010）擋下，
-# 所以明確自報身分；不偽裝成瀏覽器或其他工具。
-try:
-    USER_AGENT = f"canon/{version('canon')}"
-except PackageNotFoundError:  # 未安裝的原始碼樹
-    USER_AGENT = "canon"
+
+def _user_agent() -> str:
+    """`canon/<版本> (+<聯絡處>)`；版本與聯絡處取自套件中繼資料。"""
+    try:
+        meta = metadata("canon")
+    except PackageNotFoundError:  # 未安裝的原始碼樹
+        return "canon"
+    agent = f"canon/{meta['Version']}"
+    for entry in meta.get_all("Project-URL") or []:
+        label, _, url = entry.partition(", ")
+        if label == "Repository":
+            return f"{agent} (+{url})"
+    return agent
+
+
+#: 對外請求的 User-Agent。urllib／httpx 預設值會被端點前面的 WAF（如 Cloudflare 的 error 1010）
+#: 擋下，所以明確自報身分；不偽裝成瀏覽器或其他工具。聯絡處讓沒有 API 的來源站台知道找誰。
+USER_AGENT = _user_agent()
 
 
 class HttpStatus(Exception):

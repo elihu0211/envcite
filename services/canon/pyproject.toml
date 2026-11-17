@@ -26,6 +26,9 @@ dependencies = [
     "pydantic-settings",
 ]
 
+[project.urls]
+Repository = "https://github.com/elihu0211/envcite"
+
 [tool.uv.sources]
 envcite-grpc = { workspace = true }
 envcite-jobkit = { workspace = true }
