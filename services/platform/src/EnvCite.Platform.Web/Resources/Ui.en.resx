@@ -1164,17 +1164,14 @@
   <data name="重新連線失敗，稍後會自動再試。" xml:space="preserve">
     <value>Couldn’t reconnect. Trying again shortly.</value>
   </data>
-  <data name="仍無法連線，會持續自動重試。也可以立即重試。" xml:space="preserve">
-    <value>Still can’t connect. Retrying automatically. You can also retry now.</value>
+  <data name="仍然無法連線，系統會持續自動重試。" xml:space="preserve">
+    <value>Still can’t connect. Retrying automatically.</value>
   </data>
-  <data name="正在恢復這個工作階段…" xml:space="preserve">
-    <value>Restoring this session…</value>
+  <data name="正在恢復連線…" xml:space="preserve">
+    <value>Restoring the connection…</value>
   </data>
-  <data name="尚未恢復，稍後會自動再試。" xml:space="preserve">
-    <value>Not restored yet. Trying again shortly.</value>
-  </data>
-  <data name="繼續" xml:space="preserve">
-    <value>Resume</value>
+  <data name="尚未恢復連線，稍後會自動再試。" xml:space="preserve">
+    <value>Not reconnected yet. Trying again shortly.</value>
   </data>
   <data name="啟用帳號" xml:space="preserve">
     <value>Activate account</value>

@@ -9,10 +9,10 @@
         <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="ep-reconnect-progress" aria-hidden="true" />
         <p class="components-reconnect-first-attempt-visible">@L["連線中斷，正在重新連線…"]</p>
         <p class="components-reconnect-repeated-attempt-visible">@L["重新連線失敗，稍後會自動再試。"]</p>
-        <p class="components-reconnect-failed-visible">@L["仍無法連線，會持續自動重試。也可以立即重試。"]</p>
-        <p class="components-pause-visible">@L["正在恢復這個工作階段…"]</p>
-        <p class="components-resume-failed-visible">@L["尚未恢復，稍後會自動再試。"]</p>
+        <p class="components-reconnect-failed-visible">@L["仍然無法連線，系統會持續自動重試。"]</p>
+        <p class="components-pause-visible">@L["正在恢復連線…"]</p>
+        <p class="components-resume-failed-visible">@L["尚未恢復連線，稍後會自動再試。"]</p>
     </div>
     <button type="button" id="components-reconnect-button" class="ep-btn ep-btn-primary components-reconnect-failed-visible">@L["重試"]</button>
-    <button type="button" id="components-resume-button" class="ep-btn ep-btn-primary components-pause-visible components-resume-failed-visible">@L["繼續"]</button>
+    <button type="button" id="components-resume-button" class="ep-btn ep-btn-primary components-pause-visible components-resume-failed-visible">@L["重試"]</button>
 </dialog>
