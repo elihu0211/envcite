@@ -1,10 +1,12 @@
 """以網址（與表單的檢索詞）對到頁面的替身，取代 `acquire.web.Http`；沒有的頁是 404。"""
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import httpx
+import pytest
 
+from canon import net
 from canon.acquire.web import Http
 from envcite_jobkit import ItemError
 
@@ -55,3 +57,10 @@ class Served:
         if path is None:
             return httpx.Response(404)
         return httpx.Response(200, content=path.read_bytes())
+
+
+def route_post_json(
+    monkeypatch: pytest.MonkeyPatch, handler: Callable[[httpx.Request], httpx.Response]
+) -> None:
+    """讓 `canon.net.post_json` 的請求由 `handler` 回應，不碰網路；測試結束時還原。"""
+    monkeypatch.setattr(net, "_pool", httpx.Client(transport=httpx.MockTransport(handler)))
