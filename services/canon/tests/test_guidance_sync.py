@@ -375,6 +375,22 @@ def _renamed(old: str, law: int) -> list[dict[str, Any]]:
     return laws
 
 
+def test_a_nameless_row_does_not_break_the_name_table(
+    conn: Conn, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """文字缺漏的版本沒有標題：`guidance.law_name` 為它出一列空名稱（現場有一列），解析器略過。"""
+    rows = [
+        guidance_anchor._NameRow(None, None, False),
+        guidance_anchor._NameRow("水污染防治法", WATER, False),
+    ]
+    monkeypatch.setattr(guidance_anchor, "fetch", lambda *_args: rows)
+
+    resolver = guidance_anchor.Resolver(conn)
+
+    assert resolver.resolve("水污染防治法") == guidance_anchor.Resolved(WATER, None)
+    assert resolver.resolve("不存在法") == guidance_anchor.Resolved(None, "law_unresolved")
+
+
 def test_an_old_name_from_the_history_resolves_to_the_law(conn: Conn, tmp_path: Path) -> None:
     _import(conn, tmp_path, _renamed("水污染防治條例", 1))
     resolver = guidance_anchor.Resolver(conn)

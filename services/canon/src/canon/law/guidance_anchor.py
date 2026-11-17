@@ -53,7 +53,8 @@ class Resolved:
 
 
 class _NameRow(NamedTuple):
-    name: str
+    #: 版本沒有標題（`legal_expression.title` 可為空）時視圖仍出一列，名稱為空。
+    name: str | None
     #: 名稱對到兩部以上法規時為 None。
     pcode: str | None
     alias: bool
@@ -71,7 +72,7 @@ class Resolver:
         self._conn = conn
         rows = fetch(conn, "SELECT name, pcode, alias FROM guidance.law_name", None, _NameRow)
         conn.rollback()
-        self._names = {row.name: row.pcode for row in rows}
+        self._names = {row.name: row.pcode for row in rows if row.name is not None}
         self._aliases = sum(row.alias for row in rows)
         self._longest = max(map(len, self._names), default=0)
 
