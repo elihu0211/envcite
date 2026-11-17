@@ -273,56 +273,51 @@
     // 強化導覽換完頁（Blazor 的 enhancedload，串流渲染時每次更新都會觸發）：伺服器渲染的側欄不帶 title 與 aria-expanded，重設一次。
     globalThis.Blazor?.addEventListener("enhancedload", syncSide);
 
-    // 互動式頁面由 SSR 預先渲染時，區塊已經開始 ep-rise 進場；blazor.web.js 連線接手換掉 bl-root 時，
-    // 用負的 animation-delay 接續原本的進場進度（已經跑完的直接定格），避免「先出現、突然歸零再淡入」的閃爍。
+    // 互動式頁面由 SSR 預先渲染時，區塊已經開始 ep-rise 進場；blazor.web.js 連線接手，把預先渲染的節點整批換成新節點，
+    // 新節點的 ep-rise 會從頭播：畫面先出現、突然歸零再淡入，看起來閃兩下。接手不是一批做完：外殼先換，頁面內容
+    // （等授權與資料）晚幾毫秒才到，所以不能只在換根的那一刻處理一次。從 bl-root 被抽換起開一段短窗口，窗口內新長出來的
+    // ep-rise 動畫都接回原本的進度（已經跑完的直接收尾）。不分區塊與位置：內容裡的提示（ep-alert）、分頁面板是同一支動畫。
+    const handoverMs = 600;
     let riseOrigin = performance.now();
-    let blRootObserver;
-    const parseDurationMs = (value) => {
-        if (!value) {
-            return 0;
-        }
-        const trimmed = value.trim();
-        return trimmed.endsWith("ms") ? parseFloat(trimmed) : parseFloat(trimmed) * 1000;
-    };
-    const settleHydratedBlocks = () => {
+    const continued = new WeakSet();
+    const continueRise = () => {
         const elapsed = Math.max(0, performance.now() - riseOrigin);
-        document.querySelectorAll(".ep-console-main > *, .ep-shell-main > *, .ep-auth-body > *").forEach((element) => {
-            const style = getComputedStyle(element);
-            if (!style.animationName.split(",").some((name) => name.trim() === "ep-rise")) {
-                return;
+        for (const animation of document.getAnimations()) {
+            if (animation.animationName !== "ep-rise" || continued.has(animation)) {
+                continue;
             }
-            const delayMs = parseDurationMs(style.animationDelay);
-            const durationMs = parseDurationMs(style.animationDuration);
-            const nextDelay = delayMs - elapsed;
-            if (durationMs > 0 && -nextDelay < durationMs) {
-                element.style.animationDelay = `${Math.round(nextDelay)}ms`;
+            continued.add(animation);
+            if (elapsed >= animation.effect.getComputedTiming().endTime) {
+                animation.finish();
             } else {
-                element.setAttribute("data-ep-settled", "");
+                animation.currentTime = elapsed;
             }
-        });
+        }
     };
-    const watchBlRoot = () => {
-        if (blRootObserver || !document.body) {
+    const rootSwapped = (records) => records.some((record) =>
+        [...record.removedNodes].some((node) => node.nodeType === 8 && node.nodeValue === "/bl-root"));
+    // 等換根：只看 html、head、body 的直接子節點（bl-root 標記就在那裡），平常幾乎沒有成本。
+    const rootWatcher = new MutationObserver((records) => {
+        if (!rootSwapped(records)) {
             return;
         }
-        blRootObserver = new MutationObserver((records) => {
-            const swapped = records.some((record) =>
-                [...record.removedNodes].some((node) => node.nodeType === 8 && node.nodeValue === "/bl-root"));
-            if (!swapped) {
-                return;
+        rootWatcher.disconnect();
+        continueRise();
+        const handover = new MutationObserver(continueRise);
+        handover.observe(document.documentElement, { childList: true, subtree: true });
+        setTimeout(() => handover.disconnect(), handoverMs);
+    });
+    const watchBlRoot = () => {
+        for (const target of [document.documentElement, document.head, document.body]) {
+            if (target) {
+                rootWatcher.observe(target, { childList: true });
             }
-            blRootObserver.disconnect();
-            blRootObserver = undefined;
-            settleHydratedBlocks();
-        });
-        blRootObserver.observe(document.body, { childList: true });
+        }
     };
     watchBlRoot();
     document.addEventListener("DOMContentLoaded", watchBlRoot);
     globalThis.Blazor?.addEventListener("enhancedload", () => {
         riseOrigin = performance.now();
-        blRootObserver?.disconnect();
-        blRootObserver = undefined;
         watchBlRoot();
     });
 
