@@ -1,4 +1,5 @@
-@* 互動頁的 SignalR 連線中斷時的提示（.NET 範本的 ReconnectModal）。框架在 id 為 components-reconnect-modal 的元素上
+@* 互動頁的 SignalR 連線中斷時的提示（改自 .NET 範本的 ReconnectModal，改成不擋畫面的右下角提示；id 與 class 是框架的契約，
+   所以名字仍叫 modal，實際用非模態的 show() 開）。框架在 id 為 components-reconnect-modal 的元素上
    切換 components-reconnect-* 的 class 並發出 components-reconnect-state-changed 事件；哪一段文字出現由 platform.css 依 class 決定，
    開關對話框、自動重試與恢復由同目錄的 ReconnectModal.razor.js 處理（按鈕只是「現在就試」的捷徑）。只在互動頁放（靜態頁沒有連線可斷）。 *@
 <script src="@Assets["_content/EnvCite.Platform.Web/Components/Layout/ReconnectModal.razor.js"]" type="module"></script>
