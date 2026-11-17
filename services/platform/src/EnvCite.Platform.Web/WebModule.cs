@@ -7,6 +7,7 @@ using EnvCite.Platform.Web.Presentation;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -32,6 +33,7 @@ public static class WebModule
         services.AddRazorComponents().AddInteractiveServerComponents();
         // 取代預設的 AuthenticationStateProvider：circuit 每分鐘重驗營運者與入口成員的帳號（見 PlatformAuthenticationStateProvider）。
         services.AddScoped<AuthenticationStateProvider, PlatformAuthenticationStateProvider>();
+        services.AddScoped<CircuitHandler, OperatorSessionPrefetch>();
         services.AddCascadingAuthenticationState();
         services.AddMudServices();
         // MudBlazor 內建文字的繁體中文；英文退回它內建的英文。

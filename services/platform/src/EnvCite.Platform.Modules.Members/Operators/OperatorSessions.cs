@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Security.Claims;
 
 using Microsoft.AspNetCore.Authentication;
@@ -32,9 +33,50 @@ internal sealed class OperatorClaimsPrincipalFactory(UserManager<OperatorUser> u
 }
 
 /// <inheritdoc cref="IOperatorSessions"/>
-internal sealed class OperatorSessions(IServiceScopeFactory scopes) : IOperatorSessions
+internal sealed class OperatorSessions(IServiceScopeFactory scopes, TimeProvider time) : IOperatorSessions
 {
-    public async Task<OperatorSessionState?> FindAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+    /// <summary>預取的結果最多沿用多久。只夠 circuit 開啟到第一次渲染之間；超過就當沒預取，重查資料庫。</summary>
+    internal static readonly TimeSpan PrefetchLife = TimeSpan.FromSeconds(5);
+
+    private sealed record Prefetched(Task<OperatorSessionState?> Result, long StartedAt);
+
+    // 以 principal 物件（不是它的 claim）為鍵：別的請求、別的 circuit 即使是同一位營運者，也拿不到這一份。
+    private readonly ConditionalWeakTable<ClaimsPrincipal, Prefetched> _prefetched = [];
+
+    public async Task PrefetchAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+    {
+        if (user.FindFirst(PlatformClaimTypes.OperatorId) is null)
+            return;
+
+        var query = QueryAsync(user, cancellationToken);
+        _prefetched.AddOrUpdate(user, new Prefetched(query, time.GetTimestamp()));
+        try
+        {
+            await query;
+        }
+        catch (Exception exception)
+        {
+            // 預取只是搶先查：失敗就丟掉，授權時再查一次（資料庫真的有問題，那時照常失敗）。取消則往外傳，circuit 本來就在關。
+            _prefetched.Remove(user);
+            if (exception is OperationCanceledException)
+                throw;
+        }
+    }
+
+    public Task<OperatorSessionState?> FindAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+    {
+        // 只用一次：取出就移除，之後的授權與重驗都回到每次查資料庫。
+        if (_prefetched.TryGetValue(user, out var ready))
+        {
+            _prefetched.Remove(user);
+            if (time.GetElapsedTime(ready.StartedAt) <= PrefetchLife && ready.Result is { IsFaulted: false, IsCanceled: false })
+                return ready.Result;
+        }
+
+        return QueryAsync(user, cancellationToken);
+    }
+
+    private async Task<OperatorSessionState?> QueryAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         if (user.FindFirst(PlatformClaimTypes.OperatorId)?.Value is not { } id)
             return null;

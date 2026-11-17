@@ -122,7 +122,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 
 1. **獨立儲存**：營運者不屬任何租戶，Identity 主鍵為 `Guid`（避免與租戶成員 `string` 主鍵混階）；不開放自助註冊。
 2. **強制安全順序**：先設本人密碼再綁定 TOTP（無角色豁免，啟用不簽發 session）。
-3. **每請求重查 DB 與絕對期限**：授權每個請求重查 DB 狀態與 security stamp（circuit 由 `PlatformAuthenticationStateProvider` 每分鐘重驗）；session 受 `Platform:Ui:SessionMaxAge` 絕對期限限制（起點記於 `OperatorSessionLimit.StartedAtKey`）。登入稽核採 fail closed（先寫稽核再簽發 cookie）。
+3. **每請求重查 DB 與絕對期限**：授權每個請求重查 DB 狀態與 security stamp（circuit 由 `PlatformAuthenticationStateProvider` 每分鐘重驗；唯一例外是 circuit 開啟時的預取 `OperatorSessionPrefetch`：只給該 principal 物件用一次、最多數秒，由 `OperatorSessionChecksTests` 守門）；session 受 `Platform:Ui:SessionMaxAge` 絕對期限限制（起點記於 `OperatorSessionLimit.StartedAtKey`）。登入稽核採 fail closed（先寫稽核再簽發 cookie）。
 
 ### 客戶入口（`/portal/{tenant}/…`）
 

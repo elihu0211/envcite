@@ -81,4 +81,12 @@ public interface IOperatorSessions
     /// （帳號被刪、被停用、密碼或兩步驟驗證被重設都讓既有 session 失效）。
     /// </returns>
     Task<OperatorSessionState?> FindAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 互動式 circuit 開啟、第一次渲染之前先查一次：第一次授權（<see cref="FindAsync"/>）直接用這個結果，不必為它等一趟資料庫。
+    /// 否則 circuit 接手預先渲染的頁面時，外殼先畫出來、頁面內容晚一趟資料庫才到，畫面空一格。
+    /// 結果只給<b>這個 principal 物件</b>用一次、最多沿用幾秒；之後的授權（切頁、每分鐘重驗）照舊每次都重查資料庫。
+    /// 查詢失敗不影響 circuit 開啟：授權時再查一次，失敗就照常失敗。
+    /// </summary>
+    Task PrefetchAsync(ClaimsPrincipal user, CancellationToken cancellationToken);
 }
