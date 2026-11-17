@@ -1258,7 +1258,36 @@
       return;
     }
 
+    // 還在隱藏的分頁或還沒排版（寬度 0）時先不建圖：以 0 寬排出來的位置與視角都是錯的，等有寬度再建。
+    if (container.clientWidth === 0 && typeof ResizeObserver === "function") {
+      if (container.dataset.graphWait !== "1") {
+        container.dataset.graphWait = "1";
+        const waiter = new ResizeObserver(() => {
+          if (container.clientWidth === 0) return;
+          waiter.disconnect();
+          delete container.dataset.graphWait;
+          initGraph(container);
+        });
+        waiter.observe(container);
+      }
+      return;
+    }
+
     container.dataset.graphReady = "1";
+    // 視角定好之前不給人看：G6 一建圖就以縮放 1 畫出實際大小的卡片，隨後才縮到適合視窗，使用者會看到「先放大、再縮小」。
+    // 定好第一個視角後才淡入；逾時也要放行，圖不能因為初始視角卡住而一直藏著。
+    container.dataset.graphState = "loading";
+    let revealed = false;
+    const revealTimer = window.setTimeout(() => reveal(), 2500);
+    function reveal() {
+      if (revealed) return;
+      revealed = true;
+      window.clearTimeout(revealTimer);
+      // 等兩個 frame，定好視角的那一畫面先畫出來再淡入。
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        container.dataset.graphState = "ready";
+      }));
+    }
     const host = container.closest("[data-graph-host]");
     const inspectorEl = host ? host.querySelector("[data-graph-inspector]") : null;
 
@@ -1531,11 +1560,17 @@
       const isFs = Boolean(document.fullscreenElement && host?.contains(document.fullscreenElement));
       if (evt.ctrlKey || evt.metaKey || isFs) {
         evt.preventDefault();
+        container.dataset.viewportTouched = "1";
       }
     }, { passive: false });
+    // 使用者拖曳過畫布就不再替他重新適應視窗（見 ResizeObserver）：視角是他自己擺的。
+    container.addEventListener("pointerdown", () => {
+      container.dataset.viewportTouched = "1";
+    });
 
     async function fitViewport({ forceFitAll = false, focusTargetId = null } = {}) {
       try {
+        delete container.dataset.viewportTouched;
         await graph.fitView(undefined, false);
         const minZoom = currentLayout === "indented" ? 0.72 : 0.74;
         const targetZoom = currentLayout === "indented" ? 0.82 : 0.84;
@@ -1918,7 +1953,7 @@
         });
         updateToolbarState();
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(reveal);
 
     if (host && host.dataset.graphBound !== "1") {
       host.dataset.graphBound = "1";
@@ -1947,8 +1982,10 @@
         const activeGraph = container._g6Instance || graph;
         const action = btn.dataset.graphAction;
         if (action === "fit") fitViewport({ forceFitAll: true });
-        else if (action === "zoom-in") activeGraph.zoomBy(1.2).catch(() => {});
-        else if (action === "zoom-out") activeGraph.zoomBy(0.84).catch(() => {});
+        else if (action === "zoom-in" || action === "zoom-out") {
+          container.dataset.viewportTouched = "1";
+          activeGraph.zoomBy(action === "zoom-in" ? 1.2 : 0.84).catch(() => {});
+        }
         else if (action === "fullscreen") {
           const fsPlugin = activeGraph.getPluginInstance?.("canon-fullscreen");
           if (fsPlugin) {
@@ -1988,10 +2025,9 @@
           clearSelectionStates();
         } else if (evt.key === "0") {
           fitViewport({ forceFitAll: true });
-        } else if (evt.key === "+" || evt.key === "=") {
-          activeGraph.zoomBy(1.2).catch(() => {});
-        } else if (evt.key === "-") {
-          activeGraph.zoomBy(0.84).catch(() => {});
+        } else if (evt.key === "+" || evt.key === "=" || evt.key === "-") {
+          container.dataset.viewportTouched = "1";
+          activeGraph.zoomBy(evt.key === "-" ? 0.84 : 1.2).catch(() => {});
         }
       });
     }
@@ -2007,7 +2043,8 @@
           if (Math.abs(w - lastWidth) > 32) {
             lastWidth = w;
             graph.resize();
-            fitViewport();
+            // 關閉檢視面板、收合側欄都會改變畫布寬度：還沒被使用者動過視角才重新適應，否則維持他擺的位置，不要跳。
+            if (container.dataset.viewportTouched !== "1") fitViewport();
           }
         });
       });
