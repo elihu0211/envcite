@@ -302,6 +302,21 @@ def test_guidance_articles_join_the_ranking_without_displacing_the_arms() -> Non
     assert all(documents == 0 for h, documents in fused if h.iri in {x.iri for x in hits})
 
 
+def test_a_sanction_shares_the_rank_of_its_source_and_pushes_no_other_source_down() -> None:
+    """展開出來的處罰條（件數 0）與來源同名次：後面的來源名次不變，與兩臂結果的相對次序不變。"""
+    hits = [_hit(n) for n in range(1, 11)]
+    sources = [(_hit(20), 3), (_hit(21), 2), (_hit(22), 1)]
+    expanded = [sources[0], (_hit(90), 0), (_hit(91), 0), *sources[1:]]
+
+    plain = [h.iri for h, _ in fuse(hits, sources, limit=10)]
+    chained = [h.iri for h, _ in fuse(hits, expanded, limit=10)]
+
+    assert chained.index("iri-90") == chained.index("iri-20") + 1  # 緊跟在來源之後
+    assert chained.index("iri-91") == chained.index("iri-90") + 1
+    kept = [iri for iri in chained if iri in plain]
+    assert kept == [iri for iri in plain if iri in kept]  # 原有的次序一個都沒變
+
+
 def test_an_article_in_both_ranks_above_one_in_either() -> None:
     fused = fuse([_hit(1), _hit(2)], [(_hit(2), 4)], limit=10)
 
