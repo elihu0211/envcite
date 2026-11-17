@@ -172,7 +172,7 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 
 ### 規範關係：罰則的連結
 
-罰則陳述以非空外鍵 `annotation.sanction.punished_statement_id` 指向單一義務或禁止陳述（表與規則見 `0055_penalty_link.sql`，寫入在 [`verification/link.py`](src/canon/verification/link.py)）。
+罰則陳述以非空外鍵 `annotation.sanction.punished_statement_id` 指向單一義務或禁止陳述（表與規則見 [`migrations/0001_baseline.sql`](migrations/0001_baseline.sql) 的 `annotation.sanction`，寫入在 [`verification/link.py`](src/canon/verification/link.py)）。
 
 1. **連結約束**：寫入罰則時受罰陳述必須為 `confirmed`（觸發器強制）；受罰陳述被駁回時罰則一併駁回。
 2. **待連結罰則**：`annotate.load` 時暫連不上的罰則連同相依條件存為 `annotation.held_penalty`；`canon pipeline` 於第一次接受後嘗試連結（記於 `held_penalty_link`）並再接受一次。
