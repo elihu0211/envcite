@@ -15,7 +15,7 @@ from pathlib import Path
 
 import psycopg
 
-from canon import projection, violation
+from canon import projection, rules, violation
 from canon.acquire.cli import SOURCES
 from canon.acquire.engine import Source, acquire
 from canon.db import Conn
@@ -28,6 +28,8 @@ from envcite_jobkit import ExitCode, Policy
 
 log = logging.getLogger(__name__)
 
+#: 匯入之後依序執行的確定性規則抽取器；新增一種規則在此登記。
+EXTRACTORS = (delegation.EXTRACTOR, violation.EXTRACTOR)
 
 POLICY = Policy(
     name="sync",
@@ -49,8 +51,7 @@ def sync(
     try:
         acquire(source, root, conn, policy)
         importer.run(conn, root, source)
-        delegation.extract(conn)
-        violation.extract(conn)
+        rules.run(conn, *EXTRACTORS)
         conn.commit()
         projection.rebuild(conn, embedder, policy)
     except Exception as e:

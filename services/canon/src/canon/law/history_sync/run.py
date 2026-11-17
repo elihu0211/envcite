@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 
-from canon import embedding, projection
+from canon import embedding, projection, rules
 from canon.clock import Today
 from canon.db import Conn
 from canon.exit_codes import JobStopped
@@ -76,7 +76,7 @@ def sync(
         if code == ExitCode.OK and step in ("sync", "import"):
             import_(conn, source, root, report, dry_run=dry_run)
             if not dry_run:
-                delegation.extract(conn)
+                rules.run(conn, delegation.EXTRACTOR)
                 conn.commit()
                 projection.rebuild(conn, embedder, policy)
                 code = _write_gate(report)

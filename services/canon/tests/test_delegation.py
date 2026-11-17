@@ -178,11 +178,13 @@ def test_extracts_the_authorizing_article_from_the_first_article(
     assert corpus.rows(date(2003, 1, 1)) == [
         ("水污染防治法", "art_7/para_2", corpus.law, corpus.para2, "in_force")
     ]
-    method = conn.execute(
-        "SELECT DISTINCT d.method::text FROM annotation.derivation AS d"
-        " JOIN annotation.assertion AS a ON a.derivation_id = d.id"
+    derivation = conn.execute(
+        "SELECT DISTINCT d.method::text, d.producer, d.producer_version"
+        "  FROM annotation.derivation AS d"
+        "  JOIN annotation.assertion AS a ON a.derivation_id = d.id"
     ).fetchall()
-    assert method == [("rule",)]
+    # 版本在程式裡是整數，資料庫的 producer_version 仍是原來的文字
+    assert derivation == [("rule", "canon-delegation-rule", "1")]
 
 
 def test_resolves_by_the_date_asked(conn: Conn, corpus: Corpus) -> None:

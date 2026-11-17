@@ -7,16 +7,12 @@
 **改解析規則要遞增 `RULE_VERSION`**，`annotation.current_violation` 只看最新版本。
 """
 
-import logging
 import re
-import time
 from collections.abc import Sequence
 
 from canon.db import Conn
 from canon.numerals import CN_NUMERALS, parse_int
-
-log = logging.getLogger(__name__)
-
+from canon.rules import Extracted, Extractor
 
 RULE_VERSION = 1
 
@@ -112,9 +108,8 @@ def within(path: str, cited: Sequence[str]) -> bool:
     return any(path == c or path.startswith(c + "/") or c.startswith(path + "/") for c in cited)
 
 
-def extract(conn: Conn) -> int:
-    """寫入語料所有現行條文的處罰依賴圖；回傳新寫入的列數。不 commit，由呼叫端決定。"""
-    started = time.monotonic()
+def extract(conn: Conn) -> Extracted:
+    """寫入語料所有現行條文的處罰依賴圖；`written` 是新寫入的列數。不 commit，由呼叫端決定。"""
     rows = conn.execute(
         "SELECT v.provision_id, p.resource_id, v.content_sha256, v.content"
         "  FROM corpus.provision_version AS v"
@@ -145,10 +140,7 @@ def extract(conn: Conn) -> int:
             " ON CONFLICT DO NOTHING",
             found,
         )
-    log.info(
-        "處罰依賴圖：新寫入 %d 列（%d 個條文單元待解析），%.1f 秒",
-        len(found),
-        len(rows),
-        time.monotonic() - started,
-    )
-    return len(found)
+    return Extracted(len(found))
+
+
+EXTRACTOR = Extractor("canon-violation-rule", RULE_VERSION, extract)

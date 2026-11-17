@@ -7,18 +7,15 @@
 （駁回是人的決定，不因下次同步而復活）。改了解析規則要遞增 `RULE_VERSION`。
 """
 
-import logging
 import re
 from dataclasses import dataclass
 from typing import NamedTuple
 
 from canon.db import Conn, fetch, scalar
 from canon.numerals import CN_NUMERALS, parse_int
+from canon.rules import Extracted, Extractor
 
-log = logging.getLogger(__name__)
-
-
-RULE_VERSION = "1"
+RULE_VERSION = 1
 PRODUCER = "canon-delegation-rule"
 
 _N = f"[{CN_NUMERALS}]+"
@@ -110,15 +107,6 @@ def parse(text: str) -> list[Citation]:
     return found
 
 
-@dataclass(frozen=True)
-class Extracted:
-    """一次授權抽取的結果：新寫入、其中法律端對不到，以及已有主張而略過的引文數。"""
-
-    written: int
-    unresolved: int
-    skipped: int
-
-
 class _CommandRow(NamedTuple):
     resource_id: int
     provision_id: int
@@ -150,7 +138,10 @@ class _ExistingRow(NamedTuple):
 
 
 def extract(conn: Conn) -> Extracted:
-    """從語料內所有命令的首條抽取授權，寫成 `annotation.delegation`（規則推導、待用）。"""
+    """從語料內所有命令的首條抽取授權，寫成 `annotation.delegation`（規則推導、待用）。
+
+    `unresolved` 是新寫入中法律端對不到的引文數，`skipped` 是已有主張而略過的。
+    """
     titles = _titles(conn)
     existing = _existing(conn)
     commands = fetch(
@@ -192,7 +183,7 @@ def extract(conn: Conn) -> Extracted:
                 "INSERT INTO annotation.derivation (method, producer, producer_version)"
                 " VALUES ('rule', %s, %s) RETURNING id",
                 PRODUCER,
-                RULE_VERSION,
+                str(RULE_VERSION),
             )
         assertion = _one(
             conn,
@@ -212,10 +203,10 @@ def extract(conn: Conn) -> Extracted:
         written += 1
         if law_provision is None:
             unresolved += 1
-    log.info(
-        "delegation: %d written (%d unresolved), %d already present", written, unresolved, skipped
-    )
     return Extracted(written, unresolved, skipped)
+
+
+EXTRACTOR = Extractor(PRODUCER, RULE_VERSION, extract)
 
 
 def _titles(conn: Conn) -> dict[str, int]:
