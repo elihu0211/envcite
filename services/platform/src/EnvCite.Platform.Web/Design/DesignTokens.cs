@@ -3,7 +3,8 @@ namespace EnvCite.Platform.Web.Design;
 /// <summary>
 /// 一組配色。語意名稱而非色名：元件只說「這是主要文字」「這是危險」，換主題只換這張表。
 /// 文字配對的對比度由 <c>DesignTokenTests</c> 驗證（WCAG AA：一般文字 4.5:1、控制項外框 3:1）。
-/// 一個角色一個色：淡底與邊框由 CSS 以 <c>color-mix</c> 疊透明度取得，不另開 -bg／-border 的色。
+/// 角色沿用 Material 3 的色彩角色：淡底與邊框由 CSS 以 <c>color-mix</c> 疊透明度取得（狀態層、徽章），
+/// 只有「選取」用一組實心的色調容器（<see cref="PrimaryContainer"/>），因為它要在任何底上都同一個色、而不是透出底色。
 /// </summary>
 public sealed record ColorTokens
 {
@@ -13,7 +14,7 @@ public sealed record ColorTokens
 
     public required string SurfaceRaised { get; init; }
 
-    /// <summary>表格欄標題、hover 列、次要區塊的底。</summary>
+    /// <summary>表格欄標題、搜尋列、分段軌道、次要區塊的底（Material 3 的 surface-container）。</summary>
     public required string SurfaceMuted { get; init; }
 
     public required string Text { get; init; }
@@ -22,13 +23,22 @@ public sealed record ColorTokens
 
     public required string Primary { get; init; }
 
+    /// <summary>
+    /// 主色的色調容器（Material 3 的 secondary-container）：側欄目前項、選中的晶片、分頁數量這類「選取」的實心淡底。
+    /// 不用 <c>color-mix</c>：疊透明度會透出底下的表面，同一個選取在頂欄、側欄、卡片上就成了三個色。
+    /// </summary>
+    public required string PrimaryContainer { get; init; }
+
+    /// <summary>放在 <see cref="PrimaryContainer"/> 上的文字與圖示。</summary>
+    public required string OnPrimaryContainer { get; init; }
+
     /// <summary>少量實心的強調底：頭像一類。淺色主題是深色塊，深色主題反過來是淺色塊——永遠是反差最大的那一塊。</summary>
     public required string Ink { get; init; }
 
     /// <summary>放在 <see cref="Ink"/> 上的文字。</summary>
     public required string OnInk { get; init; }
 
-    /// <summary>第二個強調色，只做裝飾，不承載文字，所以不受文字對比限制。</summary>
+    /// <summary>第二個強調色（品牌圖形的葉色），只做裝飾，不承載文字，所以不受文字對比限制。</summary>
     public required string Accent { get; init; }
 
     /// <summary>放在 <see cref="Primary"/> 上的文字。</summary>
@@ -45,10 +55,10 @@ public sealed record ColorTokens
 
     public required string Info { get; init; }
 
-    /// <summary>裝飾性的分隔線與卡片邊框；不承載資訊，不受非文字對比限制。</summary>
+    /// <summary>裝飾性的分隔線與卡片邊框（Material 3 的 outline-variant）；不承載資訊，不受非文字對比限制。</summary>
     public required string BorderSubtle { get; init; }
 
-    /// <summary>輸入框等控制項的外框；要讓人認得出控制項在哪裡，所以對表面至少 3:1。</summary>
+    /// <summary>輸入框等控制項的外框（Material 3 的 outline）；要讓人認得出控制項在哪裡，所以對表面至少 3:1。</summary>
     public required string BorderControl { get; init; }
 
     /// <summary>鍵盤焦點環。</summary>
@@ -59,70 +69,77 @@ public sealed record ColorTokens
 }
 
 /// <summary>
-/// 營運後台與客戶入口的外觀。執行期只讀這裡；給代理的視覺規格是同目錄的 <c>DESIGN.md</c>，兩份由測試核對。
+/// 營運後台與客戶入口的外觀：Google 雲端產品那一型（Material 3）的企業工作介面。執行期只讀這裡；
+/// 給代理的視覺規格是同目錄的 <c>DESIGN.md</c>，兩份由測試核對。
 /// 有淺色與深色兩套調色盤，角色（語意名稱）完全相同：元件只引用角色，不知道自己在哪一套；
 /// 預設跟隨瀏覽器／系統（<c>prefers-color-scheme</c>），個人設定可以手動選亮色或暗色覆寫（見 <c>TokenCss</c> 與 <c>AppearanceSetting</c>）。
 /// </summary>
 public static class DesignTokens
 {
-    // 中性灰階（近乎無彩度）加單一藍色強調；表面以平面為主，層次靠細邊與淡陰影，不靠色塊。全站沒有漸層。
-    // 狀態色全在 sRGB 色域內、彩度有上限（狀態要比品牌色顯眼，但不能搶過它），而且是文字級：
-    // 對白底與一成淡底（徽章、提示框的字）都 ≥ 4.5:1。警示與危險兩色在這個明度本來就近，所以永遠搭配圖示與文字，不靠色相分辨。
+    // Material 3 的中性灰（帶一點點藍的 neutral 與 neutral-variant 色階）加單一品牌藍。頁面底是帶藍的淺灰，
+    // 卡片是白色的面浮在上面；層次靠面的色階（surface → surface-container）與髮絲線，陰影只給浮起的東西。全站沒有漸層。
+    // 狀態色取 Material 3 的色階（文字級）：對白底與一成淡底（徽章、提示框的字）都 ≥ 4.5:1。
+    // 警示與危險兩色在這個明度本來就近，所以永遠搭配圖示與文字，不靠色相分辨。
     // 換主題只換這張表：語意名稱不變，DesignTokenTests 會重新驗證每一組對比。
-    // 企業色只寫一次。主色與焦點環指向它；連結是同一色的文字級（填色按鈕太亮，長文要深一階才過 4.5:1）。
+    // 企業色只寫一次。主色與焦點環指向它；連結是同一色的文字級（長文小字要深一階才在淡底上也穩過 4.5:1）。
+    // 品牌藍是產品自己的，不換成 Google 的藍：檔案版圖示（favicon、app icon）由測試對齊這個值。
     public const string Brand = "#005FC4";
 
     public const string BrandText = "#004F9E";
 
     public static ColorTokens Light { get; } = new()
     {
-        Background = "#F8FAFC",
+        Background = "#F8FAFD",
         Surface = "#FFFFFF",
         SurfaceRaised = "#FFFFFF",
-        SurfaceMuted = "#F1F5F9",
-        Text = "#0F172A",
-        TextSecondary = "#475569",
+        SurfaceMuted = "#F0F4F9",
+        Text = "#1F1F1F",
+        TextSecondary = "#444746",
         Primary = Brand,
-        Ink = "#0F172A",
+        PrimaryContainer = "#D3E3FD",
+        OnPrimaryContainer = "#041E49",
+        Ink = "#1F1F1F",
         OnInk = "#FFFFFF",
         Accent = "#0D9488",
         OnPrimary = "#FFFFFF",
         Link = BrandText,
-        Success = "#047857",
-        Warning = "#A14A07",
-        Error = "#B91C1C",
-        Info = "#4338CA",
-        BorderSubtle = "#E2E8F0",
-        BorderControl = "#64748B",
+        Success = "#146C2E",
+        Warning = "#8F4E00",
+        Error = "#B3261E",
+        Info = "#5E3BB5",
+        BorderSubtle = "#E1E3E1",
+        BorderControl = "#747775",
         Focus = Brand,
-        Scrim = "rgb(15 23 42 / 0.5)",
+        Scrim = "rgb(31 31 31 / 0.4)",
     };
 
-    // 深色：企業級深藍灰板岩階層（Obsidian Slate，#0B1120 往上），層次靠表面一階比一階亮（背景最暗、卡片、浮起的面最亮），
-    // 不靠陰影——深色底上陰影看不出來。企業藍在深色底上改用高可讀亮藍階：實心按鈕的字改深藍黑，
-    // 對比由測試驗證，與淺色同一套標準。狀態色同理，明度清晰、文字級對比。
+    // 深色：Material 3 的深色中性階（#131314 往上），層次靠表面一階比一階亮（背景最暗、卡片、浮起的面最亮），
+    // 不靠陰影——深色底上陰影看不出來。主色改用同一色相的亮階（tone 80），實心按鈕上的字改深藍（tone 20）；
+    // 色調容器反過來是深藍底（tone 30）配淺字。對比由測試驗證，與淺色同一套標準。狀態色同理，取各自的亮階。
     public static ColorTokens Dark { get; } = new()
     {
-        Background = "#0B1120",
-        Surface = "#111827",
-        SurfaceRaised = "#1E293B",
-        SurfaceMuted = "#273449",
-        Text = "#F8FAFC",
-        TextSecondary = "#CBD5E1",
-        Primary = "#60A5FA",
-        Ink = "#F8FAFC",
-        OnInk = "#0B1120",
+        Background = "#131314",
+        Surface = "#1E1F20",
+        SurfaceRaised = "#282A2C",
+        SurfaceMuted = "#333537",
+        Text = "#E3E3E3",
+        TextSecondary = "#C4C7C5",
+        Primary = "#A8C7FA",
+        PrimaryContainer = "#004A77",
+        OnPrimaryContainer = "#C2E7FF",
+        Ink = "#E3E3E3",
+        OnInk = "#131314",
         Accent = "#2DD4BF",
-        OnPrimary = "#0B1120",
-        Link = "#93C5FD",
-        Success = "#34D399",
-        Warning = "#FBBF24",
-        Error = "#F87171",
-        Info = "#A78BFA",
-        BorderSubtle = "#334155",
-        BorderControl = "#94A3B8",
-        Focus = "#60A5FA",
-        Scrim = "rgb(2 6 23 / 0.72)",
+        OnPrimary = "#062E6F",
+        Link = "#A8C7FA",
+        Success = "#6DD58C",
+        Warning = "#FFB869",
+        Error = "#F2B8B5",
+        Info = "#D0BCFF",
+        BorderSubtle = "#444746",
+        BorderControl = "#8E918F",
+        Focus = "#A8C7FA",
+        Scrim = "rgb(0 0 0 / 0.6)",
     };
 
     /// <summary>
@@ -131,12 +148,12 @@ public static class DesignTokens
     public const string QrSurface = "#FFFFFF";
 
     // ---- 字型 ----------------------------------------------------------------------------------
-    // 自己託管的開源字型（OFL），各平台看到同一套字，不隨作業系統變：拉丁字與數字用 Roboto（Google 主控台與 Material 的預設，
-    // 字重軸、可調等寬數字），中文用 Noto Sans TC（Google 的中文字型，收字最完整，法規的罕用字也有）。字型檔與 @font-face 在
-    // wwwroot/fonts/，由 scripts/vendor-fonts.sh 產生；名稱必須與那裡的 font-family 一致（測試守住）。
+    // 自己託管的開源字型（OFL），各平台看到同一套字，不隨作業系統變：拉丁字與數字用 Google Sans Flex（Google 產品介面的字，
+    // 字重與光學尺寸兩軸：大字自動收緊、小字自動放寬），中文用 Noto Sans TC（Google 的中文字型，收字最完整，法規的罕用字也有）。
+    // 字型檔與 @font-face 在 wwwroot/fonts/，由 scripts/vendor-fonts.sh 產生；名稱必須與那裡的 font-family 一致（測試守住）。
     // sans-serif 只在字型下載完成前短暫頂替。
 
-    public static string[] FontFamily { get; } = ["Roboto Variable", "Noto Sans TC Variable", "sans-serif"];
+    public static string[] FontFamily { get; } = ["Google Sans Flex Variable", "Noto Sans TC Variable", "sans-serif"];
 
     /// <summary>
     /// 代碼、金鑰、識別碼、復原碼這類要逐字核對的字串用等寬字型：每個字元同寬，I、l、1 與 0、O 分得開（0 帶斜線）。
@@ -145,7 +162,8 @@ public static class DesignTokens
     public static string[] CodeFontFamily { get; } = ["Roboto Mono Variable", "Noto Sans TC Variable", "monospace"];
 
     /// <summary>
-    /// 字級階層沿用 Material 3 的十五個角色（display、headline、title、body、label 各分 l、m、s），名稱是業界共通的，
+    /// 字級階層沿用 Material 3 的十五個角色（display、headline、title、body、label 各分 l、m、s），名稱與字重照 Material 3：
+    /// 展示與標題是常規字重（Google 產品的大字不加粗，層次靠字級），區塊標題、按鈕與標籤是 500。
     /// 數值依中文長時間閱讀調整：最小 12px（M3 的 label-s 是 11px）、內文至少 15px、內文行高 1.6 以上。
     /// 字距與行高隨字級變化（大字收緊、小字略放寬），不是一個固定值。單位 rem，使用者調整瀏覽器字級時版面跟著放大。
     /// </summary>
@@ -154,29 +172,29 @@ public static class DesignTokens
     public static IReadOnlyDictionary<string, TypeStyle> Type { get; } = new Dictionary<string, TypeStyle>
     {
         // 展示：登入與入口的大標。最大的一階隨視窗寬度縮放，手機上不撐破版面。
-        ["display-l"] = new("clamp(2rem, 1.4rem + 2vw, 2.25rem)", "1.15", "-0.02em", 700),
-        ["display-m"] = new("2rem", "1.15", "-0.02em", 700),
-        ["display-s"] = new("1.75rem", "1.2", "-0.015em", 700),
+        ["display-l"] = new("clamp(2rem, 1.4rem + 2vw, 2.5rem)", "1.2", "-0.02em", 400),
+        ["display-m"] = new("2rem", "1.2", "-0.015em", 400),
+        ["display-s"] = new("1.75rem", "1.25", "-0.01em", 400),
 
         // 頁面標題。
-        ["headline-l"] = new("clamp(1.5rem, 1.25rem + 1vw, 1.75rem)", "1.25", "-0.015em", 700),
-        ["headline-m"] = new("1.5rem", "1.3", "-0.01em", 600),
-        ["headline-s"] = new("1.25rem", "1.4", "-0.005em", 600),
+        ["headline-l"] = new("clamp(1.5rem, 1.25rem + 1vw, 1.75rem)", "1.3", "-0.01em", 400),
+        ["headline-m"] = new("1.5rem", "1.3", "-0.005em", 400),
+        ["headline-s"] = new("1.25rem", "1.4", "0", 500),
 
         // 卡片、區塊與對話框的標題。
-        ["title-l"] = new("1.125rem", "1.45", "0", 600),
-        ["title-m"] = new("1rem", "1.5", "0", 600),
-        ["title-s"] = new("0.9375rem", "1.5", "0.005em", 600),
+        ["title-l"] = new("1.125rem", "1.45", "0.005em", 500),
+        ["title-m"] = new("1rem", "1.5", "0.01em", 500),
+        ["title-s"] = new("0.9375rem", "1.5", "0.01em", 500),
 
         // 內文與條文；body-s 是說明文字。
-        ["body-l"] = new("1rem", "1.625", "0", 400),
-        ["body-m"] = new("0.9375rem", "1.6", "0.005em", 400),
-        ["body-s"] = new("0.8125rem", "1.6", "0.01em", 400),
+        ["body-l"] = new("1rem", "1.625", "0.005em", 400),
+        ["body-m"] = new("0.9375rem", "1.6", "0.01em", 400),
+        ["body-s"] = new("0.8125rem", "1.6", "0.02em", 400),
 
         // 按鈕、表頭、徽章。label-s 是全站最小字級，沒有更小的階。
-        ["label-l"] = new("0.9375rem", "1.3", "0.005em", 600),
-        ["label-m"] = new("0.8125rem", "1.4", "0.01em", 500),
-        ["label-s"] = new("0.75rem", "1.4", "0.015em", 500),
+        ["label-l"] = new("0.9375rem", "1.3", "0.01em", 500),
+        ["label-m"] = new("0.8125rem", "1.4", "0.02em", 500),
+        ["label-s"] = new("0.75rem", "1.4", "0.03em", 500),
     };
 
     // ---- 間距、圓角、陰影、動態 -----------------------------------------------------------------
@@ -211,60 +229,82 @@ public static class DesignTokens
         ["sidebar-rail"] = "4.5rem",
     };
 
+    /// <summary>
+    /// Material 3 的形狀階：控制項（輸入框、選單項）8px、卡片 16px、浮起的大面（登入卡、對話框、抽屜）28px，
+    /// 按鈕、晶片、側欄項目、搜尋列全圓。同一畫面裡圓角只從這四階取。
+    /// </summary>
     public static IReadOnlyDictionary<string, string> Radius { get; } = new Dictionary<string, string>
     {
         ["control"] = "8px",
-        ["card"] = "12px",
-        ["sheet"] = "16px",
+        ["card"] = "16px",
+        ["sheet"] = "28px",
         ["pill"] = "9999px",
     };
 
-    /// <summary>越大的面越厚：陰影與模糊都隨之加重。</summary>
+    /// <summary>
+    /// Material 3 的三層陰影（Google 產品用的灰藍陰影色）：越大的面越厚。平面的卡片沒有陰影，
+    /// 只有浮起的東西才有——懸停的按鈕一層、選單與搜尋框聚焦兩層、對話框與抽屜三層。
+    /// </summary>
     public static IReadOnlyDictionary<string, string> Elevation { get; } = new Dictionary<string, string>
     {
-        ["1"] = "0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.1)",
-        ["2"] = "0 4px 8px -2px rgb(15 23 42 / 0.1), 0 2px 4px -2px rgb(15 23 42 / 0.06)",
-        ["3"] = "0 12px 16px -4px rgb(15 23 42 / 0.12), 0 4px 6px -2px rgb(15 23 42 / 0.05)",
+        ["1"] = "0 1px 2px 0 rgb(60 64 67 / 0.3), 0 1px 3px 1px rgb(60 64 67 / 0.15)",
+        ["2"] = "0 1px 2px 0 rgb(60 64 67 / 0.3), 0 2px 6px 2px rgb(60 64 67 / 0.15)",
+        ["3"] = "0 4px 8px 3px rgb(60 64 67 / 0.15), 0 1px 3px 0 rgb(60 64 67 / 0.3)",
     };
 
     /// <summary>深色底上陰影要更重才看得出來（純黑、不透明度加倍），主要的層次由表面的亮階承擔。</summary>
     public static IReadOnlyDictionary<string, string> ElevationDark { get; } = new Dictionary<string, string>
     {
-        ["1"] = "0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.5)",
-        ["2"] = "0 4px 8px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4)",
-        ["3"] = "0 12px 16px -4px rgb(0 0 0 / 0.6), 0 4px 6px -2px rgb(0 0 0 / 0.4)",
+        ["1"] = "0 1px 2px 0 rgb(0 0 0 / 0.6), 0 1px 3px 1px rgb(0 0 0 / 0.3)",
+        ["2"] = "0 1px 2px 0 rgb(0 0 0 / 0.6), 0 2px 6px 2px rgb(0 0 0 / 0.3)",
+        ["3"] = "0 4px 8px 3px rgb(0 0 0 / 0.3), 0 1px 3px 0 rgb(0 0 0 / 0.6)",
     };
 
     /// <summary>
-    /// 動態：時長依互動類別命名，不依毫秒數（fast 狀態回饋、normal 元件進出、slow 大面積位移、
-    /// reveal 內容揭露）；緩動依「運動的角色」命名，與時長正交（時長講多久，曲線講怎麼動）。
-    /// enter 快起慢收（眼睛在落點停得住）、exit 慢起快收（離場不搶戲）、move 兩端都緩（已在畫面上的東西換位置）。
-    /// 臨界阻尼，沒有回彈。手勢（抽屜的邊緣滑動）是跟手的：位置 1:1 跟著手指、放開時依速度投射到落點、
-    /// 再以放開當下的速度接續動畫；只有手勢在邊界上有橡皮筋的阻力。載入中的骨架屏用 pulse 緩緩一明一暗。
+    /// 動態照 Material 3 的動態系統：時長依互動類別命名，不依毫秒數（fast 狀態層與回饋、normal 元件進出、slow 大面積位移、
+    /// reveal 內容揭露、ripple 水波紋擴散）；緩動依「運動的角色」命名，與時長正交（時長講多久，曲線講怎麼動）。
+    /// standard 與 move 是 M3 的標準／強調曲線（網頁上兩者是同一條）、enter 是強調減速（快起、長而柔的收尾，眼睛在落點停得住）、
+    /// exit 是強調加速（慢起快收，離場不搶戲）、settle 是頁面與卡片的進場（同強調減速）。沒有回彈。
+    /// 手勢（抽屜的邊緣滑動）是跟手的：位置 1:1 跟著手指、放開時依速度投射到落點、再以放開當下的速度接續動畫；
+    /// 只有手勢在邊界上有橡皮筋的阻力。載入中的骨架屏用 pulse 緩緩一明一暗。
     /// </summary>
     public static IReadOnlyDictionary<string, string> Motion { get; } = new Dictionary<string, string>
     {
         ["fast"] = "150ms",
-        ["normal"] = "200ms",
-        ["slow"] = "300ms",
+        ["normal"] = "250ms",
+        ["slow"] = "350ms",
         ["reveal"] = "500ms",
+        // 水波紋從按下的點擴散到整顆按鈕的時間，放開後再淡出；比狀態層慢，看得出是從手指底下長出來的。
+        ["ripple"] = "450ms",
         // 骨架屏一明一暗的一個週期：慢到不搶戲，快到看得出「還在載入」。
         ["pulse"] = "1600ms",
-        ["ease-standard"] = "cubic-bezier(0.4, 0, 0.2, 1)",
-        ["ease-enter"] = "cubic-bezier(0, 0.4, 0, 1)",
-        ["ease-exit"] = "cubic-bezier(0.6, 0, 0.8, 0.6)",
-        ["ease-move"] = "cubic-bezier(0.4, 0, 0, 1)",
-        // 進場的落定曲線：臨界阻尼的彈簧近似（阻尼比 1、無回彈），起步快、尾端長而柔，用在頁面與卡片的進場。
-        ["ease-settle"] = "cubic-bezier(0.16, 1, 0.3, 1)",
+        ["ease-standard"] = "cubic-bezier(0.2, 0, 0, 1)",
+        ["ease-enter"] = "cubic-bezier(0.05, 0.7, 0.1, 1)",
+        ["ease-exit"] = "cubic-bezier(0.3, 0, 0.8, 0.15)",
+        ["ease-move"] = "cubic-bezier(0.2, 0, 0, 1)",
+        // 進場的落定曲線：M3 的強調減速，起步快、尾端長而柔，用在頁面與卡片的進場。
+        ["ease-settle"] = "cubic-bezier(0.05, 0.7, 0.1, 1)",
         // 進場的位移量：只有一小段，方向與離場相反（從哪來、回哪去）。
         ["travel"] = "0.75rem",
         // 彈出層（選單）的位移與起始縮放：比頁面元素小一階，看起來是從觸發點長出來，不是滑進來。
         ["travel-sm"] = "0.25rem",
-        ["scale"] = "0.97",
+        ["scale"] = "0.95",
     };
 
-    /// <summary>按下當下的縮放（回饋在按下，不是放開）。使用者要求減少動態時為 1。</summary>
+    /// <summary>按下當下的縮放（回饋在按下，不是放開；水波紋另外從按下的點擴散）。使用者要求減少動態時為 1。</summary>
     public const string PressScale = "0.97";
+
+    /// <summary>
+    /// Material 3 狀態層的不透明度：懸停、聚焦與按下時在元件上疊一層「內容色」（文字或圖示的顏色）。
+    /// 一層而不是改底色：同一條規則在任何底色、淺色與深色上都對。
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> StateLayer { get; } = new Dictionary<string, string>
+    {
+        ["hover"] = "8%",
+        ["focus"] = "10%",
+        ["pressed"] = "10%",
+        ["dragged"] = "16%",
+    };
 
     /// <summary>可點的東西在觸控裝置上至少 44×44。</summary>
     public const string TouchTarget = "2.75rem";

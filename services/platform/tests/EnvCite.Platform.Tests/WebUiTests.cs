@@ -45,7 +45,9 @@ public sealed class WebUiTests(PlatformFactory factory)
         Assert.Contains("name=\"Input.Email\"", html, StringComparison.Ordinal);
         Assert.Contains("name=\"Input.Password\"", html, StringComparison.Ordinal);
         Assert.Contains("method=\"post\"", html, StringComparison.Ordinal);
-        Assert.DoesNotContain("Google", html, StringComparison.OrdinalIgnoreCase);
+        // 營運者沒有 Google 登入：看按鈕與它的字，不看整頁的 "Google"（字型 Google Sans Flex 的名稱也在頁面的 token 裡）。
+        Assert.DoesNotContain("ep-btn-google", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Google 帳戶", html, StringComparison.Ordinal);
         Assert.DoesNotContain("註冊帳號", html, StringComparison.Ordinal);
     }
 

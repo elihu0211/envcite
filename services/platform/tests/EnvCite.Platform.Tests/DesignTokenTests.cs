@@ -66,6 +66,9 @@ public static partial class DesignTokenTests
             data.Add(name, "control border on muted surface", $"{c.BorderControl}|{c.SurfaceMuted}", 3.0);
             data.Add(name, "control border on background", $"{c.BorderControl}|{c.Background}", 3.0);
             data.Add(name, "on-primary on primary", $"{c.OnPrimary}|{c.Primary}", 4.5);
+            // 選取（側欄目前項、選中的晶片）：色調容器上的字與圖示。
+            data.Add(name, "on-primary-container on primary container", $"{c.OnPrimaryContainer}|{c.PrimaryContainer}", 4.5);
+            data.Add(name, "link on primary container", $"{c.Link}|{c.PrimaryContainer}", 4.5);
             data.Add(name, "on-ink on ink", $"{c.OnInk}|{c.Ink}", 4.5);
             data.Add(name, "link on surface", $"{c.Link}|{c.Surface}", 4.5);
             data.Add(name, "link on background", $"{c.Link}|{c.Background}", 4.5);
@@ -110,7 +113,7 @@ public static partial class DesignTokenTests
         foreach (var variable in new[]
         {
             "--ep-bg", "--ep-surface", "--ep-surface-raised", "--ep-surface-muted", "--ep-text", "--ep-text-secondary", "--ep-primary",
-            "--ep-on-primary", "--ep-ink", "--ep-on-ink", "--ep-accent", "--ep-link", "--ep-success", "--ep-warning", "--ep-error", "--ep-info",
+            "--ep-on-primary", "--ep-primary-container", "--ep-on-primary-container", "--ep-ink", "--ep-on-ink", "--ep-accent", "--ep-link", "--ep-success", "--ep-warning", "--ep-error", "--ep-info",
             "--ep-border-subtle", "--ep-border-control", "--ep-focus", "--ep-scrim", "--ep-elevation-1",
         })
         {
@@ -124,7 +127,7 @@ public static partial class DesignTokenTests
             "--ep-press-scale", "--ep-touch-target", "--ep-control-height", "--ep-label-s-size", "--ep-qr-surface",
             "--ep-motion-fast", "--ep-motion-normal", "--ep-motion-slow", "--ep-motion-reveal",
             "--ep-motion-ease-standard", "--ep-motion-ease-enter", "--ep-motion-ease-exit", "--ep-motion-ease-move",
-            "--ep-radius-pill",
+            "--ep-radius-pill", "--ep-motion-ripple", "--ep-state-hover", "--ep-state-pressed",
         })
         {
             Assert.Equal(1, Regex.Count(baseBlock, Regex.Escape(variable + ":")));
@@ -148,7 +151,7 @@ public static partial class DesignTokenTests
         Assert.DoesNotContain("color-scheme", chosen, StringComparison.Ordinal);
         Assert.Equal(1, Regex.Count(css, "color-scheme:dark;"));
         Assert.Equal(1, Regex.Count(css, "color-scheme:light;"));
-        Assert.Contains("--ep-font:\"Roboto Variable\",\"Noto Sans TC Variable\",sans-serif;", css, StringComparison.Ordinal);
+        Assert.Contains("--ep-font:\"Google Sans Flex Variable\",\"Noto Sans TC Variable\",sans-serif;", css, StringComparison.Ordinal);
         Assert.Contains("--ep-font-mono:\"Roboto Mono Variable\",\"Noto Sans TC Variable\",monospace;", css, StringComparison.Ordinal);
     }
 
@@ -298,7 +301,7 @@ public static partial class DesignTokenTests
             m.Groups[1].Value.StartsWith("var(--ep-font", StringComparison.Ordinal) || m.Groups[1].Value == "inherit", m.Value));
     }
 
-    // Roboto 排在中文字型前面，所以它要讓出中文排版的標點：引號、破折號、刪節號、間隔號落到 Noto Sans TC，排成全形。
+    // 拉丁字型（Google Sans Flex）排在中文字型前面，所以它要讓出中文排版的標點：引號、破折號、刪節號、間隔號落到 Noto Sans TC，排成全形。
     [Theory]
     [InlineData(0x00B7)]
     [InlineData(0x2014)]
@@ -306,17 +309,17 @@ public static partial class DesignTokenTests
     [InlineData(0x201C)]
     [InlineData(0x201D)]
     [InlineData(0x2026)]
-    public static void RobotoLeavesChinesePunctuationToTheChineseFont(int codePoint)
+    public static void TheLatinFontLeavesChinesePunctuationToTheChineseFont(int codePoint)
     {
         var fonts = File.ReadAllText(FontsPath());
-        var robotoRanges = Regex.Matches(fonts, @"font-family: 'Roboto Variable';[^}]*unicode-range: ([^;]+);")
+        var latinRanges = Regex.Matches(fonts, @"font-family: 'Google Sans Flex Variable';[^}]*unicode-range: ([^;]+);")
             .SelectMany(m => m.Groups[1].Value.Split(','))
             .Select(range => range.Trim()[2..].Split('-'))
             .Select(bounds => (Low: Convert.ToInt32(bounds[0], 16), High: Convert.ToInt32(bounds[^1], 16)))
             .ToList();
 
-        Assert.NotEmpty(robotoRanges);
-        Assert.DoesNotContain(robotoRanges, r => r.Low <= codePoint && codePoint <= r.High);
+        Assert.NotEmpty(latinRanges);
+        Assert.DoesNotContain(latinRanges, r => r.Low <= codePoint && codePoint <= r.High);
     }
 
     [Fact]
@@ -744,7 +747,7 @@ public static partial class DesignTokenTests
         Assert.Contains(".ep-segmented:has(> .ep-segment:nth-child(2) > input:checked)", css, StringComparison.Ordinal);
         Assert.Contains(".ep-segmented:has(> .ep-segment:nth-child(3) > input:checked)", css, StringComparison.Ordinal);
         Assert.Matches(@"\.ep-segmented::before \{[^}]*border: 1px solid var\(--ep-border-control\)", css); // 塊對軌道有 3:1 的外框
-        Assert.Matches(@"\.ep-segment:has\(> input:checked\) \{\s*color: var\(--ep-text\);\s*font-weight: var\(--ep-label-l-weight\)", css);
+        Assert.Matches(@"\.ep-segment:has\(> input:checked\) \{\s*color: var\(--ep-on-primary-container\);\s*font-weight: var\(--ep-label-l-weight\)", css);
         Assert.Matches(@"\.ep-segment > input \{[^}]*opacity: 0", css); // 原生 radio 蓋在整格上
         Assert.Contains(".ep-segment:has(> input:focus-visible)", css, StringComparison.Ordinal);
         Assert.Contains(".ep-segment:has(> input:active)", css, StringComparison.Ordinal);
@@ -1009,12 +1012,12 @@ public sealed class DesignPageTests(PlatformFactory factory)
         Assert.Matches(@"_content/MudBlazor/MudBlazor\.min\.[\w.]*css", interactivePage);
         Assert.Matches(@"_content/MudBlazor/MudBlazor\.min\.[\w.]*js", interactivePage);
 
-        var preload = $"<link rel=\"preload\" href=\"{EnvCite.Platform.Web.Components.App.RobotoLatin}\" as=\"font\" type=\"font/woff2\" crossorigin";
+        var preload = $"<link rel=\"preload\" href=\"{EnvCite.Platform.Web.Components.App.SansLatin}\" as=\"font\" type=\"font/woff2\" crossorigin";
         Assert.Contains(preload, staticPage, StringComparison.Ordinal);
         Assert.Contains(preload, interactivePage, StringComparison.Ordinal);
         var fonts = await client.GetStringAsync(new Uri("_content/EnvCite.Platform.Web/fonts/fonts.css", UriKind.Relative), TestContext.Current.CancellationToken);
-        Assert.Contains($"url({EnvCite.Platform.Web.Components.App.RobotoLatin["_content/EnvCite.Platform.Web/fonts/".Length..]})", fonts, StringComparison.Ordinal);
-        using var font = await client.GetAsync(new Uri(EnvCite.Platform.Web.Components.App.RobotoLatin, UriKind.Relative), TestContext.Current.CancellationToken);
+        Assert.Contains($"url({EnvCite.Platform.Web.Components.App.SansLatin["_content/EnvCite.Platform.Web/fonts/".Length..]})", fonts, StringComparison.Ordinal);
+        using var font = await client.GetAsync(new Uri(EnvCite.Platform.Web.Components.App.SansLatin, UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, font.StatusCode);
     }
 }

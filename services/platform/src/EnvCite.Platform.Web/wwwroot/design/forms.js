@@ -153,6 +153,10 @@
     // 偏好存在 localStorage，頁面一載入就由 <head> 裡那段小腳本套上 data-side（不閃一下）。抽屜的 data-drawer 不存檔。
     const root = document.documentElement;
     const phone = matchMedia("(width < 48rem)");
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    // 動態的時長與曲線只寫在 token（TokenCss 輸出到 :root）：腳本畫的動畫從同一份讀，不另寫毫秒數。
+    const tokenText = (name) => getComputedStyle(root).getPropertyValue(name).trim();
+    const token = (name) => Number.parseFloat(tokenText(name)) || 0;
     const sideToggles = () => document.querySelectorAll(".ep-side-toggle");
     const visibleSideToggle = () => [...sideToggles()].find((button) => button.getClientRects().length > 0);
 
@@ -467,6 +471,54 @@
         });
     }
 
+    // ---- 水波紋（Material 的觸控回饋） ----------------------------------------------------------------
+    // 按下的當下從落點擴散成蓋滿元件的圓，放開後淡出；圓怎麼畫在 platform.css 的 [data-ripple]，這裡只給落點、半徑與狀態。
+    // 放開得很快時，至少等擴散走完一半才淡出，波紋不會還沒長出來就消失。只回應主要按鍵、觸控與手寫筆；
+    // 停用、送出中的控制項不畫；使用者要求減少動態時不畫（狀態層的底色變化仍在）。鍵盤操作沒有落點，由焦點環與狀態層回饋。
+    const rippleTargets = [
+        ".ep-btn", ".ep-side-link", ".ep-recent-link", ".ep-tab", ".ep-palette-open", ".ep-palette-item", ".ep-chip",
+        ".ep-menu-item", ".ep-lang-option", ".ep-side-toggle", ".ep-portal-user", ".ep-portal-new-chat", ".ep-side-new-chat",
+        ".ep-send", "a.ep-stat", ".mud-button-root",
+    ].join(", ");
+
+    document.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 || reducedMotion.matches) {
+            return;
+        }
+
+        const host = event.target.closest?.(rippleTargets);
+        if (!host || host.matches(":disabled, [aria-disabled='true'], [aria-busy='true']")) {
+            return;
+        }
+
+        const box = host.getBoundingClientRect();
+        const x = event.clientX - box.left;
+        const y = event.clientY - box.top;
+        host.style.setProperty("--ep-ripple-x", `${x}px`);
+        host.style.setProperty("--ep-ripple-y", `${y}px`);
+        host.style.setProperty("--ep-ripple-size", `${Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y))}px`);
+
+        // 連點時從頭再播：先拿掉屬性、讓樣式重算一次，再設回去，動畫才會重新開始。
+        delete host.dataset.ripple;
+        void host.offsetWidth;
+        host.dataset.ripple = "down";
+
+        const pressed = performance.now();
+        const released = new AbortController();
+        const release = () => {
+            released.abort();
+            const hold = Math.max(0, token("--ep-motion-ripple") / 2 - (performance.now() - pressed));
+            setTimeout(() => {
+                if (host.dataset.ripple === "down") {
+                    host.dataset.ripple = "up";
+                }
+            }, hold);
+        };
+        window.addEventListener("pointerup", release, { signal: released.signal });
+        window.addEventListener("pointercancel", release, { signal: released.signal });
+        host.addEventListener("pointerleave", release, { signal: released.signal });
+    }, { passive: true });
+
     // ---- 外觀（個人設定）：即時預覽，並把選擇送給伺服器 ----------------------------------------------
     // 偏好存在伺服器的 cookie，下一個請求由 App.razor 輸出 <html data-theme>（所以頁面第一格就是對的，這裡不讀不寫任何儲存）。
     // 這裡只做兩件事：選了就立即換上（預覽，不必另外按儲存），並用 fetch 送出同一張表單。沒有 JavaScript 時，表單是普通的 POST。
@@ -495,11 +547,28 @@
         const status = form.querySelector("[data-appearance-status]");
         status.textContent = "";
 
-        // 亮暗互換的一瞬間整頁亮度會跳一下：用瀏覽器原生的 View Transition 交叉淡入淡出（只有透明度，沒有位移；
-        // 使用者要求減少動態時，樣式表把它收短）。不支援的瀏覽器直接換。
+        // 亮暗互換的一瞬間整頁亮度會跳一下：用瀏覽器原生的 View Transition 換場。新的外觀從選的那一格以圓形展開到整頁
+        // （Material 的 container transform 那種「從觸發點長出來」），時長與曲線取 token；使用者要求減少動態時不畫圓，
+        // 只留樣式表收短的交叉淡入淡出。不支援的瀏覽器直接換。
         const apply = () => applyAppearance(radio.value);
         if (document.startViewTransition) {
-            document.startViewTransition(apply);
+            const reveal = !reducedMotion.matches;
+            if (reveal) {
+                root.dataset.reveal = "";
+            }
+
+            const transition = document.startViewTransition(apply);
+            if (reveal) {
+                const origin = (radio.closest(".ep-segment") ?? radio).getBoundingClientRect();
+                const x = origin.left + origin.width / 2;
+                const y = origin.top + origin.height / 2;
+                const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+                transition.ready.then(() => root.animate(
+                    { clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+                    { duration: token("--ep-motion-reveal"), easing: tokenText("--ep-motion-ease-enter"), pseudoElement: "::view-transition-new(root)" },
+                )).catch(() => { });
+                transition.finished.finally(() => delete root.dataset.reveal);
+            }
         } else {
             apply();
         }
