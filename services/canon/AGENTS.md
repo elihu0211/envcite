@@ -65,6 +65,7 @@ uv run --env-file .env canon serve
   - 公開模組、類別與函式須有 docstring（`D100`–`D103`）：首句說明「是什麼」，其餘只寫前提、不變式與「為什麼」；欄位與常數用前置 `#:`。
   - 禁用 `Any`（`ANN401`），動態邊界（JSON 文件、clingo 答案集原子、唯讀連線列）例外須在根 `pyproject.toml` 列出並說明；人寫 JSON 在邊界以 pydantic 解碼成型別化結構（參照 `law/ruling.py`）。
 - **日誌**：只由 `cli.main` 設定一次（`server.py` 因要記錄器名稱另設），子指令不呼叫 `logging.basicConfig`（`tests/test_architecture.py` 守門）。
+- **對外 HTTP**：只有兩個出口，網頁用 [`acquire/web.py`](src/canon/acquire/web.py) 的 `Http`（循序、禮貌間隔、串流下載）、JSON API 用 [`net.py`](src/canon/net.py) 的 `post_json`（共用連線池）；身分（`USER_AGENT`，版本與聯絡處取自 `pyproject.toml` 的 `[project.urls]`）、逾時、重試（`web.retrying`）與狀態分類都只在這兩處寫一次。其他模組與 `tools/` 不匯入 `httpx`、`urllib`、`http.client`、`requests`（`tests/test_architecture.py` 守門）；模型 SDK 自帶客戶端的例外是 `verification/models.py`，它手動帶同一個 `USER_AGENT`。
 - **資料庫讀取與組態**：
   - 查詢用 `db.fetch`／`fetch_one`／`scalar` 搭配私有 `NamedTuple`（欄位次序同 `SELECT`，可空欄標 `| None`），不於用處 `cast`；欄位次序同 `store/records.py` 時直接共用紀錄型別。連線型別只用 `db.Conn`。
   - 匯入問題（`source.import_problem`）的型別與寫入只經 `import_problems`。
