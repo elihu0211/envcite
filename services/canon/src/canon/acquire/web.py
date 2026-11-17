@@ -1,8 +1,8 @@
 """循序抓網頁的 HTTP 客戶端：沒有 API、只有網頁的來源共用（公報、主管機關與立法院的法規系統）。
 
 以 `httpx.Client` 共用底層連線池，一次一個請求、請求之間至少隔 `pause` 秒，User-Agent 載明系統
-與聯絡處（02-01 §8.1）。失敗依 jobkit 分類：連線、逾時、408／429／5xx 是端點問題，可退避重試；
-其餘 4xx 隔離該項；401／403 致命。
+與聯絡處（02-01 §8.1；值見 `canon.net.USER_AGENT`）。失敗依 jobkit 分類：連線、逾時、408／429／5xx
+是端點問題，可退避重試；其餘 4xx 隔離該項；401／403 致命。
 """
 
 import hashlib
@@ -11,10 +11,8 @@ from pathlib import Path
 
 import httpx
 
-from canon.net import tls_context
+from canon.net import USER_AGENT, tls_context
 from envcite_jobkit import EndpointError, ItemError, raise_for_status
-
-USER_AGENT = "canon (+https://github.com/elihu0211/envcite)"
 
 
 class Http:
