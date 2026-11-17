@@ -133,6 +133,16 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var historyPos = home.Html.IndexOf("class=\"ep-history-empty\"", StringComparison.Ordinal);
         var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
         Assert.True(modulesPos > 0 && historyPos > modulesPos && footPos > historyPos);
+
+        // 空的歷史區只留一句短提示，不教人怎麼開始（「新對話」就在上面）。
+        Assert.Contains("<p class=\"ep-history-empty-note\">暫無對話</p>", home.Html, StringComparison.Ordinal);
+
+        // 對話紀錄頁的空狀態同一句：標題「暫無對話」，不再附說明與第二個入口（頁首已有「新對話」）。
+        var history = await browser.GetAsync($"{Home(tenant.Identifier)}/history");
+        var emptyState = Regex.Match(history.Html, "<div class=\"ep-empty\">.*?</div>", RegexOptions.Singleline).Value;
+        Assert.Contains("<h2 class=\"ep-empty-title\">暫無對話</h2>", emptyState, StringComparison.Ordinal);
+        Assert.DoesNotContain("<p>", emptyState, StringComparison.Ordinal);
+        Assert.DoesNotContain("<a ", emptyState, StringComparison.Ordinal);
     }
 
     // 功能區（新對話、各功能入口）與對話歷史區是並列的兩塊，不是同一條清單：歷史區在功能區之外，才能各自配置高度、只有歷史區捲動。

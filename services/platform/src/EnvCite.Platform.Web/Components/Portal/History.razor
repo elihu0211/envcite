@@ -48,9 +48,8 @@
     }
     else if (_items.Count == 0)
     {
-        <EmptyState Icon="@Icons.Material.Outlined.Forum" Title="@L["還沒有對話"]" Description="@L["在首頁問一個問題，它就會出現在這裡。"]">
-            <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["法規諮詢"]</a>
-        </EmptyState>
+        @* 只說現況：頁首已有「新對話」，不在空狀態再放第二個入口。 *@
+        <EmptyState Icon="@Icons.Material.Outlined.Forum" Title="@L["暫無對話"]" />
     }
     else
     {
