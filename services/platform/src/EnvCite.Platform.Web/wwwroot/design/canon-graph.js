@@ -434,6 +434,9 @@
     return metaParts.length > 0 ? `${shortTitle}\n${metaParts.join(" · ")}` : shortTitle;
   }
 
+  // 「授權 N 部子法規」膠囊的 id 前綴；展開狀態與依子法種類分組的膠囊共用 expandedGroups。
+  const DISCLOSURE_PREFIX = "dsc__";
+
   function buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers = new Set()) {
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const incomingByTarget = new Map();
@@ -449,6 +452,10 @@
     const shouldGroup = nodes.length > 12;
     const hasFocus = nodes.some((n) => n.focus);
     const minTotalLeaves = hasFocus && nodes.length <= 22 ? 4 : 2;
+    // 分層揭露：沒有焦點、節點多、也沒關掉任何層級時，先只畫沒有上位法的根（多半是法律層），
+    // 每個有下位法規的節點旁給一顆「授權 N 部子法規」膠囊，點了才畫出下一層。
+    // 圖例關掉層級代表使用者在自己挑要看的層，那時不再收合。
+    const useDisclosure = shouldGroup && !hasFocus && hiddenTiers.size === 0;
     const hiddenNodeIds = new Set();
     const groupMembership = new Map();
     const childGroupMap = new Map();
@@ -530,25 +537,132 @@
       });
     }
 
+    const disclosureNodes = [];
+    const disclosureEdges = [];
+    const collapsedIds = new Set(); // 下位法規還收著的節點：旁邊有展開膠囊，不再另畫「+N 部」連結
+    const revealParent = new Map(); // 節點 → 第一個授權它的上位法；搜尋時沿著它找出要展開哪幾顆膠囊
+    if (useDisclosure) {
+      const childrenOf = (id) => {
+        const seen = new Set();
+        (outgoingBySource.get(id) || []).forEach((e) => {
+          if (e.target !== id) seen.add(e.target);
+        });
+        return Array.from(seen);
+      };
+      const hasParent = (id) => (incomingByTarget.get(id) || []).some((e) => e.source !== id);
+
+      // 先不管展開與否走完整張圖，記下每個節點由誰授權；萬一整段成環（沒有根），拿沒走到的第一個當根，圖不會少節點。
+      const roots = nodes.filter((n) => !hasParent(n.id)).map((n) => n.id);
+      const walked = new Set();
+      const walkFrom = (start) => {
+        const queue = [start];
+        walked.add(start);
+        for (let i = 0; i < queue.length; i += 1) {
+          childrenOf(queue[i]).forEach((cid) => {
+            if (!revealParent.has(cid)) revealParent.set(cid, queue[i]);
+            if (!walked.has(cid)) {
+              walked.add(cid);
+              queue.push(cid);
+            }
+          });
+        }
+      };
+      roots.forEach(walkFrom);
+      nodes.forEach((n) => {
+        if (!walked.has(n.id)) {
+          roots.push(n.id);
+          walkFrom(n.id);
+        }
+      });
+
+      const reachable = new Set(roots);
+      const queue = [...roots];
+      const reveal = (cid) => {
+        if (reachable.has(cid)) return;
+        reachable.add(cid);
+        queue.push(cid);
+      };
+      for (let i = 0; i < queue.length; i += 1) {
+        const id = queue[i];
+        const kids = childrenOf(id);
+        if (kids.length === 0) continue;
+        const tier = Number.isFinite(byId.get(id).hierarchyTier) ? byId.get(id).hierarchyTier : 1;
+        if (tier >= 3) {
+          // 最後一層不收：膠囊會和它同欄。
+          kids.forEach(reveal);
+          continue;
+        }
+        const capsuleId = `${DISCLOSURE_PREFIX}${id}`;
+        const isExpanded = expandedGroups.has(capsuleId);
+        const template = isExpanded
+          ? (labels.disclosureExpanded || "授權 {n} 部子法規 · 收合")
+          : (labels.disclosureCollapsed || "授權 {n} 部子法規 · 點擊展開");
+        disclosureNodes.push({
+          id: capsuleId,
+          title: `${isExpanded ? "▼" : "▶"} ${template.replace("{n}", String(kids.length))}`,
+          documentType: "",
+          hierarchyTier: Math.min(3, tier + 1),
+          isGroupCapsule: true,
+          isExpanded,
+          groupId: capsuleId,
+          parentId: id,
+          count: kids.length,
+        });
+        disclosureEdges.push({ source: id, target: capsuleId, kind: "group_link", anchorArticles: [] });
+        if (isExpanded) kids.forEach(reveal);
+        else collapsedIds.add(id);
+      }
+      nodes.forEach((n) => {
+        if (!reachable.has(n.id)) hiddenNodeIds.add(n.id);
+      });
+
+      // 還收著的節點，原本依子法種類分的膠囊先不畫（它們的成員本來就被收起來了）；展開後才回來。
+      // 面板與右鍵選單的「展開／收合授權子法」要連同新的膠囊一起操作，所以把它放在清單最前面。
+      collapsedIds.forEach((id) => childGroupMap.delete(id));
+      disclosureNodes.forEach((c) => {
+        const existing = childGroupMap.get(c.parentId) || [];
+        childGroupMap.set(c.parentId, [{ groupId: c.id, count: c.count, isExpanded: c.isExpanded }, ...existing]);
+      });
+    }
+
+    const keptGroupNodes = groupNodes.filter((g) => !hiddenNodeIds.has(g.parentId) && !collapsedIds.has(g.parentId));
+    const keptGroupIds = new Set(keptGroupNodes.map((g) => g.id));
+    const keptGroupEdges = groupEdges.filter((e) => keptGroupIds.has(e.target));
+
     // 圖例關掉的層級不畫（分組膠囊的層級是它所屬母法的下一層，所以跟著一起消失）。連線由下面的 visibleIds 自然濾掉。
     const visibleNodes = [
       ...nodes.filter((n) => !hiddenNodeIds.has(n.id)),
-      ...groupNodes,
+      ...keptGroupNodes,
+      ...disclosureNodes,
     ].filter((n) => !hiddenTiers.has(Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1));
     const visibleIds = new Set(visibleNodes.map((n) => n.id));
     const visibleEdges = [
       ...edges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target)),
-      ...groupEdges,
+      ...keptGroupEdges,
+      ...disclosureEdges,
     ];
 
-    return { visibleNodes, visibleEdges, groupMembership, childGroupMap };
+    // 要看到某個節點得先展開哪幾顆膠囊（由根往下，不含節點自己）。
+    const revealPath = (id) => {
+      const path = [];
+      const seen = new Set();
+      let current = revealParent.get(id);
+      while (current && !seen.has(current)) {
+        seen.add(current);
+        path.push(`${DISCLOSURE_PREFIX}${current}`);
+        current = revealParent.get(current);
+      }
+      return path;
+    };
+
+    return { visibleNodes, visibleEdges, groupMembership, childGroupMap, collapsedIds, revealPath };
   }
 
-  function computeStufenbauPositions(nodes, edges, containerWidth, labels) {
+  function computeStufenbauPositions(nodes, edges, containerWidth, labels, collapsedIds = new Set()) {
     if (!nodes || nodes.length === 0) return { positions: new Map(), clusters: [] };
 
     const clusters = nodes
-      .filter((n) => !n.isGroupCapsule && n.truncatedChildren > 0 && n.expandHref)
+      .filter((n) => !n.isGroupCapsule && !collapsedIds.has(n.id) && n.truncatedChildren > 0 && n.expandHref)
       .map((n) => {
         const parentTier = Number.isFinite(n.hierarchyTier) ? n.hierarchyTier : 1;
         return {
@@ -1298,6 +1412,32 @@
     const host = container.closest("[data-graph-host]");
     const inspectorEl = host ? host.querySelector("[data-graph-inspector]") : null;
 
+    // 「怎麼讀這張圖」：第一次看到時常駐在畫布上方；關掉後記在這個瀏覽器，之後用工具列的「怎麼讀」叫回來。
+    // 沒有 JS 或讀不到儲存空間時它就一直在，不會因為記不住而讓人找不到說明。
+    const guideEl = host ? host.querySelector("[data-graph-guide]") : null;
+    const guideDismissedKey = "envcite.law-graph.guide-dismissed";
+    function setGuideOpen(open, { remember = false } = {}) {
+      if (!guideEl || !host) return;
+      guideEl.hidden = !open;
+      host.querySelectorAll("[data-graph-guide-toggle]").forEach((btn) => {
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      if (!remember) return;
+      try {
+        if (open) window.localStorage.removeItem(guideDismissedKey);
+        else window.localStorage.setItem(guideDismissedKey, "1");
+      } catch {
+        // 私密視窗或封鎖網站資料：只是記不住，說明照常能開關
+      }
+    }
+    let guideDismissed = false;
+    try {
+      guideDismissed = window.localStorage.getItem(guideDismissedKey) === "1";
+    } catch {
+      guideDismissed = false;
+    }
+    setGuideOpen(!guideDismissed);
+
     let currentLayout = payload.mode === "concentric" ? "concentric" : "stufenbau";
     let showEdgeLabels = edges.length <= 16;
     let selectedNodeId = null;
@@ -1309,8 +1449,8 @@
 
     function computeCurrentGraphData() {
       visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers);
-      const { visibleNodes, visibleEdges } = visibleModelCache;
-      const { positions, clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
+      const { visibleNodes, visibleEdges, collapsedIds } = visibleModelCache;
+      const { positions, clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels, collapsedIds);
       return buildG6Data(visibleNodes, visibleEdges, clusters, positions, themePalette(), labels);
     }
 
@@ -1517,7 +1657,7 @@
           enable: (e) => e.targetType === "node",
           getItems: (e) => {
             const nodeId = e?.target?.id;
-            const datum = nodeId ? graph.getNodeData(nodeId) : null;
+            const datum = nodeId ? nodeDatumOf(nodeId) : null;
             if (datum?.data?.isGroupCapsule === "yes") {
               return [{ name: labels.toggleGroupAction || "展開／收合授權子法", value: "toggle-capsule" }];
             }
@@ -1538,7 +1678,7 @@
           onClick: async (value, target, current) => {
             const nodeId = current?.id;
             if (!nodeId) return;
-            const datum = graph.getNodeData(nodeId);
+            const datum = nodeDatumOf(nodeId);
             const raw = datum?.data?.raw;
             if (value === "toggle-capsule" && datum?.data?.groupId) {
               await toggleSingleGroup(datum.data.groupId, datum.data.parentId);
@@ -1563,6 +1703,16 @@
     });
 
     container._g6Instance = graph;
+
+    // G6 的 getNodeData(id) 找不到節點時是丟例外，不是回 undefined。被收起的節點不在圖上是常態
+    // （分層揭露、子法分組），所以「圖上有沒有這個節點」一律走這裡。
+    function nodeDatumOf(id) {
+      try {
+        return graph.getNodeData(id);
+      } catch {
+        return undefined;
+      }
+    }
 
     container.addEventListener("wheel", (evt) => {
       const isFs = Boolean(document.fullscreenElement && host?.contains(document.fullscreenElement));
@@ -1591,7 +1741,7 @@
           const target = focusTargetId
             || selectedNodeId
             || (nodes.find((n) => n.focus) || topParent || nodes[0])?.id;
-          if (target && graph.getNodeData(target)) {
+          if (target && nodeDatumOf(target)) {
             await graph.focusElement(target, false);
           }
         }
@@ -1618,7 +1768,7 @@
       invalidSpotlight = !invalidSpotlight;
       syncFilterButtons();
       if (!invalidSpotlight) {
-        if (selectedNodeId && graph.getNodeData(selectedNodeId)) {
+        if (selectedNodeId && nodeDatumOf(selectedNodeId)) {
           selectNodeById(selectedNodeId);
         } else {
           clearSelectionStates();
@@ -1662,7 +1812,7 @@
         graph.setData(computeCurrentGraphData());
         await graph.render();
         await applyLayout(currentLayout);
-        if (selectedNodeId && graph.getNodeData(selectedNodeId)) {
+        if (selectedNodeId && nodeDatumOf(selectedNodeId)) {
           selectNodeById(selectedNodeId);
         } else {
           selectedNodeId = null;
@@ -1822,9 +1972,9 @@
     const inspectorCallbacks = {
       getNodeGroups: (id) => visibleModelCache?.childGroupMap.get(id) || [],
       toggleNodeGroups: (id) => { toggleGroupsForNode(id); },
-      hasNode: (id) => Boolean(graph.getNodeData(id)),
+      hasNode: (id) => Boolean(nodeDatumOf(id)),
       focusNodeOnCanvas: async (nodeId) => {
-        if (!nodeId || !graph.getNodeData(nodeId)) return;
+        if (!nodeId || !nodeDatumOf(nodeId)) return;
         selectNodeById(nodeId);
         setInspectorOpen(true);
         if (graph.getZoom() < 0.78) {
@@ -1839,7 +1989,7 @@
     // 窄容器的底部面板是 fixed、蓋在畫布外，不需要讓位。
     async function revealBesideInspector(nodeId) {
       const sheet = host?.querySelector(".ep-graph-inspector");
-      if (!sheet || host.dataset.inspectorOpen !== "true" || !graph.getNodeData(nodeId)) return;
+      if (!sheet || host.dataset.inspectorOpen !== "true" || !nodeDatumOf(nodeId)) return;
       if (getComputedStyle(sheet).position === "fixed") return;
       try {
         // 面板的最終位置用版面座標（offsetLeft 不含進場的位移動畫）；量 getBoundingClientRect 會把動畫中的位移算進去，少推一截。
@@ -1901,7 +2051,7 @@
     }
 
     function selectNodeById(nodeId) {
-      const nodeDatum = graph.getNodeData(nodeId);
+      const nodeDatum = nodeDatumOf(nodeId);
       if (!nodeDatum) {
         selectedNodeId = null;
         clearSelectionStates();
@@ -1926,35 +2076,50 @@
       renderInspector(inspectorEl, nodeDatum.data?.raw || null, nodes, edges, labels, inspectorCallbacks);
     }
 
+    // 展開或收合要重排、再適應視窗，這段時間節點還在換位置；標在畫布上（data-graph-busy），
+    // 想等它停下來的人（端對端測試）有明確的訊號，不必猜時間。
+    async function whileRelayouting(work) {
+      container.dataset.graphBusy = "true";
+      try {
+        await work();
+      } finally {
+        delete container.dataset.graphBusy;
+      }
+    }
+
     async function toggleSingleGroup(groupId, parentId) {
       if (!groupId) return;
-      if (expandedGroups.has(groupId)) {
-        expandedGroups.delete(groupId);
-      } else {
-        expandedGroups.add(groupId);
-      }
-      graph.setData(computeCurrentGraphData());
-      await graph.render();
-      await applyLayout(currentLayout, groupId || parentId);
-      if (parentId && graph.getNodeData(parentId)) {
-        selectNodeById(parentId);
-      }
+      await whileRelayouting(async () => {
+        if (expandedGroups.has(groupId)) {
+          expandedGroups.delete(groupId);
+        } else {
+          expandedGroups.add(groupId);
+        }
+        graph.setData(computeCurrentGraphData());
+        await graph.render();
+        await applyLayout(currentLayout, groupId || parentId);
+        if (parentId && nodeDatumOf(parentId)) {
+          selectNodeById(parentId);
+        }
+      });
     }
 
     async function toggleGroupsForNode(nodeId) {
       const groups = visibleModelCache?.childGroupMap.get(nodeId) || [];
       if (groups.length === 0) return;
-      const anyCollapsed = groups.some((g) => !expandedGroups.has(g.groupId));
-      groups.forEach((g) => {
-        if (anyCollapsed) expandedGroups.add(g.groupId);
-        else expandedGroups.delete(g.groupId);
+      await whileRelayouting(async () => {
+        const anyCollapsed = groups.some((g) => !expandedGroups.has(g.groupId));
+        groups.forEach((g) => {
+          if (anyCollapsed) expandedGroups.add(g.groupId);
+          else expandedGroups.delete(g.groupId);
+        });
+        graph.setData(computeCurrentGraphData());
+        await graph.render();
+        await applyLayout(currentLayout, nodeId);
+        if (nodeDatumOf(nodeId)) {
+          selectNodeById(nodeId);
+        }
       });
-      graph.setData(computeCurrentGraphData());
-      await graph.render();
-      await applyLayout(currentLayout, nodeId);
-      if (graph.getNodeData(nodeId)) {
-        selectNodeById(nodeId);
-      }
     }
 
     async function applyLayout(mode, focusTargetId = null) {
@@ -1979,8 +2144,8 @@
         await graph.layout();
       } else if (mode === "indented") {
         visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers);
-        const { visibleNodes, visibleEdges } = visibleModelCache;
-        const { clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
+        const { visibleNodes, visibleEdges, collapsedIds } = visibleModelCache;
+        const { clusters } = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels, collapsedIds);
         const positions = computeIndentedPositions(
           [...visibleNodes, ...clusters],
           [...visibleEdges, ...clusters.map((c) => ({ source: c.parentId, target: c.id }))],
@@ -1996,8 +2161,8 @@
         }
       } else {
         visibleModelCache = buildVisibleGraphModel(nodes, edges, expandedGroups, labels, hiddenTiers);
-        const { visibleNodes, visibleEdges } = visibleModelCache;
-        const updated = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels);
+        const { visibleNodes, visibleEdges, collapsedIds } = visibleModelCache;
+        const updated = computeStufenbauPositions(visibleNodes, visibleEdges, container.clientWidth, labels, collapsedIds);
         const updates = [];
         graph.getNodeData().forEach((n) => {
           const p = updated.positions.get(n.id);
@@ -2019,7 +2184,7 @@
     graph.on("node:click", async (evt) => {
       const id = evt.target?.id;
       if (!id) return;
-      const nodeDatum = graph.getNodeData(id);
+      const nodeDatum = nodeDatumOf(id);
       if (nodeDatum?.data?.isGroupCapsule === "yes") {
         await toggleSingleGroup(nodeDatum.data.groupId, nodeDatum.data.parentId);
         return;
@@ -2037,7 +2202,7 @@
     graph.on("node:dblclick", (evt) => {
       const id = evt.target?.id;
       if (!id) return;
-      const raw = graph.getNodeData(id)?.data?.raw;
+      const raw = nodeDatumOf(id)?.data?.raw;
       if (raw?.focusHref) {
         window.location.assign(raw.focusHref);
       }
@@ -2068,17 +2233,23 @@
           );
           if (!match) return;
 
-          if (!graph.getNodeData(match.id)) {
-            const targetGroupId = visibleModelCache?.groupMembership.get(match.id);
-            if (targetGroupId) {
-              expandedGroups.add(targetGroupId);
-              graph.setData(computeCurrentGraphData());
-              await graph.render();
-              await applyLayout(currentLayout, match.id);
+          if (!nodeDatumOf(match.id)) {
+            // 被收起的節點：先展開授權它的每一層上位法，再展開它所屬的子法種類分組。
+            const toExpand = [
+              ...(visibleModelCache?.revealPath(match.id) || []),
+              visibleModelCache?.groupMembership.get(match.id),
+            ].filter(Boolean);
+            if (toExpand.length > 0) {
+              await whileRelayouting(async () => {
+                toExpand.forEach((id) => expandedGroups.add(id));
+                graph.setData(computeCurrentGraphData());
+                await graph.render();
+                await applyLayout(currentLayout, match.id);
+              });
             }
           }
 
-          if (graph.getNodeData(match.id)) {
+          if (nodeDatumOf(match.id)) {
             selectNodeById(match.id);
             if (graph.getZoom() < 0.72) {
               await graph.zoomTo(0.82);
@@ -2113,6 +2284,16 @@
       let isFullscreen = false;
 
       host.addEventListener("click", (evt) => {
+        const guideClose = evt.target.closest("[data-graph-guide-close]");
+        if (guideClose) {
+          setGuideOpen(false, { remember: true });
+          host.querySelector("[data-graph-guide-toggle]")?.focus({ preventScroll: true });
+          return;
+        }
+        if (evt.target.closest("[data-graph-guide-toggle]")) {
+          setGuideOpen(Boolean(guideEl?.hidden), { remember: true });
+          return;
+        }
         const filterBtn = evt.target.closest("[data-graph-filter-tier]");
         if (filterBtn) {
           if (filterBtn.dataset.graphFilterTier === "invalid") applyInvalidSpotlight();
@@ -2125,7 +2306,7 @@
         }
         const openBtn = evt.target.closest("[data-inspector-open-btn]");
         if (openBtn) {
-          // 「法學檢視」是開關：開著再按就收起；從鍵盤打開時把焦點帶進面板。
+          // 「節點詳情」是開關：開著再按就收起；從鍵盤打開時把焦點帶進面板。
           if (host.dataset.inspectorOpen === "true") {
             setInspectorOpen(false);
           } else {
@@ -2143,6 +2324,11 @@
         if (!btn) return;
         const activeGraph = container._g6Instance || graph;
         const action = btn.dataset.graphAction;
+        // 選了排版或全螢幕就把「檢視選項」收回去；顯示授權條號是開關，留著讓人看到它變了。
+        if (action.startsWith("layout-") || action === "fullscreen") {
+          const options = btn.closest("[data-graph-options]");
+          if (options) options.open = false;
+        }
         if (action === "fit") fitViewport({ forceFitAll: true });
         else if (action === "zoom-in" || action === "zoom-out") {
           container.dataset.viewportTouched = "1";
@@ -2172,6 +2358,12 @@
         }
       });
 
+      // 點「檢視選項」以外的地方就收起來，和一般下拉選單一樣。
+      document.addEventListener("click", (evt) => {
+        const options = host.querySelector("[data-graph-options][open]");
+        if (options && !options.contains(evt.target)) options.open = false;
+      });
+
       document.addEventListener("keydown", (evt) => {
         if (!container.isConnected) return;
         const tag = evt.target?.tagName;
@@ -2180,7 +2372,14 @@
         }
         const activeGraph = container._g6Instance || graph;
         if (evt.key === "Escape") {
-          // 焦點在面板裡時，收起後要把焦點交還給「法學檢視」，不能掉到 body。
+          // 「檢視選項」開著時，Esc 先收它並把焦點還給它的標題，不順手把檢視面板也關掉。
+          const openOptions = host.querySelector("[data-graph-options][open]");
+          if (openOptions) {
+            openOptions.open = false;
+            openOptions.querySelector("summary")?.focus({ preventScroll: true });
+            return;
+          }
+          // 焦點在面板裡時，收起後要把焦點交還給「節點詳情」，不能掉到 body。
           setInspectorOpen(false, { restoreFocus: Boolean(host.querySelector(".ep-graph-inspector")?.contains(document.activeElement)) });
           selectedNodeId = null;
           invalidSpotlight = false;

@@ -210,8 +210,10 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
   - 新發出的 key／一次性密碼僅於不可隨意關閉的對話框顯示一次；時間顯示臺北時間（UTC+8），長 id 縮短留尾端（UUIDv7）。
   - 法規體系與合規頁（`LawCorpus`）的版面：查詢條件收成一列摘要（`<details class="ep-conditions">`，領域、關鍵字、基準日；沒有結果時才預設展開），讓圖譜在 1280×800 就看得到；分頁列 sticky 在頂欄底下（`inset-block-start: var(--ep-appbar-height)`）；瀏覽母法體系的抽屜叫「法規目錄」，圖譜排版才叫「法律樹結構」，兩者不同名（`law-workbench-layout` E2E 守門）。
   - 授權知識圖譜（`canon-graph.js`）建圖時為 `data-graph-state="loading"`（透明），第一個視角定好才轉 `ready` 淡入，使用者不會看到縮放 1 的中間態；畫布沒有寬度時不建圖；使用者動過視角後，容器變寬窄只 `resize`、不再重新適應（`law-graph-viewport` E2E 守門）。
-  - 授權知識圖譜的檢視面板（`.ep-graph-inspector`）是畫布外框 grid 裡與畫布疊在同一格的浮層，不是並排欄位：開關不改變畫布寬度，圖不因此重新適應。預設收起，只有一個狀態 `data-inspector-open`（點節點、「法學檢視」開，Esc、✕、點空白處收；焦點進出面板要回到「法學檢視」）；被選的節點若在面板底下，畫面往左讓位；容器窄於 68rem 改為底部面板（`law-graph-inspector` E2E 守門）。
+  - 授權知識圖譜的檢視面板（`.ep-graph-inspector`）是畫布外框 grid 裡與畫布疊在同一格的浮層，不是並排欄位：開關不改變畫布寬度，圖不因此重新適應。預設收起，只有一個狀態 `data-inspector-open`（點節點、「節點詳情」開，Esc、✕、點空白處收；焦點進出面板要回到「節點詳情」）；被選的節點若在面板底下，畫面往左讓位；容器窄於 68rem 改為底部面板（`law-graph-inspector` E2E 守門）。
   - 授權知識圖譜的圖例列（`.ep-graph-swimlanes`）：層級是可複選的顯示／隱藏開關（`aria-pressed` = 顯示中，被關掉的整層不畫、依剩下的重排；至少留一層，說明走 `role="status"`），重畫時焦點還給同一個控制項；「違憲失效」是另一種標記，只打亮相關節點、不改畫的內容；連線樣式（實線直接授權、虛線再授權）以線形加文字說明，不只靠顏色（`law-graph-legend` E2E 守門）。
+  - 授權知識圖譜分層揭露：節點超過 12、沒有焦點節點、圖例也沒關掉任何層級時，首屏只畫沒有上位法的根（多半是法律層），每個有下位法規的節點旁一顆「授權 N 部子法規」膠囊（id 前綴 `dsc__`，與依子法種類分的膠囊共用 `expandedGroups`），點了才畫下一層；有焦點或使用者自己關了層級就全畫。圖上有沒有某個節點一律問 `nodeDatumOf`（G6 的 `getNodeData(id)` 找不到會丟例外，被收起的節點是常態）；搜尋被收起的法規靠 `revealPath` 展開沿途的膠囊。展開／收合重排期間畫布帶 `data-graph-busy`，等它消失再操作（`law-graph-disclosure` E2E 守門）。
+  - 授權知識圖譜首屏的控制要少：「怎麼讀這張圖」（`data-graph-guide`）常駐在畫布上方，關掉記在瀏覽器（localStorage，讀寫失敗只是記不住），由工具列「怎麼讀」叫回；工具列只留搜尋、「怎麼讀」、「檢視選項」、「節點詳情」，排版切換、授權條號、全螢幕與滾輪說明收在「檢視選項」（原生 `<details data-graph-options>`，Esc 或點外面收起並把焦點還給標題），畫布上的浮動列只留 ＋、－、重設視角（`law-graph-disclosure` E2E 守門）。
   - `Api.csproj` 須設 `RequiresAspNetWebAssets` 以提供 `_framework/blazor.web.js`（`DesignPageTests` 守門）。
 
 ## Conventions

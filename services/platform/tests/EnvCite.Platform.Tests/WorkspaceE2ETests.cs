@@ -182,6 +182,14 @@ public sealed class WorkspaceE2ETests(PlatformFactory factory)
     }
 
     [Fact]
+    public async Task TheLawGraphOpensOneLayerAtATimeAndKeepsItsGuideAndAdvancedControlsOutOfTheFirstView()
+    {
+        var chat = await RunAsync("law-graph-disclosure", consent: true);
+
+        Assert.Empty(chat.Calls);
+    }
+
+    [Fact]
     public async Task TheLawWorkbenchToolbarAlignsControlsAndRespondsCleanlyAcrossViewports()
     {
         var chat = await RunAsync("laws-toolbar", consent: true);
