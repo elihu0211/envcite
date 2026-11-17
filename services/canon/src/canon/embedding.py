@@ -9,6 +9,7 @@
 
 import logging
 from collections.abc import Mapping, Sequence
+from typing import Protocol
 
 from canon.net import HttpStatus, TransportError, post_json
 from envcite_jobkit import Disposition, EndpointError, FatalError, ItemError, classify_http_status
@@ -42,8 +43,19 @@ class EndpointMisconfigured(EmbeddingError, FatalError):
     """401／403 或維度不符：設定錯了，每一批都會失敗。"""
 
 
+class Embeds(Protocol):
+    """嵌入的介面；投影、檢索與評估工具只依賴它，測試以替身實作。"""
+
+    #: 記在 `retrieval.passage.model`；換模型時舊向量隨之重算。
+    model: str
+
+    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        """依序回傳每段文字的向量；失敗以 `EmbeddingError` 的子型別表明。"""
+        ...
+
+
 class Embedder:
-    """OpenAI 相容 `/embeddings` 端點的客戶端；失敗以 `EmbeddingError` 的子型別表明。"""
+    """`Embeds` 的實作：OpenAI 相容 `/embeddings` 端點的客戶端。"""
 
     def __init__(
         self,

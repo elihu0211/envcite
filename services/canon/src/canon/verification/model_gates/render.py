@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import NamedTuple
 
 from canon.db import Conn, fetch, fetch_one
-from canon.verification.gates import unit_of
+from canon.verification.gates.base import unit_of
 
 _CMP = {"le": "不大於", "lt": "小於", "ge": "不小於", "gt": "大於", "eq": "等於", "ne": "不等於"}
 

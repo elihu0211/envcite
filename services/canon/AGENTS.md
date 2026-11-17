@@ -72,7 +72,7 @@ uv run --env-file .env canon serve
 
 ### 模組職責分層
 
-套件 `__init__.py`（如 `verification/`、`reasoning/facts/`、`reasoning_codec/`、`claims/`、`law/guidance_sync/`、`reasoning/scoring/`、`law/backfill/`、`law/history_sync/`、`verification/model_gates/`）不匯出名稱，一律從定義該符號的子模組匯入。
+套件 `__init__.py` 只放套件說明、不匯出名稱，一律從定義該符號的子模組匯入（`tests/test_architecture.py` 守門）。
 
 | 子套件 | 職責拆分 |
 |------|------|

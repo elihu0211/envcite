@@ -1,10 +1,9 @@
 """寫入 `guidance` 的推導來源：改變寫入的公文內容、錨定或停止適用的規則時遞增版本。"""
 
-PRODUCER = "canon-guidance-sync"
+from canon.rules import Rule
 
+#: 取得是規則推導，不是人或模型；改變寫入的公文內容、錨定或停止適用的規則時遞增版本。
+RULE = Rule("canon-guidance-sync", 2)
 
-#: 改變寫入的公文內容、錨定或停止適用的規則時遞增
-RULE_VERSION = "2"
-
-#: `guidance.load` 的 `derivation`：取得是規則推導，不是人或模型
-DERIVATION = {"method": "rule", "agent": PRODUCER, "agent_version": RULE_VERSION}
+#: `guidance.load` 的 `derivation`
+DERIVATION = RULE.derivation

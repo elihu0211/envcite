@@ -10,7 +10,7 @@ import psycopg
 import pytest
 
 from canon.annotate import load
-from canon.reasoning import evaluate
+from canon.reasoning.engine import evaluate
 from canon.verification import definition_gates as dg
 from canon.verification.definitions import extract_definitions
 from tests.model_gates_support import Scripted

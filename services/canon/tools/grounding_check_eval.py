@@ -37,8 +37,6 @@ not written out (the golden set is external; ids and a hash of the question only
 by the name `models.toml` gives (environment variable, then the OS keychain) and goes nowhere else.
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json

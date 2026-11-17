@@ -5,7 +5,7 @@ from typing import Any
 
 from canon.db import Conn
 from canon.verification import prompts
-from canon.verification.gates import GateResult, unit_of
+from canon.verification.gates.base import GateResult, unit_of
 from canon.verification.jsonutil import object_from
 from canon.verification.model_gates.common import eligible, extractor_of
 from canon.verification.model_gates.render import render_annotation

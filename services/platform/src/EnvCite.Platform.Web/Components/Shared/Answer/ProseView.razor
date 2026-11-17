@@ -1,0 +1,12 @@
+<div class="ep-ans-prose">
+    <AnswerHeading Text="@Block.Heading" />
+    <p class="ep-ans-p">
+        @Block.Text
+        <CitationChips Codes="Block.CitationCodes" />
+    </p>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ProseBlock Block { get; set; } = null!;
+}

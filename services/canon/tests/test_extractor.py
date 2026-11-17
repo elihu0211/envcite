@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from canon.reasoning import evaluate
+from canon.reasoning.engine import evaluate
 from canon.verification.extract import extract_unit
 from canon.verification.pipeline import settle
 from tests.test_annotation import BEFORE, LAW

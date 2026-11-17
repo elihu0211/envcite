@@ -14,8 +14,6 @@
 「規則之外還剩什麼」（新版本）；語意上對不對由 `duty_audit.py` 量。
 """
 
-from __future__ import annotations
-
 import argparse
 from collections import defaultdict
 from typing import Any

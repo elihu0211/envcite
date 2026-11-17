@@ -3,7 +3,9 @@
 抽取者與審查者都讀得到上層，但錨點仍在單元自己的文字上：引文只能取自單元本身，上層只供理解。
 """
 
-from canon.db import Conn
+from typing import NamedTuple
+
+from canon.db import Conn, fetch
 
 _UP = """
 WITH RECURSIVE up(id, parent_id, depth) AS (
@@ -20,6 +22,10 @@ SELECT DISTINCT ON (up.depth) v.content
 """
 
 
+class _ContentRow(NamedTuple):
+    content: str
+
+
 def ancestors_text(conn: Conn, provision_id: int) -> str:
     """單元所有上層的現行文字，由外到內，換行相接；頂層單元（或上層沒有文字）是空字串。"""
-    return "\n".join(str(row[0]) for row in conn.execute(_UP, (provision_id,)))
+    return "\n".join(row.content for row in fetch(conn, _UP, (provision_id,), _ContentRow))

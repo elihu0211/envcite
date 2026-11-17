@@ -53,6 +53,16 @@ public sealed class ChatTurn(string question, string? asOfLabel)
     public string? StoredText { get; internal set; }
 
     internal IReadOnlyList<ConversationCitation> MemoryCitations { get; set; } = [];
+
+    /// <summary>這個回合列給使用者的法源：即時回答帶的；沒有就用歷史還原的引用（只有代號、名稱與網址，沒有條文）。</summary>
+    public IReadOnlyList<AnswerSource> Sources =>
+        Answer?.Sources is { Count: > 0 } live
+            ? live
+            : [.. MemoryCitations.Select(c => new AnswerSource(c.Code, c.Uri, c.Label, string.Empty))];
+
+    /// <summary>「複製回答」複製的純文字；只有有出處的回答才有。</summary>
+    public string? CopyText =>
+        State == TurnState.Answered && Document is { } document ? AnswerDocumentFormatter.ToCopyText(document) : null;
 }
 
 /// <summary>

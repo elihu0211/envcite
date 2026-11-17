@@ -47,7 +47,7 @@ def sync(
     step: str = "sync",
     rescan: bool = False,
     dry_run: bool = False,
-    embedder: embedding.Embedder | None = None,
+    embedder: embedding.Embeds | None = None,
     policy: Policy = POLICY,
     sleep: Callable[[float], None] = time.sleep,
     today: Today = date.today,

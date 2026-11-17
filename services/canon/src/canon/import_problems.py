@@ -24,7 +24,7 @@ class Problem:
     detail: str = ""
 
 
-def record(conn: Conn, item_id: object, snapshot_id: int, problems: Iterable[Problem]) -> None:
+def record(conn: Conn, item_id: int, snapshot_id: int, problems: Iterable[Problem]) -> None:
     """為來源項目新增問題；不動既有的列。"""
     with conn.cursor() as cur:
         cur.executemany(
@@ -35,7 +35,7 @@ def record(conn: Conn, item_id: object, snapshot_id: int, problems: Iterable[Pro
         )
 
 
-def replace(conn: Conn, item_id: object, snapshot_id: int, problems: Iterable[Problem]) -> None:
+def replace(conn: Conn, item_id: int, snapshot_id: int, problems: Iterable[Problem]) -> None:
     """來源項目的問題整份換成 `problems`。"""
     conn.execute("DELETE FROM source.import_problem WHERE item_id = %s", (item_id,))
     record(conn, item_id, snapshot_id, problems)

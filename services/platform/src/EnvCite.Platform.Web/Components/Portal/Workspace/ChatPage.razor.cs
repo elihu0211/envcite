@@ -179,15 +179,6 @@ public sealed partial class ChatPage(
         }
     }
 
-    /// <summary>等結果時說明進行到哪一步：找到幾條法源、正在寫、正在核對出處。搜尋沒有步驟，維持「正在查找法源」。</summary>
-    private string PendingText(ChatTurn turn) => turn.Progress switch
-    {
-        { Stage: AnswerStage.Rewriting } => L["正在理解你的追問…"],
-        { Stage: AnswerStage.Writing } progress => L["找到 {0} 條法源，正在撰寫回答…", progress.Sources],
-        { Stage: AnswerStage.Verifying } => L["正在核對出處…"],
-        _ => L["正在查找法源…"],
-    };
-
     /// <summary>
     /// 桌機（有精準的指標）一開首頁就聚焦輸入框；觸控裝置不聚焦，否則鍵盤會一開頁就彈出來蓋住畫面。
     /// 判斷在瀏覽器端（<c>pointer: fine</c>），伺服器不知道。
@@ -300,19 +291,12 @@ public sealed partial class ChatPage(
         _refocus = true;
     }
 
-    private static IReadOnlyList<AnswerSource> StoredSourcesOf(ChatTurn turn) =>
-        [.. turn.MemoryCitations.Select(c => new AnswerSource(c.Code, c.Uri, c.Label, string.Empty))];
+    private Task OpenSourceAsync(SourceRequest request) => OpenDrawerAsync(request.Source, request.AsOfLabel, request.Sources);
 
-    private static IReadOnlyList<AnswerSource> TurnSourcesOf(ChatTurn turn) =>
-        turn.Answer?.Sources is { Count: > 0 } liveSources
-            ? liveSources
-            : StoredSourcesOf(turn);
-
-    private static string? CopyTextOf(ChatTurn turn) => turn.State switch
-    {
-        TurnState.Answered => turn.Document is { } doc ? AnswerDocumentFormatter.ToCopyText(doc) : null,
-        _ => null,
-    };
+    /// <summary>拒答對使用者說的話：即時回答依原因組，從歷史還原的是當時存下來的文字。</summary>
+    private string? RefusalTextOf(ChatTurn turn) =>
+        turn.State != TurnState.Refused ? null
+            : turn.Answer is not null ? Session.RefusalLabel(turn.Answer.RefusalReason) : turn.StoredText;
 
     private void OnChanged()
     {

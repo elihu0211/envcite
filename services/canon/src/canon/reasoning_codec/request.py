@@ -250,19 +250,13 @@ def case_facts(
 
 def fact_units(request: pb.EvaluateRequest) -> dict[str, str]:
     """萃取各事實所帶之量綱單位代碼。"""
-    return {
-        str(fact.concept): str(fact.unit)
-        for fact in request.facts
-        if fact.concept and getattr(fact, "unit", "")
-    }
+    return {fact.concept: fact.unit for fact in request.facts if fact.concept and fact.unit}
 
 
 def act_groups(request: pb.EvaluateRequest) -> dict[str, list[int]]:
     """萃取行為分組（§24/§25）。"""
     return {
-        str(g.act_id): [int(sid) for sid in g.statement_ids]
-        for g in getattr(request, "act_groups", ())
-        if g.act_id and g.statement_ids
+        g.act_id: list(g.statement_ids) for g in request.act_groups if g.act_id and g.statement_ids
     }
 
 

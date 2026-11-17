@@ -15,8 +15,6 @@
 逐項列出單元、引文與罰則；另數罰則自己的主體槽位（推論只讀罰則的主體槽位）。
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import re

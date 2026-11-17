@@ -17,16 +17,16 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
-from typing import Literal
+from typing import Literal, NamedTuple
 
 from canon import numerals
-from canon.db import Conn
+from canon.db import Conn, fetch
 from canon.import_problems import Problem
 from canon.law import moenv
 from canon.law.guidance_anchor import Resolver
 
 #: 抽取或版本規則的版本；改變輸出時遞增。
-RULE_VERSION = "1"
+RULE_VERSION = 1
 
 _QUOTES = str.maketrans("", "", "「」『』")
 _SENTENCE = re.compile(r"[^。;]+")
@@ -163,30 +163,35 @@ def _place(
     return _on_date(conn, pcode, path, decided_on, "decided_on", "no_version_on_decision")
 
 
+class _TextRow(NamedTuple):
+    path: str
+    content: str | None
+
+
+class _PriorRow(NamedTuple):
+    path: str
+    #: 前一版的文字；不只一段（前一版不唯一）就不採用。
+    texts: list[str | None]
+
+
 def _on_date(
     conn: Conn, pcode: str, path: str, on: date, basis: str, missing: str
 ) -> list[tuple[str, str, str]] | str:
-    rows = conn.execute(_ON_DATE, {"pcode": pcode, "path": path, "on": on}).fetchall()
+    rows = fetch(conn, _ON_DATE, {"pcode": pcode, "path": path, "on": on}, _TextRow)
     if not rows:
         return "provision_unresolved"
-    if any(text is None for _, text in rows):
-        return missing
-    return [(str(path), str(text), basis) for path, text in rows]
+    found = [(row.path, row.content, basis) for row in rows if row.content is not None]
+    return found if len(found) == len(rows) else missing
 
 
 def _prior(conn: Conn, pcode: str, path: str, on: date) -> list[tuple[str, str, str]] | str:
-    rows = conn.execute(_PREDECESSOR, {"pcode": pcode, "path": path, "on": on}).fetchall()
-    texts = [text for row in rows if (text := _one_text(row[1])) is not None]
-    if not rows or len(texts) != len(rows):
-        return "version_not_unique"
-    return [(str(row[0]), text, "stated") for row, text in zip(rows, texts, strict=True)]
-
-
-def _one_text(value: object) -> str | None:
-    """前一版恰有一段文字才採用。"""
-    if isinstance(value, list) and len(value) == 1 and isinstance(value[0], str):
-        return value[0]
-    return None
+    rows = fetch(conn, _PREDECESSOR, {"pcode": pcode, "path": path, "on": on}, _PriorRow)
+    found = [
+        (row.path, text, "stated")
+        for row in rows
+        if len(row.texts) == 1 and (text := row.texts[0]) is not None
+    ]
+    return found if rows and len(found) == len(rows) else "version_not_unique"
 
 
 def _applicative(

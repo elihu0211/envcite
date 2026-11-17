@@ -1,7 +1,5 @@
 """作答結果彙總：計數、口徑與輸入來源。"""
 
-from __future__ import annotations
-
 import importlib.util
 import json
 import sys

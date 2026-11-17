@@ -120,7 +120,7 @@ def test_offline_fusion_returns_the_very_list_the_service_returns(
     tool = _load("ablation_fusion_eval")
     _import(conn, tmp_path)
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
     conn.commit()
     queries = [f"{a}{b}" for a in THEMES for b in THEMES if a != b][:30]
     with CanonStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
@@ -150,7 +150,7 @@ def test_the_semantic_arm_runs_without_the_lexical_arm_and_the_lexical_arm_witho
     tool = _load("ablation_fusion_eval")
     _import(conn, tmp_path)
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
     conn.commit()
     with CanonStore.from_dsn(dsn) as store, psycopg.connect(dsn) as read:
         segmenter = Segmenter(store.retrieval.lexicon())

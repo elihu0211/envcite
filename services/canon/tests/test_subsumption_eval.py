@@ -4,26 +4,35 @@
 需判斷事項、按次處罰觸發與行政罰法總則阻卻各案例下的評估指標。
 """
 
+import importlib.util
 import json
+import sys
 from datetime import date
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
 from canon.annotate import Loaded
-from canon.reasoning import (
-    SubsumptionCase,
-    evaluate_subsumption,
-)
 from tests.reasoning_support import (
     WATER,
     Conn,
 )
 from tests.verification_support import _with_penalties
 
-BENCHMARK_PATH = (
-    Path(__file__).resolve().parents[1] / "eval" / "datasets" / "subsumption_benchmark.json"
-)
+TOOL = Path(__file__).resolve().parents[1] / "tools" / "subsumption_eval.py"
+
+
+def _tool() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("subsumption_eval", TOOL)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["subsumption_eval"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+tool = _tool()
 
 
 @pytest.fixture
@@ -37,40 +46,11 @@ def water_loaded(conn: Conn, sample: None) -> Loaded:
     return loaded
 
 
-def _load_cases() -> list[SubsumptionCase]:
-    data = json.loads(BENCHMARK_PATH.read_text(encoding="utf-8"))
-    cases: list[SubsumptionCase] = []
-    for item in data:
-        as_of = date.fromisoformat(item["as_of"])
-        decided_on = date.fromisoformat(item["decided_on"]) if item.get("decided_on") else None
-        cases.append(
-            SubsumptionCase(
-                case_id=item["case_id"],
-                title=item["title"],
-                description=item.get("description", ""),
-                as_of=as_of,
-                decided_on=decided_on,
-                case_facts=item["case_facts"],
-                expected_verdicts=item["expected_verdicts"],
-                expected_penalties=tuple(
-                    (p[0], p[1], bool(p[2])) for p in item.get("expected_penalties", [])
-                ),
-                expected_missing=tuple((m[0], m[1]) for m in item.get("expected_missing", [])),
-                expected_judgements=tuple(
-                    (j[0], j[1]) for j in item.get("expected_judgements", [])
-                ),
-                expected_unpunished=tuple(item.get("expected_unpunished", [])),
-                expected_time_barred=tuple(item.get("expected_time_barred", [])),
-            )
-        )
-    return cases
-
-
 def test_subsumption_benchmark_all_cases_pass(conn: Conn, water_loaded: Loaded) -> None:
-    cases = _load_cases()
+    cases = tool.load_benchmark(tool.DEFAULT_BENCHMARK)
     assert len(cases) == 10
 
-    report = evaluate_subsumption(
+    report = tool.evaluate_subsumption(
         conn,
         cases,
         id_resolver=water_loaded.ids,
@@ -102,7 +82,7 @@ def test_subsumption_benchmark_all_cases_pass(conn: Conn, water_loaded: Loaded) 
 
 def test_subsumption_evaluator_catches_verdict_mismatch(conn: Conn, water_loaded: Loaded) -> None:
     # 故意構造一個錯誤預期的案例，驗證評估器能精確回報差異
-    flawed_case = SubsumptionCase(
+    flawed_case = tool.SubsumptionCase(
         case_id="FLAWED-01",
         title="預期錯誤測試",
         as_of=date(2019, 1, 1),
@@ -122,7 +102,7 @@ def test_subsumption_evaluator_catches_verdict_mismatch(conn: Conn, water_loaded
         },
     )
 
-    report = evaluate_subsumption(
+    report = tool.evaluate_subsumption(
         conn,
         [flawed_case],
         id_resolver=water_loaded.ids,

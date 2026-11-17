@@ -26,7 +26,7 @@ from canon.verification.definitions import (
 )
 from canon.verification.distinct import assert_distinct
 from canon.verification.extract import extract_unit
-from canon.verification.gates import Gate
+from canon.verification.gates.base import Gate
 from canon.verification.link import held_states, link_penalties, penalized
 from canon.verification.methods import ALL_METHODS, gates_for, gates_from
 from canon.verification.models import Model

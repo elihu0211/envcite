@@ -1,0 +1,32 @@
+@* 結論摘要、核心義務、合規提醒：同一個版面，只換圖示、標籤與色調。 *@
+<section class="ep-ans-callout @_style.Css">
+    <div class="ep-ans-callout-head">
+        <span class="ep-ans-callout-icon" aria-hidden="true"><NavIcon Path="@_style.Icon" /></span>
+        <span class="ep-ans-callout-badge">@_style.Label</span>
+    </div>
+    <AnswerHeading Text="@Block.Title" />
+    <p class="ep-ans-p">@Block.Body</p>
+    @if (Block.CitationCodes.Count > 0)
+    {
+        <div class="ep-ans-sources">
+            <span class="ep-ans-sources-label">@L["依據"]</span>
+            <CitationChips Codes="Block.CitationCodes" />
+        </div>
+    }
+</section>
+
+@code {
+    private sealed record ToneStyle(string Css, string Icon, string Label);
+
+    [Parameter, EditorRequired]
+    public CalloutBlock Block { get; set; } = null!;
+
+    private ToneStyle _style = null!;
+
+    protected override void OnParametersSet() => _style = Block.Tone switch
+    {
+        CalloutTone.Requirement => new(Css: "ep-ans-callout-requirement", Icon: Icons.Material.Outlined.Gavel, Label: L["核心義務"]),
+        CalloutTone.Caution => new(Css: "ep-ans-callout-caution", Icon: Icons.Material.Outlined.WarningAmber, Label: L["合規提醒"]),
+        _ => new(Css: "ep-ans-callout-summary", Icon: Icons.Material.Outlined.AutoAwesome, Label: L["結論摘要"]),
+    };
+}

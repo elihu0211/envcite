@@ -26,8 +26,6 @@ The cell runs can be exported (`--export-runs`) in the run-file shape `relevance
 reads, so the holes of every cell are judged before the final scoring.
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

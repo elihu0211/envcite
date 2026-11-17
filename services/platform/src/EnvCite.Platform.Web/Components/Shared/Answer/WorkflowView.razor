@@ -1,0 +1,38 @@
+@* 流程圖：圖表來源是確定性轉出的 Mermaid 指令，由 answer-diagrams.js 延遲載入後畫；沒有指令碼時留下原文與步驟清單。 *@
+<div class="ep-ans-workflow-section">
+    <AnswerHeading Text="@Block.Title" />
+    <figure class="ep-mermaid-card" aria-label="@L["流程與結構圖表"]">
+        <div class="ep-mermaid"
+             data-mermaid-source="@_mermaidSource"
+             data-diagram-state="pending">
+            <div class="ep-mermaid-canvas" role="img" aria-label="@L["流程與結構圖表"]" hidden></div>
+            <pre class="ep-mermaid-fallback"><code>@_mermaidSource</code></pre>
+        </div>
+        <ol class="ep-ans-workflow-steps" aria-label="@L["流程步驟"]">
+            @foreach (var node in Block.Nodes)
+            {
+                <li>
+                    <span class="ep-ans-step-label">@node.Label</span>
+                    <CitationChips Codes="node.CitationCodes" />
+                </li>
+            }
+        </ol>
+    </figure>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public WorkflowBlock Block { get; set; } = null!;
+
+    private WorkflowBlock? _sourceFor;
+    private string _mermaidSource = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_sourceFor, Block))
+            return;
+
+        _sourceFor = Block;
+        _mermaidSource = AnswerDocumentFormatter.ToMermaidSource(Block);
+    }
+}

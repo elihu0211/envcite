@@ -1,7 +1,5 @@
 """重抽成本與浪費的計數（tools/duty_cost.py）：日誌摘要與重複確認的判定。"""
 
-from __future__ import annotations
-
 import importlib.util
 import sys
 from pathlib import Path

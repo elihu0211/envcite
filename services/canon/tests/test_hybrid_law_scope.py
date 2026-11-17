@@ -43,7 +43,7 @@ def _corpus(conn: Conn, tmp_path: Path) -> FakeEmbedder:
     stored_snapshot(conn, tmp_path, laws)
     importer.run(conn, tmp_path, Moj())
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
     return embedder
 
 

@@ -1,0 +1,10 @@
+@* 回答裡一個積木的小標題；沒有標題就不畫。 *@
+@if (!string.IsNullOrWhiteSpace(Text))
+{
+    <h2 class="ep-ans-heading">@Text</h2>
+}
+
+@code {
+    [Parameter]
+    public string? Text { get; set; }
+}

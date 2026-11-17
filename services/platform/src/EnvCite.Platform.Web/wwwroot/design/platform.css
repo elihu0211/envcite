@@ -6550,14 +6550,14 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     color: var(--ep-text);
     font-size: var(--ep-title-m-size);
     font-weight: var(--ep-title-m-weight);
-    line-height: 1.45;
+    line-height: var(--ep-title-m-leading);
     letter-spacing: var(--ep-title-m-tracking);
     text-wrap: balance;
 }
 
 .ep-ans-p {
     margin: 0;
-    line-height: 1.75;
+    line-height: var(--ep-body-m-leading);
     text-wrap: pretty;
 }
 
@@ -6602,6 +6602,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-ans-callout .ep-ans-heading {
     font-size: var(--ep-title-l-size);
     font-weight: var(--ep-title-l-weight);
+    line-height: var(--ep-title-l-leading);
     letter-spacing: var(--ep-title-l-tracking);
 }
 
@@ -6628,7 +6629,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-ans-sources .ep-cite-inline {
     margin: 0;
-    vertical-align: baseline;
 }
 
 .ep-ans-checklist-wrap,
@@ -6642,7 +6642,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 /* 清單：用瀏覽器原生的項目符號與編號，只調色；待辦項目才自畫核取方塊。 */
 .ep-ans-list {
-    --ep-task-box: calc(var(--ep-space-4) + var(--ep-space-1));
     margin: 0;
     padding-inline-start: var(--ep-space-6);
     display: grid;
@@ -6651,7 +6650,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-ans-list > li {
     padding-inline-start: var(--ep-space-1);
-    line-height: 1.7;
+    line-height: var(--ep-body-m-leading);
 }
 
 .ep-ans-list > li::marker {
@@ -6661,7 +6660,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-ans-list > li.ep-ans-task {
     display: flex;
-    align-items: flex-start;
+    align-items: first baseline;
     gap: var(--ep-space-2);
     margin-inline-start: calc(-1 * var(--ep-space-6));
     padding-inline-start: 0;
@@ -6670,30 +6669,11 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-ans-task-marker {
     flex: none;
-    box-sizing: border-box;
-    display: inline-grid;
-    place-items: center;
-    inline-size: var(--ep-task-box);
-    block-size: var(--ep-task-box);
-    margin-block-start: calc(0.85em - var(--ep-task-box) / 2);
-    border: 1.5px solid var(--ep-border-control);
-    border-radius: var(--ep-space-1);
-    background: var(--ep-surface);
-}
-
-.ep-ans-task-marker[data-state="done"] {
-    border-color: var(--ep-primary);
-    background: var(--ep-primary);
-}
-
-.ep-ans-task-marker[data-state="done"]::after {
-    content: "";
-    inline-size: 0.3rem;
-    block-size: 0.55rem;
-    margin-block-start: -0.1rem;
-    border: solid var(--ep-on-primary);
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    margin: 0;
+    accent-color: var(--ep-primary);
+    pointer-events: none;
 }
 
 .ep-ans-item-label {
@@ -6707,7 +6687,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 /* 行內法源標籤：沒有括號的小圓角晶片，淡藍底；滑過時填滿品牌藍。 */
 .ep-cite-group {
-    margin-inline-start: 0.125rem;
+    margin-inline-start: calc(var(--ep-space-1) / 2);
 }
 
 .ep-cite-inline {
@@ -6716,9 +6696,8 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     align-items: center;
     justify-content: center;
     min-inline-size: var(--ep-space-6);
-    block-size: calc(var(--ep-space-4) + var(--ep-space-1) + 0.125rem);
-    margin-inline: 0.125rem;
-    padding: 0 var(--ep-space-2);
+    margin-inline: calc(var(--ep-space-1) / 2);
+    padding: var(--ep-space-1) var(--ep-space-2);
     border: 0;
     border-radius: var(--ep-radius-pill);
     background: color-mix(in srgb, var(--ep-primary) 11%, var(--ep-surface));
@@ -6729,7 +6708,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--ep-label-s-tracking);
     line-height: 1;
-    vertical-align: 0.1em;
     cursor: pointer;
     transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard), color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
@@ -6750,105 +6728,28 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 @media (pointer: coarse) {
     .ep-cite-inline {
         min-inline-size: var(--ep-space-8);
-        block-size: var(--ep-space-6);
+        min-block-size: var(--ep-space-6);
     }
 }
 
-/* 對照表：直接畫在頁面上，只有水平髮絲線；欄寬由內容決定，容器太窄時一列變成「欄名：內容」的條列。 */
-.ep-ans-table-section .ep-legal-table-wrap {
-    container: ep-answer-table / inline-size;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+/* 對照表交給共用的 DataTable（Plain）；回答裡的長文字要換行，不像成員清單那樣不換行橫向捲動。 */
+.ep-ans-table-section .ep-plain-table :is(th, td) {
+    white-space: normal;
 }
 
-.ep-ans-table {
-    min-inline-size: 0;
-}
-
-.ep-ans-table th,
-.ep-ans-table td {
-    padding: var(--ep-space-3);
-    border-inline-end: 0;
-    text-align: start;
-    vertical-align: top;
-    line-height: 1.6;
-    text-wrap: pretty;
-}
-
-.ep-ans-table :is(th, td):first-child {
+.ep-ans-table-section .ep-plain-table :is(th, td):first-child {
     padding-inline-start: 0;
 }
 
-.ep-ans-table :is(th, td):last-child {
+.ep-ans-table-section .ep-plain-table :is(th, td):last-child {
     padding-inline-end: 0;
 }
 
-.ep-ans-table thead th {
-    background: transparent;
-    border-block-end: 1px solid var(--ep-border-control);
+.ep-ans-table-section .ep-plain-table th {
     color: var(--ep-text-secondary);
     font-size: var(--ep-label-s-size);
     font-weight: var(--ep-label-l-weight);
     letter-spacing: var(--ep-label-s-tracking);
-}
-
-.ep-ans-table tbody th[scope="row"] {
-    background: transparent;
-    white-space: normal;
-}
-
-.ep-ans-table tbody tr:hover :is(th, td) {
-    background: transparent;
-}
-
-.ep-ans-table-citations {
-    white-space: nowrap;
-}
-
-.ep-ans-table-citations .ep-cite-group {
-    margin: 0;
-}
-
-@container ep-answer-table (max-width: 36rem) {
-    .ep-ans-table,
-    .ep-ans-table tbody,
-    .ep-ans-table tbody tr,
-    .ep-ans-table tbody :is(th, td) {
-        display: block;
-    }
-
-    /* 欄標題視覺上隱藏，但保留給輔助技術；每一格的欄名由 data-label 帶出。 */
-    .ep-ans-table thead {
-        position: absolute;
-        inline-size: 1px;
-        block-size: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-    }
-
-    .ep-ans-table tbody tr {
-        padding-block: var(--ep-space-3);
-        border-block-end: 1px solid var(--ep-border-subtle);
-    }
-
-    .ep-ans-table tbody tr:last-child {
-        border-block-end: 0;
-    }
-
-    .ep-ans-table tbody :is(th, td) {
-        padding: var(--ep-space-1) 0;
-        border: 0;
-    }
-
-    .ep-ans-table tbody td[data-label]::before {
-        content: attr(data-label);
-        display: block;
-        color: var(--ep-text-secondary);
-        font-size: var(--ep-label-s-size);
-        font-weight: var(--ep-label-l-weight);
-        letter-spacing: var(--ep-label-s-tracking);
-    }
 }
 
 /* 流程圖：同樣直接畫在頁面上。 */
@@ -6866,7 +6767,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     background: var(--ep-surface-muted);
     font-family: var(--ep-font-mono);
     font-size: var(--ep-label-m-size);
-    line-height: 1.55;
+    line-height: var(--ep-label-m-leading);
     color: var(--ep-text);
     overflow-x: auto;
 }
@@ -6884,41 +6785,6 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-mermaid-canvas svg {
     max-inline-size: 100%;
     block-size: auto;
-}
-
-/* 流程圖的配色只在這裡宣告：Mermaid 把自己的樣式寫進 SVG、並以圖的 id 限定範圍（優先權高於任何 class 選擇器），
- * 所以用 !important 蓋過；顏色只取角色變數，深淺色切換時圖自己跟著變，不必重畫，指令碼也不用解析色碼。 */
-.ep-mermaid-canvas svg {
-    font-family: var(--ep-font) !important;
-}
-
-.ep-mermaid-canvas svg :is(.node, .cluster) :is(rect, circle, ellipse, polygon, path) {
-    fill: var(--ep-surface-muted) !important;
-    stroke: var(--ep-border-control) !important;
-}
-
-.ep-mermaid-canvas svg :is(.flowchart-link, .edge-pattern-solid) {
-    stroke: var(--ep-border-control) !important;
-}
-
-.ep-mermaid-canvas svg :is(.marker, .arrowMarkerPath) {
-    fill: var(--ep-border-control) !important;
-    stroke: var(--ep-border-control) !important;
-}
-
-.ep-mermaid-canvas svg :is(.nodeLabel, .edgeLabel, .label),
-.ep-mermaid-canvas svg foreignObject :is(div, span, p) {
-    color: var(--ep-text) !important;
-    fill: var(--ep-text) !important;
-}
-
-.ep-mermaid-canvas svg :is(.edgeLabel, .edgeLabel *, .labelBkg) {
-    background-color: var(--ep-surface) !important;
-}
-
-.ep-mermaid-canvas svg .edgeLabel rect {
-    fill: var(--ep-surface) !important;
-    opacity: 1 !important;
 }
 
 /* 流程步驟：原生編號清單，只調色。 */

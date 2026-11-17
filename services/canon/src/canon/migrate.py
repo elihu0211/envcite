@@ -5,8 +5,9 @@
 
 import hashlib
 from pathlib import Path
+from typing import NamedTuple
 
-from psycopg import Connection
+from canon.db import Conn, fetch
 
 MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "migrations"
 
@@ -19,18 +20,22 @@ CREATE TABLE IF NOT EXISTS schema_migration (
 """
 
 
+class _AppliedRow(NamedTuple):
+    filename: str
+    sha256: str
+
+
 class MigrationChanged(RuntimeError):
     """已套用的 migration 檔案遭到修改；請改為新增一個檔案。"""
 
 
-def apply_all(conn: Connection[tuple[object, ...]], directory: Path | None = None) -> list[str]:
+def apply_all(conn: Conn, directory: Path | None = None) -> list[str]:
     """套用尚未執行的 migration；回傳本次呼叫所套用的檔名。"""
     directory = directory or MIGRATIONS_DIR
     applied: list[str] = []
     with conn.cursor() as cur:
         cur.execute(_SCHEMA_TABLE)
-        cur.execute("SELECT filename, sha256 FROM schema_migration")
-        seen: dict[str, str] = {str(f): str(h) for f, h in cur.fetchall()}
+        seen = dict(fetch(conn, "SELECT filename, sha256 FROM schema_migration", None, _AppliedRow))
 
         paths = sorted(directory.glob("*.sql"))
         orphans = sorted(seen.keys() - {p.name for p in paths})

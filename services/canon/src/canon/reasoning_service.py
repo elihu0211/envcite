@@ -18,9 +18,10 @@ from canon import annotation_read, errors, identifiers
 from canon.clock import Today
 from canon.endpoints.common import log_call
 from canon.identifiers import law_key
-from canon.reasoning import Result, evaluate_across
+from canon.reasoning.engine import Result
 from canon.reasoning.facts.case_inputs import Measurements, Permits, PerOccasionTimeline
 from canon.reasoning.scoring.models import ScoringInput
+from canon.reasoning.transition import evaluate_across
 from canon.reasoning_codec import disposition as disposition_codec
 from canon.reasoning_codec import outcome as outcome_codec
 from canon.reasoning_codec import request as request_codec

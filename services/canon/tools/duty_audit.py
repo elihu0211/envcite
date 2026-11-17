@@ -15,8 +15,6 @@
 金鑰從作業系統鑰匙圈取（見 `verification/config.py`）。
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json
