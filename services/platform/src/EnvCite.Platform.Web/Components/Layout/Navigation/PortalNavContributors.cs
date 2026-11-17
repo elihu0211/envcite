@@ -22,7 +22,7 @@ internal abstract class PortalNavContributorBase(IStringLocalizer<Ui> localizer)
     public abstract IEnumerable<PortalShell.NavItem> Items(PortalNavContext context);
 }
 
-// 首頁（法規諮詢的新對話）不是導覽項目：外殼把它畫成側欄頂端的「新對話」主要動作，對話清單的標題才是法規諮詢；
+// 首頁（法規諮詢的新對話）不是導覽項目：外殼把它畫成側欄頂端的「新增對話」主要動作，對話清單的標題才是法規諮詢；
 // 同一個目的地不在導覽裡再列一次。這裡只放與首頁不同的目的地。
 internal sealed class LawWorkbenchNav(IStringLocalizer<Ui> localizer, ITenantModules modules) : PortalNavContributorBase(localizer)
 {

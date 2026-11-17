@@ -106,7 +106,7 @@ public sealed partial class ChatPage(
 
         if (Id == Guid.Empty)
         {
-            // 回到新對話（例如點側欄的「新對話」）。問完一題後網址換成這串對話的 Id 是同一個頁面，不算。
+            // 回到新對話（例如點側欄的「新增對話」）。問完一題後網址換成這串對話的 Id 是同一個頁面，不算。
             _notFound = false;
             if (Session.ConversationId is not null)
                 Session.StartNew();

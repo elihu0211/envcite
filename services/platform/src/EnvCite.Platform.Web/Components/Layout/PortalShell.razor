@@ -1,5 +1,5 @@
 @* 客戶入口的外殼，純呈現（不讀登入狀態）：已登入進入工作區時採用現代 AI 瀏覽器雙欄版面——
-   左側為全高導覽欄（頂部為品牌與收合控制；功能區固定在上：頂端是唯一的主要動作「新對話」（Grok 式的外框膠囊），
+   左側為全高導覽欄（頂部為品牌與收合控制；功能區固定在上：頂端是唯一的主要動作「新增對話」（Grok 式的外框膠囊），
    其下才是與首頁不同的業務模塊入口；首頁就是新對話，不在導覽裡再列一次；
    再下是法規諮詢的對話：一張平面的清單，標題寫它屬於哪個功能，占剩下的高度、只有它自己捲動，沒有篩選框也沒有日期分組；左下角為帳號選單並向上彈出）；
    右側為主工作區舞台（精簡上下文頂欄與置中問答／內容區）。還沒登入或還有強制步驟時，只有頂欄。
@@ -32,14 +32,14 @@
                 </div>
 
                 <div class="ep-side-body">
-                    @* 功能區：頂端是「新對話」主要動作（它就是首頁，所以導覽裡沒有第二個指向首頁的項目），其下是業務模塊入口，
+                    @* 功能區：頂端是「新增對話」主要動作（它就是首頁，所以導覽裡沒有第二個指向首頁的項目），其下是業務模塊入口，
                        固定在上、不跟著對話清單捲動。沒有群組標題也沒有分隔線，群組之間只留一點間距（群組名留在 nav 的 aria-label）。 *@
                     <div class="ep-side-actions">
                         @if (!string.IsNullOrEmpty(HomeHref))
                         {
-                            <a class="ep-side-new-chat" href="@HomeHref" title="@L["新對話"]">
+                            <a class="ep-side-new-chat" href="@HomeHref" title="@L["新增對話"]">
                                 <span class="ep-side-new-chat-mark" aria-hidden="true"><NavIcon Path="@Icons.Material.Outlined.Add" /></span>
-                                <span class="ep-side-label">@L["新對話"]</span>
+                                <span class="ep-side-label">@L["新增對話"]</span>
                             </a>
                         }
 
@@ -66,7 +66,7 @@
                     </div>
 
                     @* 最近的對話：標題是它所屬的功能（法規諮詢）的可摺疊清單（沒有日期分組；釘選的排最前、帶圖釘），占去側欄剩下的高度，只有它自己捲動。
-                       「新對話」開的就是這一區的對話。還沒有對話時畫引導提示（ep-history-empty）。 *@
+                       「新增對話」開的就是這一區的對話。還沒有對話時畫引導提示（ep-history-empty）。 *@
                     @if (Recent.Count > 0 || !string.IsNullOrEmpty(HistoryHref))
                     {
                         <section class="@(Recent.Count > 0 ? "ep-recent" : "ep-history-empty")" aria-label="@L["最近的對話"]">
@@ -166,7 +166,7 @@
                     <span class="ep-spacer"></span>
                     @if (!string.IsNullOrEmpty(HomeHref))
                     {
-                        <a class="ep-portal-new-chat" href="@HomeHref"><NavIcon Path="@Icons.Material.Outlined.Add" /><span>@L["新對話"]</span></a>
+                        <a class="ep-portal-new-chat" href="@HomeHref"><NavIcon Path="@Icons.Material.Outlined.Add" /><span>@L["新增對話"]</span></a>
                     }
                 </header>
 
@@ -286,7 +286,7 @@
 
     /// <param name="Group">側欄的群組標題；同一群組的項目連續排列。</param>
     /// <param name="Icon">項目前面的圖示（MudBlazor 的 Material 圖示常數）；收成窄欄時只剩它，所以每一項都該有。</param>
-    /// <remarks>目前頁以路徑前綴比對，所以項目不能是首頁（每一頁都在首頁底下）；首頁是外殼頂端的「新對話」。</remarks>
+    /// <remarks>目前頁以路徑前綴比對，所以項目不能是首頁（每一頁都在首頁底下）；首頁是外殼頂端的「新增對話」。</remarks>
     public sealed record NavItem(string Href, string Label, string Group, string? Icon = null);
 
     [Parameter]

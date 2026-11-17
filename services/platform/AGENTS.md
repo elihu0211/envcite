@@ -19,7 +19,7 @@
   4. **禁用可處置 Transient**：不將實作 `IDisposable`／`IAsyncDisposable` 的自有型別註冊為 transient（測試主機啟用 `ValidateScopes` 與 `ValidateOnBuild`）。
 - **入口導覽擴充**：功能模組實作 `IPortalNavContributor`（`Components/Layout/Navigation/`，以 `AddPortalNavContributor<T>()` 註冊為 scoped），宣告位置 `Slot`、群組與 `Order`；文字須經 `L` 以便資源檔掃描。
   - **側欄只放業務模塊**（`Slot = Sidebar`，服務群組 `Order` 10–29）；租戶的系統設定（成員、目錄同步、帳號與組織）放頭像的帳號選單（`Slot = AccountMenu`，系統設定群組 `Order` 30–59），排在個人項目之後。
-  - **首頁不是導覽項目**：首頁就是法規諮詢的新對話，由外殼畫成側欄頂端唯一的主要動作「新對話」；項目不得指向首頁（目前頁以路徑前綴比對，列了它就會一直亮著；同一個目的地也不在導覽再列一次）。功能名稱「法規諮詢」是對話清單的標題與首頁的頂欄標題（由 `PortalNavigationTests`、`PortalShellTests` 守門）。
+  - **首頁不是導覽項目**：首頁就是法規諮詢的新對話，由外殼畫成側欄頂端唯一的主要動作「新增對話」；項目不得指向首頁（目前頁以路徑前綴比對，列了它就會一直亮著；同一個目的地也不在導覽再列一次）。功能名稱「法規諮詢」是對話清單的標題與首頁的頂欄標題（由 `PortalNavigationTests`、`PortalShellTests` 守門）。
   - **項目由角色決定出不出現**：各來源依 `PortalNavContext.User` 的角色與功能開關自己判斷（由 `PortalNavigationTests` 守門）。顯示與否不是授權，授權由頁面與服務層執行。
 
 ### 資料存取、租戶範圍與中介層
