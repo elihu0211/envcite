@@ -98,7 +98,7 @@ h1[tabindex="-1"]:focus-visible {
     color: var(--ep-primary);
 }
 
-/* 分組面：白底、髮絲線、圓角，沒有陰影。層次靠背景與分隔線，不靠浮起來的卡片。 */
+/* 分組面（Material 3 的外框卡片）：白底浮在帶藍的頁面底上、髮絲線、大圓角，沒有陰影。層次靠面的色階與分隔線，不靠浮起來的卡片。 */
 .ep-card {
     background: var(--ep-surface);
     border: 1px solid var(--ep-border-subtle);
@@ -148,7 +148,9 @@ h1[tabindex="-1"]:focus-visible {
 }
 
 .ep-empty-title,
-.ep-section-title {
+.ep-section-title,
+.mud-dialog .mud-dialog-title,
+.mud-dialog .mud-dialog-title .mud-typography {
     font-size: var(--ep-headline-s-size);
     line-height: var(--ep-headline-s-leading);
     letter-spacing: var(--ep-headline-s-tracking);
@@ -160,7 +162,8 @@ h1[tabindex="-1"]:focus-visible {
     color: var(--ep-text);
 }
 
-/* 登入、帳號與匿名頁：品牌字在上，下面置中一張卡。客戶入口的登入、改密碼與第二步驗證共用同一張卡。 */
+/* 登入、帳號與匿名頁：品牌字在上，下面置中一張卡（Google 帳戶登入那一型：28px 大圓角、平面、沒有陰影）。
+   客戶入口的登入、改密碼與第二步驗證共用同一張卡。 */
 .ep-auth {
     min-block-size: 100dvh;
     display: flex;
@@ -183,7 +186,6 @@ h1[tabindex="-1"]:focus-visible {
     background: var(--ep-surface);
     border: 1px solid var(--ep-border-subtle);
     border-radius: var(--ep-radius-sheet);
-    box-shadow: var(--ep-elevation-2);
 }
 
 /* 入口的頂欄底下（登入、改密碼、第二步驗證這類只有一張卡的頁面）：卡片在剩下的空間裡上下置中，
@@ -215,12 +217,13 @@ h1[tabindex="-1"]:focus-visible {
     min-block-size: var(--ep-touch-target);
     padding-inline: var(--ep-space-3);
     border: 0;
-    border-radius: var(--ep-radius-control);
+    border-radius: var(--ep-radius-pill);
     background: transparent;
     color: var(--ep-text-secondary);
     font: inherit;
     font-size: var(--ep-body-m-size);
     cursor: pointer;
+    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 .ep-lang-option[aria-current="true"] {
@@ -230,7 +233,7 @@ h1[tabindex="-1"]:focus-visible {
 
 @media (hover: hover) {
     .ep-lang-option:hover {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
     }
 }
 
@@ -244,10 +247,11 @@ h1[tabindex="-1"]:focus-visible {
     flex: 1;
 }
 
-/* 外觀選項（分段控制，Apple 的 segmented control）：一條淺底的軌道，選中的那一格是浮起的一塊，在格子之間滑動。
+/* 外觀選項（Material 3 的分段按鈕）：一條外框膠囊，選中的那一格是色調容器的實心塊，在格子之間滑動。
    每一格是原生 radio（透明、蓋滿整格）：點擊、方向鍵、螢幕閱讀器念出選中項目都是瀏覽器原生的；選中的塊與字色跟著 :checked 走，
    不靠腳本。塊只動 translate（合成層，不觸發版面），動畫中途再選會從目前位置轉向；使用者要求減少動態時，全域規則把它收成瞬間。
-   選中不只靠塊的位置：字色加深、字重加粗，塊另有控制項外框（高對比模式與非文字對比 3:1）。按下當下整格縮一下（回饋在按下，不是放開）。 */
+   選中不只靠塊的位置：字色換成容器上的字色、字重加粗，塊另有控制項外框（非文字對比 3:1）。
+   按下當下整格縮一下（回饋在按下，不是放開）。 */
 .ep-segmented {
     --ep-segment-index: 0;
     position: relative;
@@ -261,9 +265,9 @@ h1[tabindex="-1"]:focus-visible {
     min-inline-size: 0;
     margin: 0;
     padding: var(--ep-space-1);
-    border: 0;
-    border-radius: var(--ep-radius-card);
-    background: var(--ep-surface-muted);
+    border: 1px solid var(--ep-border-control);
+    border-radius: var(--ep-radius-pill);
+    background: transparent;
 }
 
 .ep-segmented::before {
@@ -275,9 +279,8 @@ h1[tabindex="-1"]:focus-visible {
     inline-size: calc((100% - var(--ep-space-1) * 4) / 3);
     box-sizing: border-box;
     border: 1px solid var(--ep-border-control);
-    border-radius: var(--ep-radius-control);
-    background: var(--ep-surface);
-    box-shadow: var(--ep-elevation-1);
+    border-radius: var(--ep-radius-pill);
+    background: var(--ep-primary-container);
     translate: calc(var(--ep-segment-index) * (100% + var(--ep-space-1))) 0;
     transition: translate var(--ep-motion-normal) var(--ep-motion-ease-move);
 }
@@ -300,7 +303,7 @@ h1[tabindex="-1"]:focus-visible {
     box-sizing: border-box;
     min-block-size: var(--ep-touch-target);
     padding: var(--ep-space-1) var(--ep-space-2);
-    border-radius: var(--ep-radius-control);
+    border-radius: var(--ep-radius-pill);
     color: var(--ep-text-secondary);
     font-size: var(--ep-body-m-size);
     line-height: var(--ep-body-m-leading);
@@ -319,7 +322,7 @@ h1[tabindex="-1"]:focus-visible {
 }
 
 .ep-segment:has(> input:checked) {
-    color: var(--ep-text);
+    color: var(--ep-on-primary-container);
     font-weight: var(--ep-label-l-weight);
 }
 
@@ -479,15 +482,68 @@ h1[tabindex="-1"]:focus-visible {
     transition-duration: 0s;
 }
 
-/* MudBlazor 的水波紋是 Material 的回饋，跟上面的按下縮放重複；元件沒有全域開關，在這裡一次收掉。 */
+/* 水波紋（Material 的觸控回饋）：從按下的那一點擴散成蓋滿整個元件的圓，放開後淡出。forms.js 在按下時把落點與半徑寫進
+   --ep-ripple-x／y／size，並把 data-ripple 設成 down（放開時換成 up）；這裡只畫一層與元件同形狀的面（圓角繼承），
+   用 clip-path 的圓從落點長大，所以不必裁切元件本身（分頁的主色線、焦點環都不受影響）。顏色是元件的內容色（currentColor），
+   不透明度是狀態層的按下值，在任何底色、淺色與深色上都成立。這層畫在內容底下（isolation 加 z-index -1），文字與圖示不被蓋住。
+   沒有 JavaScript 時沒有落點，不畫；要求減少動態時 forms.js 不設 data-ripple，只剩狀態層的底色變化。
+   MudBlazor 自己的水波紋顏色與時序與這裡不同，收掉，由同一份規則接手。 */
 .mud-ripple-effect {
     display: none;
+}
+
+:where([data-ripple]) {
+    position: relative;
+    isolation: isolate;
+}
+
+[data-ripple]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+}
+
+[data-ripple="down"]::before {
+    animation: ep-ripple-grow var(--ep-motion-ripple) var(--ep-motion-ease-standard) forwards;
+}
+
+[data-ripple="up"]::before {
+    animation: ep-ripple-fade var(--ep-motion-slow) var(--ep-motion-ease-standard) forwards;
+}
+
+@keyframes ep-ripple-grow {
+    from {
+        opacity: var(--ep-state-pressed);
+        clip-path: circle(0 at var(--ep-ripple-x) var(--ep-ripple-y));
+    }
+
+    to {
+        opacity: var(--ep-state-pressed);
+        clip-path: circle(var(--ep-ripple-size) at var(--ep-ripple-x) var(--ep-ripple-y));
+    }
+}
+
+@keyframes ep-ripple-fade {
+    from {
+        opacity: var(--ep-state-pressed);
+        clip-path: circle(var(--ep-ripple-size) at var(--ep-ripple-x) var(--ep-ripple-y));
+    }
+
+    to {
+        opacity: 0;
+        clip-path: circle(var(--ep-ripple-size) at var(--ep-ripple-x) var(--ep-ripple-y));
+    }
 }
 
 @media (hover: hover) {
     .ep-send:not(:disabled):hover,
     .ep-btn-primary:hover {
-        background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-text));
+        background: color-mix(in srgb, var(--ep-primary) 88%, var(--ep-on-primary));
     }
 }
 
@@ -1054,7 +1110,7 @@ time {
 
 @media (hover: hover) {
     .ep-tab:hover:not([aria-current="page"]) {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
         color: var(--ep-text);
     }
 }
@@ -1074,7 +1130,8 @@ time {
 }
 
 .ep-tab[aria-current="page"] .ep-tab-count {
-    background: color-mix(in srgb, var(--ep-primary) 14%, transparent);
+    background: var(--ep-primary-container);
+    color: var(--ep-on-primary-container);
 }
 
 /* 面板：選到的那一刻淡入並上浮一小段（落定曲線、無回彈）；hidden 的面板不佔版面。減少動態時由全域規則收成瞬間。 */
@@ -1124,7 +1181,7 @@ time {
 
 @media (hover: hover) {
     .ep-subbar .ep-copy > .ep-btn:hover {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
         color: var(--ep-link);
     }
 }
@@ -1156,8 +1213,8 @@ time {
     flex-direction: column;
 }
 
-/* 頂欄中間的切換器按鈕：看起來像搜尋框（雲端主控台那一型：整條膠囊、沒有邊框、左邊一個搜尋圖示，
-   底色比頂欄深一階），點下去（或 ⌘K）開切換器。寬度走問答欄的 measure，頂欄放不下時先縮它。 */
+/* 頂欄中間的切換器按鈕：看起來像搜尋框（Google 產品的搜尋列：整條膠囊、沒有邊框、左邊一個搜尋圖示，
+   底色是帶一點主色的 surface-container，比頂欄深一階），點下去（或 ⌘K）開切換器。寬度走問答欄的 measure，頂欄放不下時先縮它。 */
 .ep-palette-open {
     display: flex;
     align-items: center;
@@ -1169,22 +1226,24 @@ time {
     padding-inline: var(--ep-space-4) var(--ep-space-3);
     border: 0;
     border-radius: var(--ep-radius-pill);
-    background: color-mix(in srgb, var(--ep-text) 7%, transparent);
+    background: color-mix(in srgb, var(--ep-primary) 5%, var(--ep-surface-muted));
     color: var(--ep-text-secondary);
     font: inherit;
     font-size: var(--ep-body-l-size);
     cursor: pointer;
-    transition: background var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    transition:
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        box-shadow var(--ep-motion-normal) var(--ep-motion-ease-standard);
 }
 
 .ep-palette-open > .ep-icon {
     color: var(--ep-text-secondary);
 }
 
-/* 切換器開著的時候，搜尋鈕換成頁面的底色加一圈細線，像是搜尋框被「按進去」。 */
+/* 切換器開著的時候，搜尋列浮起來：換成表面色加兩層陰影（Google 的搜尋列聚焦時那樣），與下面長出來的結果面連成一體。 */
 .ep-palette-open:has(+ .ep-palette:popover-open) {
-    background: var(--ep-surface);
-    box-shadow: inset 0 0 0 1px var(--ep-border-control);
+    background: var(--ep-surface-raised);
+    box-shadow: var(--ep-elevation-2);
 }
 
 .ep-palette-open > span {
@@ -1207,7 +1266,7 @@ time {
 
 @media (hover: hover) {
     .ep-palette-open:hover {
-        background: color-mix(in srgb, var(--ep-text) 11%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), color-mix(in srgb, var(--ep-primary) 5%, var(--ep-surface-muted)));
     }
 }
 
@@ -1274,7 +1333,7 @@ time {
 
 .ep-palette-item:hover,
 .ep-palette-item:focus-visible {
-    background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+    background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
 }
 
 .ep-palette-empty {
@@ -1318,7 +1377,7 @@ time {
     flex-direction: column;
 }
 
-/* 側欄（雲端主控台那一型）：每項圖示加文字，目前項是整條的淡藍底，群組用小標題隔開。
+/* 側欄（Google 產品的導覽抽屜）：每項圖示加文字、整條膠囊，目前項是色調容器的實心淡藍底，群組用小標題隔開。
    平板起是黏在頂欄下面的左欄，桌機可收成只剩圖示的窄欄（forms.js 設 html[data-side]，偏好存在 localStorage）；
    手機是從左側滑出的抽屜加遮罩（forms.js 設 html[data-drawer]）。沒有 JavaScript 時，手機上維持頂欄下一條可橫捲的列。 */
 .ep-side {
@@ -1356,12 +1415,14 @@ time {
     align-items: center;
     gap: var(--ep-space-3);
     min-block-size: var(--ep-touch-target);
-    padding-inline: var(--ep-space-3);
+    padding-inline: var(--ep-space-4);
     border-radius: var(--ep-radius-pill);
     color: var(--ep-text);
     text-decoration: none;
     white-space: nowrap;
-    transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+    transition:
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
+        color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 .ep-side-link .ep-icon {
@@ -1371,19 +1432,19 @@ time {
 
 .ep-side-link.active,
 .ep-recent-link.active {
-    background: color-mix(in srgb, var(--ep-primary) 12%, transparent);
-    color: var(--ep-link);
+    background: var(--ep-primary-container);
+    color: var(--ep-on-primary-container);
     font-weight: var(--ep-label-l-weight);
 }
 
 .ep-side-link.active .ep-icon {
-    color: var(--ep-link);
+    color: var(--ep-on-primary-container);
 }
 
 @media (hover: hover) {
     .ep-side-link:hover:not(.active),
     .ep-recent-link:hover:not(.active) {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
     }
 }
 
@@ -1456,7 +1517,7 @@ html[data-js] .ep-side-toggle {
 
 @media (hover: hover) {
     .ep-side-toggle:hover {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
         color: var(--ep-text);
     }
 }
@@ -1792,7 +1853,7 @@ html[data-js] .ep-side-toggle {
     padding-block: var(--ep-space-2);
     padding-block-start: max(var(--ep-space-2), env(safe-area-inset-top));
     padding-inline: max(var(--ep-space-4), env(safe-area-inset-left)) max(var(--ep-space-4), env(safe-area-inset-right));
-    background: color-mix(in srgb, var(--ep-surface) 72%, transparent);
+    background: color-mix(in srgb, var(--ep-bg) 82%, transparent);
     border-block-end: 1px solid var(--ep-border-subtle);
 }
 
@@ -1872,10 +1933,10 @@ a.ep-brand {
     box-sizing: border-box;
     padding: var(--ep-space-2);
     border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-sheet);
-    background: var(--ep-surface);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface-raised);
     color: var(--ep-text);
-    box-shadow: var(--ep-elevation-3);
+    box-shadow: var(--ep-elevation-2);
     /* 收合：慢起快收，沿進場的同一條路縮回觸發點（transform-origin 見「動態」）。
        popover 開關是 display 的離散切換，所以也轉 display 與 overlay。 */
     opacity: 0;
@@ -1949,7 +2010,7 @@ a.ep-brand {
 
 @media (hover: hover) {
     .ep-menu-item:hover {
-        background: var(--ep-surface-muted);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
     }
 }
 
@@ -2270,14 +2331,13 @@ a.ep-brand {
     color: var(--ep-error);
 }
 
-/* 送出：有輸入時為高對比實心反差圓鈕，無內容時沉靜地融於卡片中；進行中顯示細旋轉環。 */
+/* 送出：有輸入時是主色的實心圓鈕（Material 3 的 filled icon button），無內容時沉靜地融於卡片中；進行中顯示細旋轉環。 */
 .ep-send {
     display: grid;
     place-items: center;
     border: 0;
-    background: var(--ep-ink);
-    color: var(--ep-on-ink);
-    box-shadow: var(--ep-elevation-1);
+    background: var(--ep-primary);
+    color: var(--ep-on-primary);
     transition: transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
         background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
         color var(--ep-motion-fast) var(--ep-motion-ease-standard),
@@ -2294,8 +2354,8 @@ a.ep-brand {
 }
 
 .ep-send[data-busy="true"] {
-    background: var(--ep-ink);
-    color: var(--ep-on-ink);
+    background: var(--ep-primary);
+    color: var(--ep-on-primary);
     opacity: 1;
 }
 
@@ -2576,14 +2636,16 @@ a.ep-brand {
     border-color: var(--ep-error);
 }
 
-/* 聚焦時外圈柔光：焦點環（outline）仍在，這只是附加的視覺回饋。 */
+/* 聚焦：Material 3 的外框欄位，外框變成 2px 的焦點色（內陰影補上第二個 1px，版面不跳），焦點的提示就是外框本身。
+   全域焦點環在這裡改成透明而不是拿掉：強制色彩模式（Windows 高對比）會丟掉陰影，但透明的 outline 會畫成系統色，焦點照樣看得到。 */
 .ep-input:focus {
     border-color: var(--ep-focus);
-    box-shadow: 0 0 0 var(--ep-space-1) color-mix(in srgb, var(--ep-focus) 16%, transparent);
+    box-shadow: inset 0 0 0 1px var(--ep-focus);
 }
 
 .ep-input:focus-visible {
-    outline-offset: 1px; /* 外框色與寬度用上面的 :focus-visible；輸入框貼著邊，偏移少 1px */
+    outline-color: transparent;
+    outline-offset: 0;
 }
 
 /* 原生下拉選單：藏起瀏覽器不對稱的小箭頭，保留統一右側觸控安全距與圖示。 */
@@ -2841,7 +2903,8 @@ html[data-js] .ep-otp-input::selection {
     margin-block-start: var(--ep-space-4);
 }
 
-/* 橫排、觸控高度的動作：按鈕與分頁。font 先繼承，字重寫在後面才不會被簡寫蓋掉。 */
+/* 橫排、觸控高度的動作：按鈕與分頁。按鈕是 Material 3 的膠囊（全圓角）：主要動作實心（filled），次要動作外框（outlined）。
+   font 先繼承，字重寫在後面才不會被簡寫蓋掉。 */
 .ep-btn {
     display: inline-flex;
     align-items: center;
@@ -2857,7 +2920,7 @@ html[data-js] .ep-otp-input::selection {
     padding: var(--ep-space-2) var(--ep-space-6);
     cursor: pointer;
     border: 1px solid transparent;
-    border-radius: var(--ep-radius-control);
+    border-radius: var(--ep-radius-pill);
 }
 
 /* 帶圖示的按鈕：圖示與文字之間一階間距。 */
@@ -2873,10 +2936,10 @@ html[data-js] .ep-otp-input::selection {
     pointer-events: none;
 }
 
+/* 實心按鈕：平放時沒有陰影，游標移上去浮起一層、疊上內容色的狀態層（見下面的 hover 規則）。 */
 .ep-btn-primary {
     background: var(--ep-primary);
     color: var(--ep-on-primary);
-    box-shadow: var(--ep-elevation-1);
     transition:
         transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
         background-color var(--ep-motion-fast) var(--ep-motion-ease-standard),
@@ -2885,18 +2948,19 @@ html[data-js] .ep-otp-input::selection {
 
 @media (hover: hover) {
     .ep-btn-primary:hover {
-        box-shadow: var(--ep-elevation-2);
+        box-shadow: var(--ep-elevation-1);
     }
 }
 
 
+/* 外框按鈕：連結色的字、控制項外框；游標移上去疊一層連結色的狀態層，外框不變。 */
 .ep-btn-quiet {
     background: transparent;
     color: var(--ep-link);
     border-color: var(--ep-border-control);
     transition:
         transform var(--ep-motion-fast) var(--ep-motion-ease-standard),
-        border-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
+        background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
 }
 
 /* 「使用 Google 帳戶登入」：Google 品牌規範的外框按鈕（中性底、細邊框、字重 500、圖示與文字間一階）。底色與邊框、文字全用本系統的
@@ -2913,7 +2977,7 @@ html[data-js] .ep-otp-input::selection {
 
 @media (hover: hover) {
     .ep-btn-google:hover {
-        background: var(--ep-surface-muted);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), var(--ep-surface));
     }
 }
 
@@ -2944,8 +3008,8 @@ html[data-js] .ep-otp-input::selection {
     --tone: var(--ep-border-control);
     margin: var(--ep-space-4) 0 0;
     padding: var(--ep-space-3) var(--ep-space-4);
-    border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--ep-surface));
-    border-radius: var(--ep-radius-control);
+    border: 1px solid color-mix(in srgb, var(--tone) 32%, var(--ep-surface));
+    border-radius: var(--ep-radius-card);
     background: color-mix(in srgb, var(--tone) 8%, var(--ep-surface));
     font-size: var(--ep-body-m-size);
     animation: ep-rise var(--ep-motion-slow) var(--ep-motion-ease-settle) both;
@@ -3034,7 +3098,7 @@ html[data-js] .ep-otp-input::selection {
 
 @media (hover: hover) {
     .ep-btn-quiet:hover {
-        border-color: var(--ep-text-secondary);
+        background: color-mix(in srgb, var(--ep-link) var(--ep-state-hover), transparent);
     }
 }
 
@@ -3048,7 +3112,7 @@ html[data-js] .ep-otp-input::selection {
 /* 減少透明或要求較高對比：實心表面，不模糊。覆蓋必須寫在上面那條材質之後，否則後來的模糊會蓋掉它。 */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
     .ep-shell-top {
-        background: var(--ep-surface);
+        background: var(--ep-bg);
     }
 
     .ep-ask[data-state="result"] .ep-composer-form {
@@ -3147,7 +3211,7 @@ html[data-js] .ep-otp-input::selection {
 
 @media (hover: hover) {
     .ep-recovery .ep-btn-quiet:hover {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
     }
 }
 
@@ -3360,10 +3424,11 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 
 /* ---- 動態 ---------------------------------------------------------------------------------------
- * 動態有四種來源：回饋（按下）、進出場（選單、抽屜、頁面的區塊）、載入（骨架屏）、手勢（抽屜的邊緣滑動，在 forms.js）。
- * 進場是臨界阻尼（落定曲線、無回彈），位移只有一小段，區塊之間錯開一點點，內容一到就開始、不讓人等。
+ * 動態照 Material 3，有四種來源：回饋（按下的狀態層、水波紋與輕微縮放）、進出場（選單、抽屜、頁面的區塊）、
+ * 載入（骨架屏）、手勢（抽屜的邊緣滑動，在 forms.js）。
+ * 進場用強調減速（落定曲線、無回彈），位移只有一小段，區塊之間錯開一點點，內容一到就開始、不讓人等。
  * 時長、曲線、位移量都來自 token；使用者要求減少動態時，上面的規則把動畫收成瞬間（位移與縮放在 token 層歸零）。
- * 跨頁用瀏覽器原生的 view transition 淡入淡出。
+ * 跨頁用瀏覽器原生的 view transition 淡入淡出；切換亮暗時新的外觀從按下的那一格以圓形展開（forms.js 設 data-reveal 並畫圓）。
  */
 @view-transition {
     navigation: auto;
@@ -3373,6 +3438,13 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 ::view-transition-new(root) {
     animation-duration: var(--ep-motion-normal);
     animation-timing-function: var(--ep-motion-ease-standard);
+}
+
+/* 圓形展開時舊畫面原地不動，新畫面整張疊在上面、由腳本的 clip-path 決定露出多少；不再交叉淡入淡出。 */
+html[data-reveal]::view-transition-old(root),
+html[data-reveal]::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }
 
 @keyframes ep-scroll-edge {
@@ -3511,9 +3583,58 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     transform-origin: top right;
 }
 
+/* MudBlazor 的元件跟自家元件同一型（Material 3）：對話框是 28px 大圓角的浮起面，標題常規字重、內距 24px，
+   動作列靠右；按鈕是膠囊、實心的平放沒有陰影（游標移上去才浮起一層），按鈕群組只有兩端是圓的；提示框用卡片圓角。 */
 .mud-dialog {
     border-radius: var(--ep-radius-sheet);
+    background: var(--ep-surface-raised);
     box-shadow: var(--ep-elevation-3);
+}
+
+.mud-dialog .mud-dialog-title {
+    padding: var(--ep-space-6) var(--ep-space-6) var(--ep-space-4);
+}
+
+.mud-dialog .mud-dialog-content {
+    padding-inline: var(--ep-space-6);
+}
+
+.mud-dialog .mud-dialog-actions {
+    gap: var(--ep-space-2);
+    padding: var(--ep-space-4) var(--ep-space-6) var(--ep-space-6);
+}
+
+.mud-button-root.mud-button {
+    border-radius: var(--ep-radius-pill);
+}
+
+.mud-button-group-root .mud-button-root.mud-button {
+    border-radius: 0;
+}
+
+.mud-button-group-root .mud-button-root.mud-button:first-child {
+    border-start-start-radius: var(--ep-radius-pill);
+    border-end-start-radius: var(--ep-radius-pill);
+}
+
+.mud-button-group-root .mud-button-root.mud-button:last-child {
+    border-start-end-radius: var(--ep-radius-pill);
+    border-end-end-radius: var(--ep-radius-pill);
+}
+
+.mud-button-filled,
+.mud-button-filled:focus-visible {
+    box-shadow: none;
+}
+
+@media (hover: hover) {
+    .mud-button-filled:hover {
+        box-shadow: var(--ep-elevation-1);
+    }
+}
+
+.mud-alert {
+    border-radius: var(--ep-radius-card);
 }
 
 .mud-table-row {
@@ -3608,8 +3729,8 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 
 /* ---- 客戶入口的外殼 -------------------------------------------------------------------------------
- * 安靜、緊湊、中性：側欄是一個平面（比頁面高一階的表面加一條細線），項目依目前頁以中性的淡底標示、不上色，
- * 彩色只留給焦點環與連結。頂欄矮一階，頭像不用反差塊。營運後台不帶 .ep-portal，維持原樣。
+ * 安靜、緊湊：側欄是一個平面（比頁面高一階的表面加一條細線），目前項與營運後台同一個色調容器的膠囊
+ * （Google 的對話產品那一型），其餘彩色只留給焦點環與連結。頂欄矮一階，頭像不用反差塊。
  * 緊湊高度只給滑鼠；觸控裝置的項目仍是 44px。
  * 頂欄高度是觸控目標加上下內距與底線：導覽鈕（有 JavaScript 才出現）是頂欄裡最高的一項，高度由它決定，
  * 沒有鈕時（登入頁、還沒執行腳本的那一格）也撐到同高，換頁與腳本載入前後頂欄與側欄的起點都不動。 */
@@ -3789,7 +3910,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     min-block-size: var(--ep-touch-target);
     padding: var(--ep-space-1) var(--ep-space-2);
     border: 0;
-    border-radius: var(--ep-radius-control);
+    border-radius: var(--ep-radius-pill);
     background: transparent;
     color: var(--ep-text);
     font: inherit;
@@ -3875,7 +3996,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 }
 
 .ep-portal.ep-console .ep-side-link {
-    border-radius: var(--ep-radius-control);
+    border-radius: var(--ep-radius-pill);
     font-size: var(--ep-label-m-size);
     font-weight: var(--ep-body-l-weight);
 }
@@ -3888,13 +4009,13 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 
 .ep-portal.ep-console .ep-side-link.active,
 .ep-portal.ep-console .ep-recent-link.active {
-    background: color-mix(in srgb, var(--ep-text) 10%, transparent);
-    color: var(--ep-text);
+    background: var(--ep-primary-container);
+    color: var(--ep-on-primary-container);
     font-weight: var(--ep-label-m-weight);
 }
 
 .ep-portal.ep-console .ep-side-link.active .ep-icon {
-    color: var(--ep-text);
+    color: var(--ep-on-primary-container);
 }
 
 /* 最近的對話是次要的清單：比主要導覽淡一階，目前那一則與游標移上去的才回到主要文字色。 */
@@ -3903,7 +4024,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 }
 
 .ep-portal.ep-console .ep-recent-link.active {
-    color: var(--ep-text);
+    color: var(--ep-on-primary-container);
 }
 
 @media (hover: hover) {
@@ -3914,7 +4035,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     .ep-side-new-chat:hover,
     .ep-portal-user:hover,
     .ep-portal-new-chat:hover {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
         color: var(--ep-text);
     }
 
@@ -3995,7 +4116,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         inline-size: 100%;
         min-block-size: var(--ep-touch-target);
         padding-inline: var(--ep-space-3);
-        border-radius: var(--ep-radius-control);
+        border-radius: var(--ep-radius-pill);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
@@ -4094,7 +4215,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
         inline-size: 100%;
         min-block-size: var(--ep-control-height);
         padding-inline: var(--ep-space-3);
-        border-radius: var(--ep-radius-control);
+        border-radius: var(--ep-radius-pill);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
@@ -4320,7 +4441,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     }
 
     .ep-history-filter:hover:not(.active) {
-        background: color-mix(in srgb, var(--ep-text) 6%, transparent);
+        background: color-mix(in srgb, var(--ep-text) var(--ep-state-hover), transparent);
         color: var(--ep-text);
     }
 }

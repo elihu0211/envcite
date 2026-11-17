@@ -32,7 +32,7 @@ public sealed partial class App(IAppearancePreference preference)
     /// 營運後台是互動的（Interactive Server）；標了 <c>[ExcludeFromInteractiveRouting]</c> 的頁面（客戶入口）是靜態伺服器端渲染：
     /// 每個請求自己解析租戶、自己驗證，不開 circuit，登入表單就是一個普通的 POST。
     /// </summary>
-    internal const string RobotoLatin = "_content/EnvCite.Platform.Web/fonts/roboto/roboto-latin-wght-normal.woff2";
+    internal const string SansLatin = "_content/EnvCite.Platform.Web/fonts/google-sans-flex/google-sans-flex-latin-opsz-normal.woff2";
 
     private IComponentRenderMode? PageRenderMode => HttpContext.AcceptsInteractiveRouting() ? RenderMode.InteractiveServer : null;
 }
