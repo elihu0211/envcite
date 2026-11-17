@@ -738,6 +738,88 @@ const scenarios = {
         });
     },
 
+    // 授權知識圖譜的圖例與層級切換：層級是可複選的顯示／隱藏開關（不是單選的打亮）、至少留一層、鍵盤切換焦點不掉、
+    // 連線樣式有文字說明；「違憲失效」是另一種標記，只打亮相關節點、不改畫的內容。
+    async "law-graph-legend"() {
+        const legend = () => page.evaluate(() => {
+            const canvas = document.querySelector(".ep-graph-canvas");
+            const graph = canvas._g6Instance;
+            const bar = document.querySelector(".ep-graph-swimlanes");
+            const tiers = [...bar.querySelectorAll(".ep-swimlane-pill[data-tier]")].map((b) => ({ tier: b.dataset.graphFilterTier, shown: b.getAttribute("aria-pressed") === "true" }));
+            const invalid = bar.querySelector("[data-graph-filter-tier='invalid']");
+            return {
+                state: canvas.dataset.graphState,
+                nodes: graph.getNodeData().filter((n) => n.data?.raw).length, // 法規節點；不含「+N 部」的展開膠囊
+                tiers,
+                reset: Boolean(bar.querySelector("[data-graph-legend-reset]")),
+                invalidText: invalid?.textContent ?? "",
+                invalidOn: invalid?.getAttribute("aria-pressed") === "true",
+                edges: [...bar.querySelectorAll(".ep-legend-edge")].map((li) => `${li.dataset.kind}:${li.textContent.trim()}:${li.querySelector("line")?.getAttribute("stroke-dasharray") ? "dashed" : "solid"}`),
+                status: bar.querySelector("[data-legend-status]")?.textContent ?? "",
+                focus: document.activeElement?.dataset?.graphFilterTier ?? (document.activeElement?.hasAttribute?.("data-graph-legend-reset") ? "reset" : null),
+                dimmed: graph.getNodeData().filter((n) => (graph.getElementState(n.id) || []).includes("inactive")).length,
+            };
+        });
+        const tierChip = (tier) => page.locator(`.ep-swimlane-pill[data-graph-filter-tier='${tier}']`);
+        const settled = (what, probe) => until(what, async () => {
+            const s = await legend();
+            return s.state === "ready" && probe(s);
+        });
+
+        await step("登入後前往法規體系與合規：三個層級都顯示、連線樣式有文字說明", async () => {
+            await signIn();
+            await page.setViewportSize({ width: 1700, height: 900 });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await settled("圖譜應建好並顯示", (s) => s.nodes >= 3);
+            const s = await legend();
+            if (JSON.stringify(s.tiers.map((t) => t.shown)) !== "[true,true,true]") throw new Error(`三個層級應都顯示：${JSON.stringify(s.tiers)}`);
+            if (s.reset) throw new Error("沒有隱藏任何層級時不該有「全部顯示」");
+            if (!s.invalidText.includes("違憲失效")) throw new Error(`違憲失效的標記要有文字，不能只有符號：${JSON.stringify(s.invalidText)}`);
+            if (s.edges.length !== 2 || !s.edges.some((e) => e.startsWith("direct:") && e.endsWith(":solid")) || !s.edges.some((e) => e.startsWith("sub:") && e.endsWith(":dashed"))) {
+                throw new Error(`連線圖例應有實線的直接授權與虛線的再授權：${JSON.stringify(s.edges)}`);
+            }
+            if (shots) await page.locator(".ep-graph-canvas-wrap").screenshot({ path: `${shots}/law-legend-all.png` });
+        });
+
+        await step("隱藏 Tier 3：該層從圖上消失、其餘照舊，焦點留在原來的開關", async () => {
+            await tierChip(3).focus();
+            await page.keyboard.press("Enter");
+            await settled("Tier 3 應被隱藏", (s) => s.nodes === 2 && s.tiers.find((t) => t.tier === "3")?.shown === false);
+            const s = await legend();
+            if (!s.reset) throw new Error("隱藏層級後應出現「全部顯示」");
+            if (s.focus !== "3") throw new Error(`切換後焦點應留在 Tier 3 的開關：${s.focus}`);
+            if (shots) await page.locator(".ep-graph-canvas-wrap").screenshot({ path: `${shots}/law-legend-hidden.png` });
+        });
+
+        await step("至少留一個層級：最後一層關不掉，並說明原因", async () => {
+            await tierChip(2).click();
+            await settled("Tier 2 也被隱藏", (s) => s.nodes === 1);
+            await tierChip(1).click();
+            await until("應說明至少要留一層", async () => (await legend()).status.includes("至少"));
+            const s = await legend();
+            if (s.nodes !== 1 || s.tiers.find((t) => t.tier === "1")?.shown !== true) throw new Error(`最後一層不該被關掉：${JSON.stringify(s)}`);
+        });
+
+        await step("全部顯示：回到三層，「全部顯示」消失", async () => {
+            await page.locator("[data-graph-legend-reset]").click();
+            await settled("應回到三層", (s) => s.nodes === 3 && !s.reset && s.tiers.every((t) => t.shown));
+        });
+
+        await step("違憲失效是標記：只打亮相關節點，不改變畫的內容", async () => {
+            await tierChip("invalid").click();
+            await until("應打亮違憲失效的節點", async () => {
+                const s = await legend();
+                return s.invalidOn && s.dimmed > 0;
+            });
+            if ((await legend()).nodes !== 3) throw new Error("打亮不該增減節點");
+            await tierChip("invalid").click();
+            await until("再按一次應取消", async () => {
+                const s = await legend();
+                return !s.invalidOn && s.dimmed === 0;
+            });
+        });
+    },
+
     // 法規體系與合規工作列：下拉選單帶統一右側安全距與箭頭、按鈕與欄位依容器斷點對齊且可 RWD 換列。
     async "laws-toolbar"() {
         await step("登入後前往法規體系與合規", async () => {

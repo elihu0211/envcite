@@ -58,6 +58,10 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("id=\"ep-graph-inspector\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("aria-controls=\"ep-graph-inspector\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-inspector-open=\"false\"", page.Html, StringComparison.Ordinal);
+        // 圖例：層級是可複選的顯示／隱藏開關，違憲失效是另一種標記（只打亮）；原本單選打亮層級的做法已經沒有了。
+        Assert.Contains("toggleTierVisibility", script.Html, StringComparison.Ordinal);
+        Assert.Contains("applyInvalidSpotlight", script.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("applyTierFilter", script.Html, StringComparison.Ordinal);
 
         var stylesheet = await browser.GetAsync("/_content/EnvCite.Platform.Web/design/platform.css");
         Assert.Equal(HttpStatusCode.OK, stylesheet.Status);
@@ -70,6 +74,8 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.DoesNotContain("data-inspector-dismissed", stylesheet.Html, StringComparison.Ordinal);
         // 面板不再是並排的欄位：host 沒有雙欄 grid，開關才不會改變畫布寬度。
         Assert.DoesNotContain("grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem)", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Contains(".ep-swimlane-pill[data-tier][aria-pressed=\"false\"]", stylesheet.Html, StringComparison.Ordinal); // 關掉的層級有自己的樣子
+        Assert.Contains(".ep-legend-edges", stylesheet.Html, StringComparison.Ordinal);
     }
 
     [Fact]

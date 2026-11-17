@@ -375,6 +375,18 @@
   <data name="帳號選單" xml:space="preserve">
     <value>Account menu</value>
   </data>
+  <data name="層級（點選顯示或隱藏）" xml:space="preserve">
+    <value>Tiers (select to show or hide)</value>
+  </data>
+  <data name="連線" xml:space="preserve">
+    <value>Links</value>
+  </data>
+  <data name="全部顯示" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="至少要保留一個層級" xml:space="preserve">
+    <value>Keep at least one tier visible</value>
+  </data>
   <data name="系統設定" xml:space="preserve">
     <value>System settings</value>
   </data>

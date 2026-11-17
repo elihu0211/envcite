@@ -5421,10 +5421,75 @@ html[data-reveal]::view-transition-new(root) {
     color: var(--ep-text);
 }
 
-.ep-swimlane-pill[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--ep-primary) 16%, var(--ep-surface));
-    border-color: var(--ep-primary);
+/* 層級開關：aria-pressed = 顯示中（預設全部顯示，維持各層級自己的底色）；關掉的層級退成透明底、名稱劃線。 */
+.ep-swimlane-pill[data-tier][aria-pressed="false"] {
+    background: transparent;
+    border-style: dashed;
+    border-inline-start-style: solid;
+    color: var(--ep-text-secondary);
+}
+
+.ep-swimlane-pill[data-tier][aria-pressed="false"] .ep-legend-name {
+    text-decoration: line-through;
+}
+
+/* 違憲失效標記：aria-pressed = 正在打亮相關節點。 */
+.ep-swimlane-pill[data-graph-filter-tier="invalid"][aria-pressed="true"] {
+    background: color-mix(in srgb, var(--ep-error) 24%, var(--ep-surface));
+    border-color: var(--ep-error);
     color: var(--ep-text);
+}
+
+.ep-legend-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
+.ep-legend-count {
+    margin-inline-start: var(--ep-space-1);
+    color: var(--ep-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-legend-reset {
+    min-block-size: 0;
+    padding: var(--ep-space-1) var(--ep-space-2);
+    font-size: var(--ep-label-s-size);
+}
+
+/* 連線樣式說明：線形（實線／虛線）加文字，不只靠顏色分辨。 */
+.ep-legend-edges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-3);
+    margin: 0;
+    padding: 0 0 0 var(--ep-space-3);
+    list-style: none;
+    border-inline-start: 1px solid var(--ep-border-subtle);
+}
+
+.ep-legend-edge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    white-space: nowrap;
+}
+
+.ep-legend-line {
+    flex: none;
+    inline-size: 1.75rem;
+    block-size: 0.5rem;
+}
+
+.ep-legend-edge[data-kind="direct"] .ep-legend-line {
+    color: var(--ep-primary);
+}
+
+.ep-legend-edge[data-kind="sub"] .ep-legend-line {
+    color: var(--ep-accent);
 }
 
 .ep-swimlane-pill[data-graph-filter-tier] {
