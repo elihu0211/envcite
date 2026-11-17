@@ -111,7 +111,7 @@ public sealed partial class ChatSession(
         ApplyDetail(detail);
     }
 
-    /// <summary>開啟自己的一串對話，回傳有沒有找到（不是自己的、已刪除、已過期、沒開啟：都是沒有）。找不到時是空白的新對話。</summary>
+    /// <summary>開啟自己的一串對話，回傳有沒有找到（不是自己的、不存在、已刪除、已過期：都是沒有）。找不到時是空白的新對話。</summary>
     public async Task<bool> OpenAsync(ClaimsPrincipal user, Guid id, CancellationToken cancellationToken)
     {
         var detail = await ask.ConversationAsync(user, id, cancellationToken);

@@ -3,9 +3,8 @@ using EnvCite.ServiceDefaults;
 namespace EnvCite.Platform.Web.Auth;
 
 /// <summary>
-/// <c>Platform:Portal</c> 區段。客戶入口預設關閉：沒有外部登入、寄信與邀請，
-/// 初始密碼由營運者經手，是展示與內部試用的程度，不是給正式客戶用的（07-01 §1.2）。
-/// Development 一律開著，方便本機看畫面。
+/// <c>Platform:Portal</c> 區段。客戶入口在程式裡預設關閉，由各環境的設定開啟；
+/// Development 一律開著，方便本機看畫面（見 <c>PlatformSurfaces</c>）。
 /// </summary>
 public sealed class PortalOptions : ISectionOptions
 {
