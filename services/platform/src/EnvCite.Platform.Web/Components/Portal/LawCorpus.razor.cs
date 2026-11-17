@@ -60,7 +60,24 @@ public sealed partial class LawCorpus(
 
     private string ResolvedTab => Route.ResolveTab(HasReasoning, _reasoningOutcome is not null || !string.IsNullOrEmpty(Error));
 
-    private string CatalogTitle => L["法律樹結構 ({0})", _filteredRoots.Count];
+    // 「法規目錄」是瀏覽母法體系的抽屜；「法律樹結構」是圖譜的一種排版，兩者不能同名。
+    private string CatalogTitle => L["法規目錄 ({0})", _filteredRoots.Count];
+
+    /// <summary>沒有結果時展開查詢條件（使用者需要調整），有結果時收成一列摘要，讓圖譜留在畫面上。</summary>
+    private bool ConditionsOpen =>
+        _graphResult is { Available: true, Nodes.Count: 0 } || (_treeLoaded && _filteredRoots.Count == 0);
+
+    /// <summary>收合時的一列摘要：目前生效的領域、關鍵字與基準日。</summary>
+    private string ConditionSummary => string.Join(" · ", ConditionParts());
+
+    private IEnumerable<string> ConditionParts()
+    {
+        yield return DomainLabel(SelectedCategoryValue);
+        if (!string.IsNullOrWhiteSpace(Query))
+            yield return L["篩選：{0}", Query];
+
+        yield return string.IsNullOrEmpty(AsOf) ? L["現行"] : L["基準日 {0}", AsOf];
+    }
 
     private string GraphSectionTitle => _graphResult?.Focus is not null && FindFocusNode(_graphResult) is { } focus
         ? L["授權知識圖譜 · {0}", focus.Title]

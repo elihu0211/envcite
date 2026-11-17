@@ -33,6 +33,12 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("id=\"ep-tab-graph\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("id=\"ep-tab-structure\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("id=\"ep-tab-reasoning\"", page.Html, StringComparison.Ordinal);
+        // 查詢條件收成一列摘要（有結果時不展開），法規目錄是另一件事：抽屜與圖譜排版不再同名「法律樹結構」。
+        Assert.Contains("class=\"ep-conditions\"", page.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("class=\"ep-conditions\" open", page.Html, StringComparison.Ordinal);
+        Assert.Contains("ep-conditions-values", page.Html, StringComparison.Ordinal);
+        Assert.Contains("法規目錄 (", page.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("法律樹結構 (", page.Html, StringComparison.Ordinal);
 
         var script = await browser.GetAsync("/_content/EnvCite.Platform.Web/design/canon-graph.js");
         Assert.Equal(HttpStatusCode.OK, script.Status);

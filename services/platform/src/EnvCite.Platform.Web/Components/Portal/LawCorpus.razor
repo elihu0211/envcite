@@ -17,34 +17,45 @@ else
     <div class="ep-workbench-shell">
         @if (HasCorpus)
         {
-            <form method="get" class="ep-workbench-bar" role="search" aria-label="@L["法規檢索與篩選"]">
-                <input type="hidden" name="tab" value="@ResolvedTab" />
-                <FormField For="f-law-cat" Label="@L["法規領域"]" Hint="@L["預設聚焦環境保護；改選「全部領域」可跨部會探索"]">
-                    <OptionSelect Id="f-law-cat" Name="cat" Label="@L["法規領域"]" Inline="false"
-                                  Options="CategoryOptions" Value="@SelectedCategoryValue" />
-                </FormField>
-                <FormField For="f-law-q" Label="@L["篩選法規"]" Hint="@L["輸入法規名稱或代碼"]">
-                    <input id="f-law-q" name="q" class="ep-input" value="@Query" placeholder="@L["例如 空氣污染"]" />
-                </FormField>
-                <FormField For="f-law-as-of" Label="@L["基準日"]" Hint="@L["留空表示現行"]">
-                    <input id="f-law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
-                </FormField>
-                <div class="ep-workbench-bar-actions">
-                    <SubmitButton>@L["套用條件"]</SubmitButton>
-                    <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-workbench-catalog-toggle"
-                            data-workbench-toggle="catalog" aria-expanded="false" aria-controls="ep-workbench-catalog">
-                        <NavIcon Path="@Icons.Material.Outlined.AccountTree" />
-                        <span>@CatalogTitle</span>
-                    </button>
-                </div>
-            </form>
+            @* 查詢條件收成一列摘要（領域、關鍵字、基準日），要改再展開：圖譜才不會被擠到畫面下方。
+               沒有任何結果時預設展開（使用者需要調整）。法規目錄是另一件事（瀏覽母法體系），按鈕留在摘要列旁、不放進條件表單。 *@
+            <div class="ep-workbench-conditions">
+                <details class="ep-conditions" open="@ConditionsOpen">
+                    <summary class="ep-conditions-summary">
+                        <span class="ep-conditions-label">@L["查詢條件"]</span>
+                        <span class="ep-conditions-values">@ConditionSummary</span>
+                        <span class="ep-conditions-edit">@L["調整"]<NavIcon Path="@Icons.Material.Outlined.ExpandMore" /></span>
+                    </summary>
+                    <form method="get" class="ep-workbench-bar" role="search" aria-label="@L["法規檢索與篩選"]">
+                        <input type="hidden" name="tab" value="@ResolvedTab" />
+                        <FormField For="f-law-cat" Label="@L["法規領域"]" Hint="@L["預設聚焦環境保護；改選「全部領域」可跨部會探索"]">
+                            <OptionSelect Id="f-law-cat" Name="cat" Label="@L["法規領域"]" Inline="false"
+                                          Options="CategoryOptions" Value="@SelectedCategoryValue" />
+                        </FormField>
+                        <FormField For="f-law-q" Label="@L["篩選法規"]" Hint="@L["輸入法規名稱或代碼"]">
+                            <input id="f-law-q" name="q" class="ep-input" value="@Query" placeholder="@L["例如 空氣污染"]" />
+                        </FormField>
+                        <FormField For="f-law-as-of" Label="@L["基準日"]" Hint="@L["留空表示現行"]">
+                            <input id="f-law-as-of" name="asOf" type="date" class="ep-input" value="@AsOf" />
+                        </FormField>
+                        <div class="ep-workbench-bar-actions">
+                            <SubmitButton>@L["套用條件"]</SubmitButton>
+                        </div>
+                    </form>
+                </details>
+                <button type="button" class="ep-btn ep-btn-quiet ep-btn-icon ep-workbench-catalog-toggle"
+                        data-workbench-toggle="catalog" aria-expanded="false" aria-controls="ep-workbench-catalog">
+                    <NavIcon Path="@Icons.Material.Outlined.AccountTree" />
+                    <span>@CatalogTitle</span>
+                </button>
+            </div>
         }
 
         <div class="ep-workbench @(HasCorpus ? "has-catalog" : "no-catalog")" data-workbench-root="true">
             @if (HasCorpus)
             {
                 <div class="ep-workbench-backdrop" data-workbench-close="catalog" aria-hidden="true"></div>
-                <aside id="ep-workbench-catalog" class="ep-workbench-catalog" aria-label="@L["法律樹結構"]">
+                <aside id="ep-workbench-catalog" class="ep-workbench-catalog" aria-label="@L["法規目錄"]">
                     <div class="ep-workbench-catalog-drawer-head">
                         <span class="ep-workbench-catalog-drawer-title">@CatalogTitle</span>
                         <button type="button" class="ep-btn ep-btn-quiet ep-workbench-catalog-close"
@@ -174,7 +185,6 @@ else
 
                                 <div class="ep-graph-host" data-graph-host="true" data-inspector-open="false">
                                     <div class="ep-graph-stage">
-                                        <p class="ep-page-description">@L["視覺化追蹤「母法條文 → 授權法規命令 → 行政函釋」之凱爾森位階與授權明確性；點擊節點可檢視授權依據，雙擊可深入展開。"]</p>
                                         <div class="ep-graph-toolbar">
                                             <div class="ep-chip-row">
                                                 <button type="button" class="ep-preset-chip" data-graph-action="layout-stufenbau" aria-pressed="true">@L["位階分層（Stufenbau）"]</button>
