@@ -616,3 +616,78 @@ def test_the_default_day_of_a_listing_is_the_injected_today(
 
     assert now.ListStatements(request, FakeContext(5.0)).statements
     assert not long_ago.ListStatements(request, FakeContext(5.0)).statements
+
+
+def test_the_discretion_of_sections_8_and_19_comes_back_typed(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    """第 8 條但書與第 19 條不是阻卻責任：依據、候選措施與情節附註經契約往返。"""
+    _first(conn, tmp_path, _law_v1(LawArticles=_articles("甲一", "乙一")))
+
+    def sanction(name: str, effect: str, **amounts: int) -> dict[str, Any]:
+        return {
+            "id": name,
+            "law": LAW,
+            "path": "art_2",
+            "text": "乙一",
+            "kind": "sanction",
+            "conditions": [],
+            "sanction": {"punishes": "duty", "effect": effect, **amounts},
+        }
+
+    ids = load(
+        conn,
+        _doc(
+            _plain_duty(),
+            sanction("fine", "fine", min=1000, max=3000),
+            sanction("seizure", "confiscation"),
+        ),
+    ).ids
+    conn.commit()
+
+    def outcome(
+        petty_minor: bool | None = None, ignorance_unavoidable: bool | None = None
+    ) -> reasoning_pb2.Outcome:
+        request = _case(conduct_on="2019-01-01", decided_on="2019-01-01")
+        request.administrative_penalty_facts.CopyFrom(
+            reasoning_pb2.AdministrativePenaltyFacts(
+                intent=True, petty_minor=petty_minor, ignorance_unavoidable=ignorance_unavoidable
+            )
+        )
+        return reasoning_stub.Evaluate(request, metadata=call_metadata()).at_decision
+
+    def rows(out: reasoning_pb2.Outcome) -> list[tuple[int, int, list[int], list[int]]]:
+        return [
+            (d.penalty_statement_id, d.basis, list(d.measures), list(d.notes))
+            for d in out.general.discretion
+        ]
+
+    petty = outcome(petty_minor=True)
+    assert [p.statement_id for p in petty.penalties] == [ids["seizure"]]
+    assert rows(petty) == [
+        (
+            ids["fine"],
+            reasoning_pb2.DISCRETION_BASIS_PETTY_OFFENSE,
+            [reasoning_pb2.DISCRETION_MEASURE_CORRECT_OR_ADVISE],
+            [],
+        )
+    ]
+    assert not petty.general.unpunished
+
+    unavoidable = outcome(ignorance_unavoidable=True)
+    assert not unavoidable.general.excused
+    assert {p.statement_id for p in unavoidable.penalties} == {ids["fine"], ids["seizure"]}
+    assert rows(unavoidable) == [
+        (
+            ids["fine"],
+            reasoning_pb2.DISCRETION_BASIS_IGNORANCE_OF_LAW,
+            [reasoning_pb2.DISCRETION_MEASURE_REDUCE, reasoning_pb2.DISCRETION_MEASURE_EXEMPT],
+            [reasoning_pb2.DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE],
+        ),
+        (
+            ids["seizure"],
+            reasoning_pb2.DISCRETION_BASIS_IGNORANCE_OF_LAW,
+            [reasoning_pb2.DISCRETION_MEASURE_EXEMPT],
+            [reasoning_pb2.DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE],
+        ),
+    ]

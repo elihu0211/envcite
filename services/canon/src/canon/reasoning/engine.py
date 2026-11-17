@@ -79,6 +79,20 @@ class Penalty:
 
 
 @dataclass(frozen=True)
+class Discretion:
+    """法律效果層次的裁量：處罰要件已成立，是否及如何減輕、免除，由裁罰機關依個案裁斷。
+
+    系統只列候選，不選。`basis` 是依據（`ignorance_of_law` 第 8 條但書、`petty_offense` 第 19 條），
+    `measures` 是候選措施（`reduce`、`exempt`、`correct_or_advise`），`notes` 是情節附註。
+    """
+
+    penalty: int
+    basis: str
+    measures: tuple[str, ...]
+    notes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class General:
     """行政罰法總則對罰則的標記；排除事由成立者不在 `penalties`。"""
 
@@ -96,6 +110,8 @@ class General:
     justified: tuple[tuple[int, str], ...] = ()
     #: （罰則，阻卻責任事由 §§7–9、期待可能性）：第三階有責性排除
     excused: tuple[tuple[int, str], ...] = ()
+    #: 法律效果層次的裁量（第 8 條但書、第 19 條），不在 `unpunished`、`excused`
+    discretion: tuple[Discretion, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -146,6 +162,22 @@ class Result:
     mutatis_applied: tuple[tuple[int, int], ...] = ()
     #: 裁罰積分／倍數／記點與環境講習試算結果
     scoring_results: tuple[ScoringResult, ...] = ()
+
+
+def _discretion(
+    measures: Sequence[tuple[Any, ...]], notes: Sequence[tuple[Any, ...]]
+) -> tuple[Discretion, ...]:
+    """（罰則，依據）一組：候選措施與情節附註各自排序。"""
+    keys = sorted({(int(p), str(b)) for p, b, _ in measures})
+    return tuple(
+        Discretion(
+            p,
+            b,
+            tuple(sorted(str(m) for q, c, m in measures if (int(q), str(c)) == (p, b))),
+            tuple(sorted(str(n) for q, c, n in notes if (int(q), str(c)) == (p, b))),
+        )
+        for p, b in keys
+    )
 
 
 def _py(symbol: clingo.Symbol) -> Any:
@@ -295,6 +327,7 @@ def evaluate(
             deductions=deductions,
             justified=tuple((int(p), str(j)) for p, j in get("justified_out")),
             excused=tuple((int(p), str(r)) for p, r in get("excused_out")),
+            discretion=_discretion(get("discretion"), get("discretion_note")),
         ),
         definitions_used=tuple((int(c), int(d)) for c, d in get("used_def")),
         missing_permits=tuple((int(s), str(k), str(m)) for s, k, m in get("missing_permit")),

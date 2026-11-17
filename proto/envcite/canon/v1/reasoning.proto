@@ -462,13 +462,16 @@ message AdministrativePenaltyFacts {
   // 構成要件錯誤（Tatbestandsirrtum）：不知客觀構成要件事實，阻卻故意。
   optional bool fact_mistake = 24;
 
-  // 不知法規有正當理由而無法避免（第 8 條但書）。
+  // 不知法規有正當理由而無法避免（第 8 條但書）。只是情節附註，不阻卻責任也不自動免除：
+  // GeneralPart.discretion 的第 8 條項目帶 DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE。這個值為真，
+  // 也視為不知法規；ignorance_of_law 明確為假（行為人知悉義務內容）則不列第 8 條。
   optional bool ignorance_unavoidable = 25;
 
   // 欠缺期待可能性。
   optional bool unexpectable = 26;
 
-  // 法定最高額 3,000 元以下且情節輕微以不處罰為適當（第 19 條）。
+  // 情節輕微，認以不處罰為適當（第 19 條第 1 項）。這是呼叫端的裁量陳述；罰鍰的法定最高額是否
+  // 在 3,000 元以下由系統核對，不由呼叫端陳述，最高額沒有數額者不適用。
   optional bool petty_minor = 27;
 }
 
@@ -873,17 +876,15 @@ enum Excuse {
   // 的沒入；其他種類行政罰照列。
   EXCUSE_CRIMINAL_PRIORITY = 8;
 
-  // 不知法規有正當理由且無法避免（第 8 條但書）。
-  EXCUSE_UNAVOIDABLE_IGNORANCE = 9;
-
   // 欠缺期待可能性。
   EXCUSE_UNEXPECTABLE = 10;
 
-  // 微罪不罰（第 19 條）。
-  EXCUSE_PETTY_OFFENSE = 11;
-
   // 尚在限期改善期間內（釋字第 604 號）。
   EXCUSE_WITHIN_CURE_PERIOD = 12;
+
+  // 第 8 條但書與第 19 條不是阻卻責任，是法律效果層次的裁量，改列 GeneralPart.discretion。
+  reserved 9, 11;
+  reserved "EXCUSE_UNAVOIDABLE_IGNORANCE", "EXCUSE_PETTY_OFFENSE";
 }
 
 // 行政罰法總則下得減輕處罰的理由。
@@ -926,8 +927,13 @@ message GeneralPart {
   // 第二階阻卻違法事由（§§11–13）：行為適法。
   repeated PenaltyExcuse justified = 8;
 
-  // 第三階阻卻責任事由（§§7–9、期待可能性）：行為仍屬不法，但免予非難。
+  // 第三階阻卻責任事由（§§7、9、期待可能性）：行為仍屬不法，但免予非難。
   repeated PenaltyExcuse excused = 9;
+
+  // 法律效果層次的裁量（第 8 條但書、第 19 條）：處罰要件已成立，是否及如何減輕、免除由裁罰機關
+  // 依個案裁斷（「得」），系統只列候選，不選，也不是阻卻責任。第 19 條適用時罰鍰不在 penalties，
+  // 其他種類的處罰照列。
+  repeated PenaltyDiscretion discretion = 10;
 }
 
 // 減輕的比例：二分之一；同時有免除處罰之規定者（第 8、12、13 條）三分之一。
@@ -971,6 +977,48 @@ message PenaltyExcuse {
 message PenaltyMitigation {
   int64 penalty_statement_id = 1;
   Mitigation mitigation = 2;
+}
+
+// 裁量的依據：同一個處罰同一個依據至多一項。
+enum DiscretionBasis {
+  DISCRETION_BASIS_UNSPECIFIED = 0;
+
+  // 第 8 條但書：不知法規而違反義務，按其情節得減輕或免除其處罰。減輕只及於可量化的處罰（罰鍰，
+  // 額度見 GeneralPart.reduced，三分之一）；免除是候選，不自動套用。
+  DISCRETION_BASIS_IGNORANCE_OF_LAW = 1;
+
+  // 第 19 條（處罰便宜原則）：法定最高額 3,000 元以下的罰鍰，情節輕微，認以不處罰為適當者，得免予
+  // 處罰；處罰要件已成立為前提，有其他不罰事由時不適用，且只免罰鍰。
+  DISCRETION_BASIS_PETTY_OFFENSE = 2;
+}
+
+// 裁量的候選措施，由裁罰機關擇一或不採。
+enum DiscretionMeasure {
+  DISCRETION_MEASURE_UNSPECIFIED = 0;
+
+  // 減輕處罰（第 8 條但書）。
+  DISCRETION_MEASURE_REDUCE = 1;
+
+  // 免除處罰（第 8 條但書）。
+  DISCRETION_MEASURE_EXEMPT = 2;
+
+  // 糾正或勸導並作成紀錄（第 19 條第 2 項）。
+  DISCRETION_MEASURE_CORRECT_OR_ADVISE = 3;
+}
+
+// 裁量的情節附註：說明情節對裁量的意義，不改變候選。
+enum DiscretionNote {
+  DISCRETION_NOTE_UNSPECIFIED = 0;
+
+  // 不知法規有正當理由而無法避免：學說認為此時應免除處罰，但系統不自動套用。
+  DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE = 1;
+}
+
+message PenaltyDiscretion {
+  int64 penalty_statement_id = 1;
+  DiscretionBasis basis = 2;
+  repeated DiscretionMeasure measures = 3;
+  repeated DiscretionNote notes = 4;
 }
 
 message ActGroup {

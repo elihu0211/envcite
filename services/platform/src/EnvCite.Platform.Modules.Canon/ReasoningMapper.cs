@@ -374,9 +374,7 @@ internal static class ReasoningMapper
         Excuse.SelfDefense => ExcuseDto.SelfDefense,
         Excuse.Necessity => ExcuseDto.Necessity,
         Excuse.CriminalPriority => ExcuseDto.CriminalPriority,
-        Excuse.UnavoidableIgnorance
-            or Excuse.Unexpectable
-            or Excuse.PettyOffense
+        Excuse.Unexpectable
             or Excuse.WithinCurePeriod => null,
         _ => throw Unknown(e),
     };
