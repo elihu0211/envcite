@@ -1,4 +1,5 @@
 import os
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -17,6 +18,9 @@ from canon.server import build_server
 from canon.store.canon_store import CanonStore
 from envcite.canon.v1 import canon_pb2, canon_pb2_grpc, reasoning_pb2_grpc
 from tests.sample import sample_laws, stored_snapshot
+
+#: 評估工具以同目錄的模組名互相匯入（`import golden_set`）；測試以同樣的名字匯入它們。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
 
 def _worker_database(server_dsn: str) -> str:

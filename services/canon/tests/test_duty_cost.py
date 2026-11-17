@@ -1,24 +1,12 @@
 """重抽成本與浪費的計數（tools/duty_cost.py）：日誌摘要與重複確認的判定。"""
 
-import importlib.util
-import sys
 from pathlib import Path
-from types import ModuleType
 from typing import Any
+
+import duty_cost as tool
 
 _TOOL = Path(__file__).resolve().parents[1] / "tools" / "duty_cost.py"
 
-
-def _load() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("duty_cost_module", _TOOL)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["duty_cost_module"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-tool = _load()
 
 LOG = """2026-11-09 11:18:14,402 INFO 法規 2 部：O0040001、O0040010
 2026-11-09 11:21:34,706 WARNING 丟掉 O0040001 art_8：quote is not in the text

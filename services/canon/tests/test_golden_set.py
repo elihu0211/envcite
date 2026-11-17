@@ -1,29 +1,18 @@
 """The golden test collection: sealed documents, the stratified split, ranx metrics, holes and the
 model judgements merged into qrels."""
 
-import importlib.util
 import json
-import sys
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 import pytest
 
+import golden_set as gs
+
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "golden_set.py"
 
 
-def _tool() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("golden_set", TOOL)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["golden_set"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
 def test_a_sealed_document_that_was_edited_is_refused(tmp_path: Path) -> None:
-    gs = _tool()
     path = tmp_path / "qrels.json"
     doc = gs.write(path, {"golden_sha256": "g", "qrels": {"q": {"A0000001-art-1": 1}}})
     assert gs.read(path) == doc
@@ -36,7 +25,6 @@ def test_a_sealed_document_that_was_edited_is_refused(tmp_path: Path) -> None:
 
 
 def test_the_split_is_stratified_by_bucket_and_fixed_by_its_seed() -> None:
-    gs = _tool()
     items = [
         {"id": f"{b}-{i:02d}", "bucket": b} for b in ("exact_id", "negative") for i in range(10)
     ]
@@ -52,7 +40,6 @@ def test_the_split_is_stratified_by_bucket_and_fixed_by_its_seed() -> None:
 
 
 def test_ranx_scores_follow_the_ranking_and_a_grade_below_the_threshold_is_not_relevant() -> None:
-    gs = _tool()
     qrels = {"q1": {"A0000001-art-1": 2, "B0000001-art-1": 1}, "q2": {"C0000001-art-1": 3}}
     ranking = {"q1": ["B0000001-art-1", "A0000001-art-1"], "q2": ["X0000001-art-1"]}
 
@@ -67,7 +54,6 @@ def test_ranx_scores_follow_the_ranking_and_a_grade_below_the_threshold_is_not_r
 
 
 def test_ndcg_takes_the_grades_as_gains() -> None:
-    gs = _tool()
     qrels = {"q1": {"A0000001-art-1": 3, "B0000001-art-1": 1}}
     best = gs.evaluate(
         qrels, {"q1": ["A0000001-art-1", "B0000001-art-1"]}, ["ndcg@10"], relevant_from=2
@@ -84,7 +70,6 @@ def test_ndcg_takes_the_grades_as_gains() -> None:
 
 
 def test_holes_are_the_unjudged_articles_of_the_top_ten() -> None:
-    gs = _tool()
     qrels = {"q1": {"A0000001-art-1": 1, "B0000001-art-1": 0}}
     docs = ["B0000001-art-1", "A0000001-art-1"] + [f"Z0000001-art-{i}" for i in range(1, 12)]
     ranking = {"q1": docs}
@@ -95,7 +80,6 @@ def test_holes_are_the_unjudged_articles_of_the_top_ten() -> None:
 
 
 def test_the_pool_merges_the_holes_of_every_run_once() -> None:
-    gs = _tool()
     qrels = {"q1": {"A0000001-art-1": 1}}
     a = {"q1": ["A0000001-art-1", "B0000001-art-1"]}
     b = {"q1": ["B0000001-art-1", "C0000001-art-1"], "neg": ["D0000001-art-1"]}
@@ -113,9 +97,8 @@ def _doc(**kw: Any) -> dict[str, Any]:
 
 
 def test_model_grades_are_merged_and_an_expected_article_is_only_raised() -> None:
-    gs = _tool()
     doc = _doc()
-    rows = [
+    rows: list[dict[str, Any]] = [
         {"qid": "q1", "doc": "B0000001-art-1", "grade": 0},
         {"qid": "q1", "doc": "C0000001-art-1", "grade": 3},
         {"qid": "q1", "doc": "D0000001-art-1", "grade": None},
@@ -135,7 +118,6 @@ def test_model_grades_are_merged_and_an_expected_article_is_only_raised() -> Non
 
 
 def test_a_second_judgement_of_the_same_article_must_agree() -> None:
-    gs = _tool()
     doc = _doc(
         qrels={"q1": {"A0000001-art-1": 2, "B0000001-art-1": 1}},
         graded_by={"q1": {"B0000001-art-1": "t1"}},
@@ -159,13 +141,11 @@ def test_a_second_judgement_of_the_same_article_must_agree() -> None:
 def test_a_judgement_file_with_a_bad_row_is_refused_whole(
     rows: list[dict[str, Any]], message: str
 ) -> None:
-    gs = _tool()
     with pytest.raises(ValueError, match=message):
         gs.merge_judgements(_doc(), rows, "t")
 
 
 def test_dual_track_composite_natural_keys_in_golden_set() -> None:
-    gs = _tool()
     # 中央法規的條文代號沒有管轄前綴；管轄的值是資料庫的 'TW-CENTRAL'
     assert gs.CENTRAL == "TW-CENTRAL"
     assert gs.doc_id("O0020001", "15-1") == "O0020001-art-15-1"

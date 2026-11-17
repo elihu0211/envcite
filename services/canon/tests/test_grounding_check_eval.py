@@ -5,31 +5,23 @@
 這裡不呼叫任何模型，也不連資料庫。
 """
 
-import importlib.util
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
-# 動態載入 tools/grounding_check_eval.py，避免非套件目錄引發 mypy 模組路徑衝突
-_tool_path = Path(__file__).resolve().parents[1] / "tools" / "grounding_check_eval.py"
-_spec = importlib.util.spec_from_file_location("grounding_check_eval_module", _tool_path)
-assert _spec is not None and _spec.loader is not None
-_tool = importlib.util.module_from_spec(_spec)
-sys.modules["grounding_check_eval_module"] = _tool
-_spec.loader.exec_module(_tool)
-
-INTERROGATIVES = _tool.INTERROGATIVES
-NAME_SUFFIXES = _tool.NAME_SUFFIXES
-QUESTION_MIN_LENGTH = _tool.QUESTION_MIN_LENGTH
-SYSTEM_PROMPT = _tool.SYSTEM_PROMPT
-Row = _tool.Row
-bare_topic_table = _tool.bare_topic_table
-is_bare_topic = _tool.is_bare_topic
-is_search_question = _tool.is_search_question
-load_keyword_questions = _tool.load_keyword_questions
-task_of = _tool.task_of
+from grounding_check_eval import (
+    INTERROGATIVES,
+    NAME_SUFFIXES,
+    QUESTION_MIN_LENGTH,
+    SYSTEM_PROMPT,
+    Row,
+    bare_topic_table,
+    is_bare_topic,
+    is_search_question,
+    load_keyword_questions,
+    task_of,
+)
 
 PLATFORM = Path(__file__).resolve().parents[3] / "services/platform/src"
 ANSWERER = PLATFORM / "EnvCite.Platform.Modules.Consult/GroundedAnswerer.cs"

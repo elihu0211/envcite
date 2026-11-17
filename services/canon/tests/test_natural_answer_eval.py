@@ -1,6 +1,5 @@
 """作答結果彙總：計數、口徑與輸入來源。"""
 
-import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -8,7 +7,9 @@ from typing import Any
 
 import pytest
 
-from tools.answer_quality import (
+import golden_set as gs
+import natural_answer_eval as tool
+from answer_quality import (
     FINAL_ANSWERED,
     FINAL_MODEL_ERROR,
     FINAL_MODEL_INSUFFICIENT,
@@ -19,14 +20,6 @@ from tools.answer_quality import (
     evaluate_records,
     format_markdown_report,
 )
-
-# 動態載入 tools/natural_answer_eval.py，避免非套件目錄引發 mypy 模組路徑衝突
-_tool_path = Path(__file__).resolve().parents[1] / "tools" / "natural_answer_eval.py"
-_spec = importlib.util.spec_from_file_location("natural_answer_eval_module", _tool_path)
-assert _spec is not None and _spec.loader is not None
-_tool = importlib.util.module_from_spec(_spec)
-sys.modules["natural_answer_eval_module"] = _tool
-_spec.loader.exec_module(_tool)
 
 GOLDEN_SHA = "a" * 64
 
@@ -147,7 +140,7 @@ def test_cli_is_deterministic_and_records_input_provenance(
         monkeypatch.setattr(
             sys, "argv", ["natural_answer_eval", "--input", str(src), "--out", str(tmp_path / name)]
         )
-        _tool.main()
+        tool.main()
         outs.append(
             ((tmp_path / f"{name}.md").read_text(), (tmp_path / f"{name}.json").read_text())
         )
@@ -163,28 +156,26 @@ def test_cli_is_deterministic_and_records_input_provenance(
 
 
 def test_subset_must_come_from_the_same_golden_set(tmp_path: Path) -> None:
-    meta, results = _tool.load_run(_prepare_run(tmp_path))
+    meta, results = tool.load_run(_prepare_run(tmp_path))
     own = tmp_path / "split-own.json"
     other = tmp_path / "split-other.json"
-    _tool.gs.write(
-        own, {"golden_sha256": GOLDEN_SHA, "dev": ["n-1", "a-1"], "test": ["n-2", "a-3"]}
-    )
-    _tool.gs.write(other, {"golden_sha256": "c" * 64, "dev": ["n-1"], "test": ["n-2"]})
+    gs.write(own, {"golden_sha256": GOLDEN_SHA, "dev": ["n-1", "a-1"], "test": ["n-2", "a-3"]})
+    gs.write(other, {"golden_sha256": "c" * 64, "dev": ["n-1"], "test": ["n-2"]})
 
-    picked = _tool.select_subset(meta, results, own, "test")
+    picked = tool.select_subset(meta, results, own, "test")
     assert [r["id"] for r in picked] == ["n-2", "a-3"]
     with pytest.raises(SystemExit, match="不是由這份題庫產生"):
-        _tool.select_subset(meta, results, other, "test")
+        tool.select_subset(meta, results, other, "test")
 
 
 def test_subset_cannot_widen_a_run_of_another_subset(tmp_path: Path) -> None:
     src = tmp_path / "run.json"
     _write_run(src, RECORDS, {**META, "split": {"path": "s.json", "subset": "dev"}})
-    meta, results = _tool.load_run(src)
+    meta, results = tool.load_run(src)
     split = tmp_path / "split.json"
-    _tool.gs.write(split, {"golden_sha256": GOLDEN_SHA, "dev": ["n-1"], "test": ["n-2"]})
+    gs.write(split, {"golden_sha256": GOLDEN_SHA, "dev": ["n-1"], "test": ["n-2"]})
     with pytest.raises(InputError, match="只跑了 dev"):
-        _tool.select_subset(meta, results, split, "test")
+        tool.select_subset(meta, results, split, "test")
 
 
 def _prepare_run(tmp_path: Path) -> Path:

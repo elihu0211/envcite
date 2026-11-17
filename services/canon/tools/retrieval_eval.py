@@ -22,7 +22,6 @@ the question writer from `models.toml`. This script never reads or writes a key 
 
 import argparse
 import json
-import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -31,11 +30,7 @@ from typing import Any, Protocol
 
 import psycopg
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import golden_set as gs
-
 from canon.embedding import Embeds
 from canon.settings import DatabaseSettings, ModelsSettings, load
 from canon.store.canon_store import CanonStore

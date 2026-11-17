@@ -619,7 +619,7 @@ def rule_variants(args: argparse.Namespace) -> dict[str, Callable[[Any], bool]]:
     lexical, semantic, coverage = args.lexical, args.semantic, args.coverage
 
     def current(hit: Any, theta: float) -> bool:
-        return (
+        return bool(
             hit.guidance_documents > 0
             or similarity(hit) >= semantic
             or (hit.lexical_score >= lexical and hit.term_coverage >= theta)
@@ -627,11 +627,11 @@ def rule_variants(args: argparse.Namespace) -> dict[str, Callable[[Any], bool]]:
 
     def whole_term(hit: Any) -> bool:
         """條文含全部查詢詞、而且字面臂有命中：不再被字面下界擋下。"""
-        return hit.term_coverage >= 1.0 and hit.lexical_score > 0
+        return bool(hit.term_coverage >= 1.0 and hit.lexical_score > 0)
 
     def semantic_needs_a_term(hit: Any) -> bool:
         """只靠語意相似度進來、卻完全不含任何查詢詞的命中不列。"""
-        return (
+        return bool(
             hit.guidance_documents > 0
             or (similarity(hit) >= semantic and hit.term_coverage > 0)
             or (hit.lexical_score >= lexical and hit.term_coverage >= coverage)

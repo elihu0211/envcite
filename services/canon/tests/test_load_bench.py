@@ -1,29 +1,23 @@
 """負載基準工具（load_bench.py）之邏輯與 CLI 參數單元測試。"""
 
-import importlib.util
-import sys
-from pathlib import Path
+import shutil
 from typing import Any
 
 import pytest
 from google.protobuf import json_format, message_factory
 
-# 動態載入 tools/load_bench.py，避免非套件目錄引發 mypy 模組路徑衝突
-_tool_path = Path(__file__).resolve().parents[1] / "tools" / "load_bench.py"
-_spec = importlib.util.spec_from_file_location("load_bench_module", _tool_path)
-assert _spec is not None and _spec.loader is not None
-_load_bench = importlib.util.module_from_spec(_spec)
-sys.modules["load_bench_module"] = _load_bench
-_spec.loader.exec_module(_load_bench)
-
-TARGETS: dict[str, Any] = _load_bench.TARGETS
-build_parser = _load_bench.build_parser
-environment = _load_bench.environment
-percentile = _load_bench.percentile
-preflight = _load_bench.preflight
-render = _load_bench.render
-requests = _load_bench.requests
-summarize = _load_bench.summarize
+import load_bench
+from canon.server import WORKERS
+from load_bench import (
+    TARGETS,
+    build_parser,
+    environment,
+    percentile,
+    preflight,
+    render,
+    requests,
+    summarize,
+)
 
 
 def test_percentile() -> None:
@@ -171,7 +165,7 @@ def test_parser_takes_the_options_the_readme_documents() -> None:
 
 
 def test_preflight_refuses_what_cannot_be_measured(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(_load_bench.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
 
     targets, ladder = preflight(_args("--pg-container", "pg"))
     assert [t.name for t in targets] == ["search", "ground", "evaluate", "search-lexical"]
@@ -184,7 +178,7 @@ def test_preflight_refuses_what_cannot_be_measured(monkeypatch: pytest.MonkeyPat
     with pytest.raises(SystemExit, match="不認得的對象"):
         preflight(_args("--skip-cold", "--targets", "search,nope"))
 
-    monkeypatch.setattr(_load_bench.shutil, "which", lambda name: None)
+    monkeypatch.setattr(shutil, "which", lambda name: None)
     with pytest.raises(SystemExit, match="k6"):
         preflight(_args("--skip-cold"))
 
@@ -206,7 +200,7 @@ def test_targets_are_canon_v1_methods_that_exist_and_accept_the_requests_sent() 
             full_service.rsplit(".", 1)[1]
         ]
         method = service.methods_by_name[rpc]
-        assert (_load_bench.PROTO_ROOT / target.proto).is_file()
+        assert (load_bench.PROTO_ROOT / target.proto).is_file()
 
         _, reqs = requests(target, questions)
         message = message_factory.GetMessageClass(method.input_type)()
@@ -216,7 +210,7 @@ def test_targets_are_canon_v1_methods_that_exist_and_accept_the_requests_sent() 
 def test_environment_records_unknowns_instead_of_inventing_values(
     dsn: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(_load_bench, "probe", lambda *cmd: None)
+    monkeypatch.setattr(load_bench, "probe", lambda *cmd: None)
 
     env = environment(dsn, None, local_canon=False, local_consult=False)
 
@@ -239,13 +233,13 @@ def test_environment_reads_the_local_consult_timeout_from_its_settings(
     env = environment(dsn, None, local_canon=True, local_consult=True)
 
     assert env["servers"]["consult_canon_timeout"]
-    assert env["servers"]["canon_workers"] == _load_bench.server.WORKERS
+    assert env["servers"]["canon_workers"] == WORKERS
 
 
 def test_render_says_unknown_for_what_was_not_measured(
     dsn: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(_load_bench, "probe", lambda *cmd: None)
+    monkeypatch.setattr(load_bench, "probe", lambda *cmd: None)
     env = environment(dsn, None, local_canon=False, local_consult=False)
     doc: dict[str, Any] = {
         "meta": {

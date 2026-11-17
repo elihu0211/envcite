@@ -41,7 +41,6 @@ import argparse
 import hashlib
 import json
 import re
-import sys
 import tomllib
 import urllib.error
 import urllib.request
@@ -55,17 +54,13 @@ import grpc
 import psycopg
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import golden_set as gs
-from golden_retrieval_eval import NEGATIVE, git, require_snapshots, snapshots
-
+from answer_quality import FINALS, FLOOR_REFUSALS, REFUSAL_FINAL
 from canon.net import json_headers
 from canon.settings import DatabaseSettings, load
 from canon.verification.config import ConfigError, resolve_secret, secret_name
 from envcite.consult.v3 import consult_pb2, consult_pb2_grpc
-from tools.answer_quality import FINALS, FLOOR_REFUSALS, REFUSAL_FINAL
+from golden_retrieval_eval import NEGATIVE, git, require_snapshots, snapshots
 
 # 與 platform 的 GroundedAnswerer 逐字相同（改了那邊要同步這裡）。
 INSUFFICIENT = "證據不足"

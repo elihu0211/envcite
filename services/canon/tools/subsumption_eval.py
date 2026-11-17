@@ -23,9 +23,6 @@ from typing import Any
 
 import psycopg
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 from canon.db import Conn
 from canon.reasoning.engine import Penalty, Result, evaluate
 from canon.reasoning.facts.case_inputs import Measurements, Permits

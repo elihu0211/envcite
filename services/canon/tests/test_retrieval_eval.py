@@ -1,12 +1,10 @@
 """The retrieval evaluation tool: questions that copy their article are dropped, and the report
 measures both arms and derives a floor per score."""
 
-import importlib.util
-import sys
 from datetime import date
 from pathlib import Path
-from types import ModuleType
 
+import retrieval_eval as tool
 from canon import projection
 from canon.db import Conn
 from canon.law import importer
@@ -23,15 +21,6 @@ NOISE = "管制區內任何人不得於夜間製造噪音，違者由主管機�
 WATER = "事業排放廢水於地面水體者，應符合放流水標準；主管機關得依水體特性另定較嚴之標準管制"
 
 
-def _tool() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("retrieval_eval", TOOL)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["retrieval_eval"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
 class Writer:
     name = "fake:writer"
 
@@ -44,13 +33,11 @@ class Writer:
 
 
 def test_overlap_counts_the_question_pairs_found_in_the_article() -> None:
-    tool = _tool()
     assert tool.overlap("排放廢水", WATER) == 1.0
     assert tool.overlap("晚上很吵", NOISE) == 0.0
 
 
 def test_a_question_that_copies_its_article_is_dropped(conn: Conn, tmp_path: Path) -> None:
-    tool = _tool()
     stored_snapshot(
         conn,
         tmp_path,
@@ -75,12 +62,10 @@ def test_a_question_that_copies_its_article_is_dropped(conn: Conn, tmp_path: Pat
 
 
 def test_the_floor_separates_answerable_from_out_of_scope() -> None:
-    tool = _tool()
     assert tool.best_floor([0.8, 0.7, 0.6], [0.2, 0.65]) == (0.7, 2 / 3, 0.0)
 
 
 def test_the_report_measures_both_arms(conn: Conn, tmp_path: Path, dsn: str) -> None:
-    tool = _tool()
     _first(conn, tmp_path, _law_v1(LawArticles=_articles(NOISE, WATER)))
     embedder = FakeEmbedder()
     projection.rebuild(conn, embedder)

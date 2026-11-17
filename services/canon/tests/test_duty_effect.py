@@ -1,25 +1,13 @@
 """義務修復效果量測（tools/duty_effect.py）：盲測、抽樣、判定旗標與檢定規則。"""
 
-import importlib.util
 import json
-import sys
 from pathlib import Path
-from types import ModuleType
 from typing import Any
+
+import duty_effect as tool
 
 _TOOL = Path(__file__).resolve().parents[1] / "tools" / "duty_effect.py"
 
-
-def _load() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("duty_effect_module", _TOOL)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["duty_effect_module"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-tool = _load()
 
 TEXT = "在水污染管制區內，不得有下列行為：\n一、使用農藥或化學肥料，致有污染主管機關公告水體之虞。"
 
@@ -347,8 +335,8 @@ def test_the_known_defective_units_are_tallied_per_condition() -> None:
         {"key": "b", "text": TEXT, "context": "", "answers": {"j": clean}},
         {"key": "c", "text": TEXT, "context": "", "answers": {"j": clean}},
     ]
-    meta = {"unit": unit, "round": 0, "sampled": True}
-    index = {
+    meta: dict[str, Any] = {"unit": unit, "round": 0, "sampled": True}
+    index: dict[str, dict[str, Any]] = {
         "a": meta | {"condition": "pre", "run": "pre-1"},
         "b": meta | {"condition": "post", "run": "post-1"},
         "c": {"unit": "O0040001 art_1", "condition": "post", "run": "post-1"},
@@ -364,9 +352,11 @@ def test_the_known_defective_units_are_tallied_per_condition() -> None:
 
 
 def test_wilson_interval_brackets_the_rate_and_stays_in_bounds() -> None:
-    low, high = tool.wilson(8, 40)
+    interval, none_found, all_found = tool.wilson(8, 40), tool.wilson(0, 10), tool.wilson(10, 10)
+    assert interval is not None and none_found is not None and all_found is not None
+    low, high = interval
     assert low < 0.2 < high
-    assert tool.wilson(0, 10)[0] == 0.0 and tool.wilson(10, 10)[1] == 1.0
+    assert none_found[0] == 0.0 and all_found[1] == 1.0
     assert tool.wilson(0, 0) is None
 
 
@@ -415,10 +405,12 @@ def test_a_truncation_must_come_after_the_quote_in_the_same_sentence() -> None:
 
 
 def test_locating_a_quoted_gap_maps_back_to_the_original_text() -> None:
-    start, end = tool.locate("登記事項有變更者", PARA)
-    assert PARA[start:end] == "登記事項有變更者"
-    start, end = tool.locate("登記事項…應於變更前", PARA)
-    assert PARA[start:end] == "登記事項有變更者，應於變更前"
+    for quote, located in (
+        ("登記事項有變更者", "登記事項有變更者"),
+        ("登記事項…應於變更前", "登記事項有變更者，應於變更前"),
+    ):
+        span = tool.locate(quote, PARA)
+        assert span is not None and PARA[span[0] : span[1]] == located
     assert tool.locate("應於變更前…登記事項", PARA) is None  # 順序不對
 
 

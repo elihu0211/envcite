@@ -53,23 +53,18 @@ import hashlib
 import json
 import re
 import subprocess
-import sys
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 from time import monotonic
-from typing import Any
+from typing import Any, Protocol
 
 import psycopg
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import golden_set as gs
-
 from canon import reranking
 from canon.embedding import Embeds
 from canon.law_names import LawNames
@@ -77,7 +72,6 @@ from canon.reranking import Reranks
 from canon.search_tuning import DEFAULT_RERANK_CANDIDATES
 from canon.settings import DatabaseSettings, ModelsSettings, load
 from canon.store.canon_store import CanonStore
-from canon.store.ports import Retrieval
 from canon.store.records import SearchHit
 from canon.store.retrieval import SEARCH_POOL
 from canon.verification import config
@@ -93,6 +87,37 @@ NEGATIVE = gs.NEGATIVE
 LABELS = {**{f"hit_rate@{k}": f"R@{k}" for k in KS}, "mrr": "MRR", "ndcg@10": "nDCG@10"}
 
 _ARTICLE = re.compile(r"^第\s*(\d+)(?:\s*條之\s*(\d+)|\s*-\s*(\d+)\s*條|\s*條)")
+
+
+class Searches(Protocol):
+    """量測只用到檢索的 `search`（服務的 `RetrievalRepository` 就是它）；測試以替身實作。"""
+
+    def search(
+        self,
+        terms: str,
+        *,
+        tokenizer: str,
+        as_of: str = "",
+        limit: int = 10,
+        embedding: Sequence[float] | None = None,
+        model: str = "",
+        laws: Sequence[str] = (),
+    ) -> list[SearchHit]:
+        """前 `limit` 條命中。"""
+        ...
+
+
+class Tokenizes(Protocol):
+    """分詞器用到的部分：問句轉成字面臂的輸入，與記進報告的分詞器識別。"""
+
+    @property
+    def tokenizer_id(self) -> str:
+        """分詞器與詞典的識別。"""
+        ...
+
+    def to_tsvector_input(self, text: str) -> str:
+        """問句分詞後、以空白相接的詞。"""
+        ...
 
 
 @dataclass(frozen=True)
@@ -343,8 +368,8 @@ def publishable(r: Measured) -> dict[str, Any]:
 
 
 def _retrieve(
-    retrieval: Retrieval,
-    segmenter: Segmenter,
+    retrieval: Searches,
+    segmenter: Tokenizes,
     r: Measured,
     embedder: Embeds | None,
     *,
@@ -374,8 +399,8 @@ def _retrieve(
 
 
 def search_all(
-    retrieval: Retrieval,
-    segmenter: Segmenter,
+    retrieval: Searches,
+    segmenter: Tokenizes,
     rows: Sequence[Measured],
     embedder: Embeds | None,
     *,

@@ -49,16 +49,12 @@ from typing import Any
 
 import grpc
 import psycopg
-from grpc_health.v1 import health_pb2, health_pb2_grpc
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from grpc_health.v1 import health_pb2
 
 import golden_set as gs
-from golden_retrieval_eval import _golden, git, snapshots
-
 from canon import server
 from canon.settings import DatabaseSettings, ModelsSettings, ServerSettings, load
+from golden_retrieval_eval import _golden, git, snapshots
 
 HERE = Path(__file__).resolve().parent
 SERVICE_DIR = HERE.parent
@@ -150,9 +146,13 @@ def wait_serving(address: str, service: str, timeout: float = 180.0) -> None:
     while time.monotonic() < deadline:
         with grpc.insecure_channel(address) as channel:
             try:
-                reply = health_pb2_grpc.HealthStub(channel).Check(
-                    health_pb2.HealthCheckRequest(service=service), timeout=2
+                # `HealthStub` 的型別資訊沒有 `Check`；直接以通道建同一個呼叫。
+                check = channel.unary_unary(
+                    "/grpc.health.v1.Health/Check",
+                    request_serializer=health_pb2.HealthCheckRequest.SerializeToString,
+                    response_deserializer=health_pb2.HealthCheckResponse.FromString,
                 )
+                reply = check(health_pb2.HealthCheckRequest(service=service), timeout=2)
                 if reply.status == health_pb2.HealthCheckResponse.SERVING:
                     return
             except grpc.RpcError:

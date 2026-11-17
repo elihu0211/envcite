@@ -38,12 +38,8 @@ from typing import Any
 
 import psycopg
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import golden_retrieval_eval as gre
 import golden_set as gs
-
 from canon.embedding import to_sql
 from canon.settings import DatabaseSettings, ModelsSettings, load
 from canon.store.canon_store import CanonStore
@@ -526,8 +522,8 @@ def cmd_grid(args: argparse.Namespace) -> None:
         raise SystemExit(f"格子要含基準 {base}")
     if args.export_runs:
         args.export_runs.mkdir(parents=True, exist_ok=True)
-        for i, cells in enumerate(rounds, 1):
-            for name, ranking in cells.items():
+        for i, arms in enumerate(rounds, 1):
+            for name, ranking in arms.items():
                 gs.write(
                     args.export_runs / f"{name}.r{i}.run.json",
                     {
@@ -545,10 +541,14 @@ def cmd_grid(args: argparse.Namespace) -> None:
     cells: dict[str, Any] = {}
     for n in names:
         by_metric = {m: [pr[n][m] for pr in per_round] for m in (*METRICS, "hole@10")}
+        #: 每輪都有值的指標；有一輪缺值（None）就不算平均與全距。
+        complete = {
+            m: [x for x in v if x is not None] for m, v in by_metric.items() if None not in v
+        }
         cells[n] = {
             "rounds": by_metric,
-            "mean": {m: round(sum(v) / len(v), 4) for m, v in by_metric.items() if None not in v},
-            "range": {m: round(max(v) - min(v), 4) for m, v in by_metric.items() if None not in v},
+            "mean": {m: round(sum(v) / len(v), 4) for m, v in complete.items()},
+            "range": {m: round(max(v) - min(v), 4) for m, v in complete.items()},
         }
 
     buckets: dict[str, str] | None = None

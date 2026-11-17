@@ -1,16 +1,11 @@
 """線上實測的純邏輯：預測、比對與取樣。對線上的呼叫由 `live-check` 在有 API key 的人手上跑。"""
 
-import importlib.util
-import sys
 from pathlib import Path
 from typing import Any
 
+import query_routing as tool
+
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
-spec = importlib.util.spec_from_file_location("query_routing", TOOLS / "query_routing.py")
-assert spec and spec.loader
-tool = importlib.util.module_from_spec(spec)
-sys.modules["query_routing"] = tool
-spec.loader.exec_module(tool)
 
 CLASSIFY = tool.classifiers(["法", "條例", "標準"])[tool.DEPLOYED_CLASSIFIER]
 

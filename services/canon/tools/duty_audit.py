@@ -262,8 +262,8 @@ def calibrate(args: argparse.Namespace) -> None:
     Path(args.out).write_text(json.dumps(results, ensure_ascii=False, indent=1))
     print("| 人工判斷 | 判定者 | 筆數 | 判主體瑕疵 | 判適用範圍瑕疵 |\n|---|---|---|---|---|")
     for kind in sorted(table):
-        for name, (n, subj, ctx) in sorted(table[kind].items()):
-            print(f"| {kind} | {name} | {n} | {subj} | {ctx} |")
+        for name, (n, subjects, contexts) in sorted(table[kind].items()):
+            print(f"| {kind} | {name} | {n} | {subjects} | {contexts} |")
 
 
 # 稽核

@@ -52,11 +52,7 @@ from typing import Any
 
 import psycopg
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import golden_set as gs
-
 from canon.settings import ServerSettings, load
 
 SCHEMA = "envcite-native-golden/1"
