@@ -9,6 +9,8 @@ import logging
 import sys
 from collections.abc import Callable, Sequence
 
+from envcite_jobkit import ExitCode
+
 #: 日誌格式是與日誌管線的契約，在這裡設定一次；子指令不再各自設定。
 LOG_FORMAT = "%(asctime)s %(levelname)s %(message)s"
 
@@ -28,8 +30,6 @@ SUBCOMMANDS: dict[str, tuple[str, str]] = {
     "verify": ("canon.verification.cli", "只跑確定性閘門的驗證"),
 }
 
-EXIT_USAGE = 2
-
 
 def _usage() -> str:
     width = max(map(len, SUBCOMMANDS))
@@ -42,14 +42,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
         print(_usage(), file=sys.stderr)
-        raise SystemExit(EXIT_USAGE)
+        raise SystemExit(ExitCode.FATAL)  # 用法錯誤重試無益，與 argparse 同為 2
     name, *rest = args
     if name in {"-h", "--help"}:
         print(_usage())
-        raise SystemExit(0)
+        raise SystemExit(ExitCode.OK)
     if name not in SUBCOMMANDS:
         print(f"canon: 沒有子指令 {name!r}\n\n{_usage()}", file=sys.stderr)
-        raise SystemExit(EXIT_USAGE)
+        raise SystemExit(ExitCode.FATAL)
     module, _ = SUBCOMMANDS[name]
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
     sys.argv = [f"canon {name}", *rest]
