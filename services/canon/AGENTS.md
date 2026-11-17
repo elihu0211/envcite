@@ -30,7 +30,7 @@
 ### 技術棧與資料真值
 
 - **Stack**：Python（≥3.14）· uv · gRPC（`grpcio` 同步伺服器）· PostgreSQL（`psycopg` 3）· ruff · mypy (strict) · pytest
-- **唯一真值**：PostgreSQL 關聯式實表，表結構以 `migrations/*.sql` 為準（不修改已套用的遷移檔，由 `schema_migration` 雜湊強制）。`0001_baseline.sql` 是 pg_dump 產生的合併基線，不手改；再合併等於重建每個環境的資料庫，動手前先問。
+- **唯一真值**：PostgreSQL 關聯式實表，表結構以 `migrations/*.sql` 為準（不修改已套用的遷移檔，由 `schema_migration` 雜湊強制）。遷移編號連續且唯一（`tests/test_migrations.py` 守門）：兩條分支取了同一個「下一個」號碼時，後合併的 rebase 後改成下一個空號。`0001_baseline.sql` 是 pg_dump 產生的合併基線，不手改；再合併等於重建每個環境的資料庫，動手前先問。
 - **法規主鍵與時間軸不變式（由綱要約束強制）**：
   - 自然鍵為 `(jurisdiction, id_scheme, local_id)`，三欄皆無預設值，方案與管轄配對由 CHECK 強制（地方方案目前僅為契約預留）。
   - 效力逐條文單元記載與解析；名稱可隨修正而變，標題屬公布版本；標註錨定 `(單元, 內容雜湊)`，不錨定版本列。
