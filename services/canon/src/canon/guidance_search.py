@@ -39,11 +39,17 @@ def fuse(
     """兩臂的結果與函釋帶出的條文，依名次倒數融合；回傳（命中，提到它的函釋件數）。
 
     同分時兩臂的結果在前。最多回 `limit + EXTRA` 條：函釋帶出的條文不擠掉兩臂的結果。
+
+    函釋帶出的名次只算有函釋提到的條（件數 > 0）；緊跟在來源之後展開出來的處罰條（件數 0）與它的來源
+    同名次、同份額：處罰條占一個位置，不把後面的來源往後推，其他條文與兩臂結果的相對次序不因展開而變。
     """
     scored: dict[str, tuple[float, int, int, SearchHit, int]] = {}
     for rank, hit in enumerate(hits, 1):
         scored[hit.iri] = (1 / (RRF_K + rank), 0, rank, hit, 0)
-    for rank, (hit, documents) in enumerate(guided, 1):
+    rank = 1
+    for position, (hit, documents) in enumerate(guided):
+        if documents > 0 and position > 0:
+            rank += 1
         share = 1 / (RRF_K + rank)
         if hit.iri in scored:
             score, side, order, found, _ = scored[hit.iri]
