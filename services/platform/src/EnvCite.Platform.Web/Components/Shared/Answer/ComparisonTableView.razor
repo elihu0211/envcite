@@ -1,0 +1,37 @@
+@* 對照表：欄位由資料宣告，表格的標記交給共用的 DataTable；第一欄是列首，最後一欄是依據。 *@
+<div class="ep-ans-table-section">
+    <AnswerHeading Text="@Block.Title" />
+    <DataTable Items="Block.Rows" Columns="_columns" Label="@(Block.Title ?? L["資料表格"])" Plain="true" />
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ComparisonTableBlock Block { get; set; } = null!;
+
+    private ComparisonTableBlock? _columnsFor;
+    private IReadOnlyList<ColumnDef<ComparisonRow>> _columns = [];
+
+    protected override void OnParametersSet()
+    {
+        // 同一個積木不重建欄位：DataTable 看到新的清單就會當作變了。
+        if (ReferenceEquals(_columnsFor, Block))
+            return;
+
+        _columnsFor = Block;
+        _columns =
+        [
+            .. Block.Columns.Select((title, index) => new ColumnDef<ComparisonRow>
+            {
+                Title = title,
+                Labeled = index != 0,
+                Class = index == 0 ? "ep-keep" : null,
+                Cell = row => builder => builder.AddContent(0, index < row.Cells.Count ? row.Cells[index] : null),
+            }),
+            new ColumnDef<ComparisonRow>
+            {
+                Title = L["依據"],
+                Cell = row => @<CitationChips Codes="row.CitationCodes" />,
+            },
+        ];
+    }
+}
