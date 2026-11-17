@@ -233,6 +233,7 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 | 融合消融 | `tools/ablation_fusion_eval.py arms …`（至少 3 輪）→ `grid … [--export-runs <目錄>]` | 離線網格搜尋 `(候選池 P, 名次常數 k)` 並做 Holm 校正檢定 |
 | 下界落差 | `tools/threshold_calibration.py --eval … [--arm hybrid] --out …` | 依共用 `relevance-floors.json` 隔離前 k 條與前 10 條通過下界之落差 |
 | 關鍵字題庫 | `tools/keyword_golden.py build` → `verify` → `measure <題庫> [--splits dev]` | 以程式抽取之定義條與無答案詞量測已知項目搜尋與誤放 |
+| 函釋入口回歸 | `tools/guidance_regression.py build` → `verify` → `measure <題庫>` → `compare <前> <後>` | 用函釋自己的詞問，查預期條文（錨定條文加本體論罰則鏈）是否都在名單裡；題目只由規則從資料產生，退步的題讓 `compare` 以 1 結束 |
 | 端到端與彙總 | `tools/grounding_check_eval.py` → `tools/natural_answer_eval.py --input …` | 量測實際拒答與引用表現，並重新彙總拒答分類 |
 | 效能基準 | `tools/load_bench.py run <golden.yaml> --split … (--pg-container … \| --skip-cold)` | 以 [k6](https://grafana.com/docs/k6/) 量測 `search`／`ground`／`evaluate` 延遲與吞吐階梯 |
 
