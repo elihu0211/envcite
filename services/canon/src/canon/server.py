@@ -9,7 +9,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from opentelemetry.metrics import Meter
 
-from canon.embedding import Embedder
+from canon.embedding import Embeds
 from canon.reasoning_service import ReasoningServicer
 from canon.reranking import Reranks
 from canon.search_tuning import DEFAULT_RERANK_CANDIDATES, SearchTuning
@@ -45,7 +45,7 @@ def build_server(
     options: Sequence[tuple[str, int]] = SERVER_OPTIONS,
     interceptors: Sequence[grpc.ServerInterceptor] = (),
     health_servicer: health.HealthServicer | None = None,
-    embedder: Embedder | None = None,
+    embedder: Embeds | None = None,
     lexical_max_df: float = 0.0,
     guidance_max_df: float = 0.0,
     reranker: Reranks | None = None,

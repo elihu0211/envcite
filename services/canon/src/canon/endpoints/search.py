@@ -8,7 +8,7 @@ from opentelemetry.metrics import Meter
 
 from canon import errors
 from canon.coverage import term_coverage
-from canon.embedding import Embedder, EmbeddingError
+from canon.embedding import EmbeddingError, Embeds
 from canon.endpoints.common import SERVICE_LOG, log_call
 from canon.guidance_search import CANDIDATES as GUIDANCE_CANDIDATES
 from canon.guidance_search import EXTRA as GUIDANCE_EXTRA
@@ -41,7 +41,7 @@ class SearchApi:
         segmenter: Segmenter,
         law_names: LawNames,
         *,
-        embedder: Embedder | None = None,
+        embedder: Embeds | None = None,
         reranker: Reranks | None = None,
         tuning: SearchTuning | None = None,
         meter: Meter | None = None,

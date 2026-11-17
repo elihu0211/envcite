@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import golden_set as gs
 
+from canon.embedding import Embeds
 from canon.settings import DatabaseSettings, ModelsSettings, load
 from canon.store.canon_store import CanonStore
 from canon.verification import config
@@ -76,13 +77,6 @@ class Writer(Protocol):
     def name(self) -> str: ...
 
     def complete(self, prompt: str) -> str: ...
-
-
-class Embeds(Protocol):
-    @property
-    def model(self) -> str: ...
-
-    def embed(self, texts: Sequence[str]) -> list[list[float]]: ...
 
 
 def overlap(question: str, text: str) -> float:

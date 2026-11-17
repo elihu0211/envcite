@@ -80,14 +80,14 @@ def _search(dsn: str, query: str, embedder: FakeEmbedder | None) -> list[tuple[s
 def test_one_row_per_passage_carries_both_arms(conn: Conn, tmp_path: Path) -> None:
     _corpus(conn, tmp_path)
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
 
     rows = conn.execute(
         "SELECT count(*), count(embedding), count(DISTINCT model) FROM retrieval.passage"
     ).fetchone()
     assert rows == (3, 3, 1)
     calls = embedder.calls
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
     assert embedder.calls == calls  # 沒有缺的，就不再呼叫端點
 
 
@@ -96,12 +96,12 @@ def test_a_new_lexicon_retokenizes_in_place_and_keeps_the_embeddings(
 ) -> None:
     _corpus(conn, tmp_path)
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
     conn.execute("UPDATE retrieval.passage SET tokenizer = 'old-dictionary'")
     conn.commit()
     calls = embedder.calls
 
-    assert projection.rebuild(conn, embedder) == 3  # type: ignore[arg-type]
+    assert projection.rebuild(conn, embedder) == 3
 
     assert embedder.calls == calls  # 換詞典不重新嵌入
     assert (
@@ -113,9 +113,9 @@ def test_a_new_lexicon_retokenizes_in_place_and_keeps_the_embeddings(
 
 def test_a_new_model_reembeds_without_touching_the_lexical_arm(conn: Conn, tmp_path: Path) -> None:
     _corpus(conn, tmp_path)
-    projection.rebuild(conn, FakeEmbedder())  # type: ignore[arg-type]
+    projection.rebuild(conn, FakeEmbedder())
 
-    assert projection.rebuild(conn, FakeEmbedder("fake-m4")) == 0  # type: ignore[arg-type]
+    assert projection.rebuild(conn, FakeEmbedder("fake-m4")) == 0
 
     assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE model = 'fake-m4'") == 3
 
@@ -123,7 +123,7 @@ def test_a_new_model_reembeds_without_touching_the_lexical_arm(conn: Conn, tmp_p
 def test_the_semantic_arm_recalls_what_the_words_miss(conn: Conn, tmp_path: Path, dsn: str) -> None:
     _corpus(conn, tmp_path)
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
 
     assert _search(dsn, "聲響", None) == []  # 條文裡沒有這個詞
     (top, *_) = _search(dsn, "聲響", embedder)
@@ -133,7 +133,7 @@ def test_the_semantic_arm_recalls_what_the_words_miss(conn: Conn, tmp_path: Path
 def test_both_arms_agreeing_ranks_first(conn: Conn, tmp_path: Path, dsn: str) -> None:
     _corpus(conn, tmp_path)
     embedder = FakeEmbedder()
-    projection.rebuild(conn, embedder)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder)
 
     hits = _search(dsn, "地震 建物", embedder)
 
@@ -142,7 +142,7 @@ def test_both_arms_agreeing_ranks_first(conn: Conn, tmp_path: Path, dsn: str) ->
 
 def test_without_a_query_vector_only_the_words_count(conn: Conn, tmp_path: Path, dsn: str) -> None:
     _corpus(conn, tmp_path)
-    projection.rebuild(conn, FakeEmbedder())  # type: ignore[arg-type]
+    projection.rebuild(conn, FakeEmbedder())
 
     hits = _search(dsn, "噪音", None)
 
@@ -315,7 +315,7 @@ def test_a_transient_endpoint_error_is_retried_and_the_projection_completes(
     _corpus(conn, tmp_path)
     embedder = Flaky(failures=2)
 
-    projection.rebuild(conn, embedder, NO_WAIT)  # type: ignore[arg-type]
+    projection.rebuild(conn, embedder, NO_WAIT)
 
     assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") == 0
 
@@ -325,10 +325,10 @@ def test_a_batch_that_keeps_failing_is_skipped_and_embedded_on_the_next_run(
 ) -> None:
     _corpus(conn, tmp_path)
 
-    projection.rebuild(conn, Flaky(failures=NO_WAIT.max_attempts), NO_WAIT)  # type: ignore[arg-type]
+    projection.rebuild(conn, Flaky(failures=NO_WAIT.max_attempts), NO_WAIT)
     assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") > 0
 
-    projection.rebuild(conn, FakeEmbedder(), NO_WAIT)  # type: ignore[arg-type]
+    projection.rebuild(conn, FakeEmbedder(), NO_WAIT)
     assert _scalar(conn, "SELECT count(*) FROM retrieval.passage WHERE embedding IS NULL") == 0
 
 
@@ -343,6 +343,6 @@ def test_a_misconfigured_endpoint_stops_the_projection_with_the_fatal_code(
     _corpus(conn, tmp_path)
 
     with pytest.raises(projection.EmbeddingStopped) as stopped:
-        projection.rebuild(conn, Misconfigured(), NO_WAIT)  # type: ignore[arg-type]
+        projection.rebuild(conn, Misconfigured(), NO_WAIT)
 
     assert stopped.value.code == ExitCode.FATAL
