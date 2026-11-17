@@ -4,47 +4,31 @@
 `tools/native_golden.py verify` 的事。
 """
 
-import importlib.util
 import json
-import sys
 from datetime import date
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 import pytest
 
+import golden_retrieval_eval as golden_eval
+import golden_set as gs
+import native_golden as tool
 from canon.db import Conn
 from tests.sample import AIR
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 
 
-def _load(name: str) -> ModuleType:
-    spec = importlib.util.spec_from_file_location(name, TOOLS / f"{name}.py")
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-@pytest.fixture(scope="module")
-def tool() -> ModuleType:
-    sys.path.insert(0, str(TOOLS))
-    return _load("native_golden")
-
-
-def _article(tool: ModuleType, pcode: str, title: str, number: str, text: str, kind: str) -> Any:
+def _article(pcode: str, title: str, number: str, text: str, kind: str) -> Any:
     return tool.Article(pcode, title, number, text, kind)
 
 
-def _corpus(tool: ModuleType) -> dict[str, Any]:
+def _corpus() -> dict[str, Any]:
     air, order = "A0000001", "B0000001"
     articles = [
-        _article(tool, air, "空氣污染防制法", "1", "為防制空氣污染，制定本法。", "statute"),
+        _article(air, "空氣污染防制法", "1", "為防制空氣污染，制定本法。", "statute"),
         _article(
-            tool,
             air,
             "空氣污染防制法",
             "2",
@@ -52,11 +36,10 @@ def _corpus(tool: ModuleType) -> dict[str, Any]:
             "二、排放標準：指排放管道所排放空氣污染物之限值。",
             "statute",
         ),
-        _article(tool, air, "空氣污染防制法", "5", "事業應申報排放量。", "statute"),
-        _article(tool, air, "空氣污染防制法", "7", "事業應設置防制設備。", "statute"),
-        _article(tool, air, "空氣污染防制法", "8", "前條之設備，準用第七條之規定。", "statute"),
+        _article(air, "空氣污染防制法", "5", "事業應申報排放量。", "statute"),
+        _article(air, "空氣污染防制法", "7", "事業應設置防制設備。", "statute"),
+        _article(air, "空氣污染防制法", "8", "前條之設備，準用第七條之規定。", "statute"),
         _article(
-            tool,
             air,
             "空氣污染防制法",
             "20",
@@ -64,7 +47,6 @@ def _corpus(tool: ModuleType) -> dict[str, Any]:
             "statute",
         ),
         _article(
-            tool,
             air,
             "空氣污染防制法",
             "21",
@@ -72,7 +54,6 @@ def _corpus(tool: ModuleType) -> dict[str, Any]:
             "statute",
         ),
         _article(
-            tool,
             order,
             "空氣污染防制設備辦法",
             "1",
@@ -100,12 +81,12 @@ def _corpus(tool: ModuleType) -> dict[str, Any]:
     ],
 )
 def test_chinese_numerals_read_like_the_corpus_article_numbers(
-    tool: ModuleType, text: str, expected: int | None
+    text: str, expected: int | None
 ) -> None:
     assert tool.zh_to_int(text) == expected
 
 
-def test_a_sub_article_is_written_the_way_the_corpus_numbers_it(tool: ModuleType) -> None:
+def test_a_sub_article_is_written_the_way_the_corpus_numbers_it() -> None:
     assert tool.article_number("三十一", "一") == "31-1"
     assert tool.article_number("六", None) == "6"
     assert tool.article_number("六", "甲") is None
@@ -122,7 +103,7 @@ def test_a_sub_article_is_written_the_way_the_corpus_numbers_it(tool: ModuleType
     ],
 )
 def test_penalty_sentences_that_cite_the_laws_own_articles_are_read(
-    tool: ModuleType, text: str, refs: list[str]
+    text: str, refs: list[str]
 ) -> None:
     ((_, found),) = tool.violation_refs(text)
 
@@ -139,14 +120,12 @@ def test_penalty_sentences_that_cite_the_laws_own_articles_are_read(
         "違反前項規定者，處新臺幣一千元罰鍰。",  # 沒有條號
     ],
 )
-def test_sentences_the_grammar_cannot_read_exactly_are_left_out(
-    tool: ModuleType, text: str
-) -> None:
+def test_sentences_the_grammar_cannot_read_exactly_are_left_out(text: str) -> None:
     assert tool.violation_refs(text) == []
 
 
-def test_definitions_are_read_from_a_defining_article_only(tool: ModuleType) -> None:
-    corpus = _corpus(tool)
+def test_definitions_are_read_from_a_defining_article_only() -> None:
+    corpus = _corpus()
 
     assert [t for t, _ in tool.definitions_of(corpus["A0000001-art-2"])] == [
         "空氣污染物",
@@ -155,8 +134,8 @@ def test_definitions_are_read_from_a_defining_article_only(tool: ModuleType) -> 
     assert tool.definitions_of(corpus["A0000001-art-5"]) == []
 
 
-def test_definition_questions_come_in_two_forms_with_the_same_answer(tool: ModuleType) -> None:
-    items = tool.gen_definitions(_corpus(tool))
+def test_definition_questions_come_in_two_forms_with_the_same_answer() -> None:
+    items = tool.gen_definitions(_corpus())
 
     by_kind = {i["kind"]: i for i in items if i["group"] == "排放標準"}
     assert by_kind["definition_term"]["question"] == "排放標準"
@@ -165,10 +144,8 @@ def test_definition_questions_come_in_two_forms_with_the_same_answer(tool: Modul
     assert [e["article"] for e in by_kind["definition_term"]["expected"]] == ["A0000001-art-2"]
 
 
-def test_a_duty_question_is_answered_by_the_penalty_article_that_cites_it(
-    tool: ModuleType,
-) -> None:
-    (item,) = tool.gen_duty_penalty(_corpus(tool))
+def test_a_duty_question_is_answered_by_the_penalty_article_that_cites_it() -> None:
+    (item,) = tool.gen_duty_penalty(_corpus())
 
     assert item["question"] == "違反空氣污染防制法第5條規定，會受到什麼處罰？"
     assert item["bucket"] == "multi_hop"
@@ -176,21 +153,18 @@ def test_a_duty_question_is_answered_by_the_penalty_article_that_cites_it(
     assert item["expected"][0]["evidence"] == "違反第五條規定"
 
 
-def test_an_order_is_asked_about_by_name_and_answered_by_the_authorizing_article(
-    tool: ModuleType,
-) -> None:
-    (item,) = tool.gen_delegation(_corpus(tool))
+def test_an_order_is_asked_about_by_name_and_answered_by_the_authorizing_article() -> None:
+    (item,) = tool.gen_delegation(_corpus())
 
     assert item["question"] == "「空氣污染防制設備辦法」是依哪一部法律的哪一條訂定的？"
     assert [e["article"] for e in item["expected"]] == ["A0000001-art-5"]
     assert "空氣污染防制法" not in item["question"]  # 題目不洩漏答案的法規名稱
 
 
-def test_an_unknown_parent_law_means_no_question(tool: ModuleType) -> None:
-    corpus = _corpus(tool)
+def test_an_unknown_parent_law_means_no_question() -> None:
+    corpus = _corpus()
     del corpus["A0000001-art-1"]
     corpus["B0000001-art-1"] = _article(
-        tool,
         "B0000001",
         "空氣污染防制設備辦法",
         "1",
@@ -201,18 +175,18 @@ def test_an_unknown_parent_law_means_no_question(tool: ModuleType) -> None:
     assert tool.gen_delegation(corpus) == []
 
 
-def test_mutatis_mutandis_asks_which_article_is_applied(tool: ModuleType) -> None:
-    (item,) = tool.gen_applies(_corpus(tool))
+def test_mutatis_mutandis_asks_which_article_is_applied() -> None:
+    (item,) = tool.gen_applies(_corpus())
 
     assert item["question"] == "空氣污染防制法第8條準用了哪一條的規定？"
     assert [e["article"] for e in item["expected"]] == ["A0000001-art-7"]
 
 
-def test_absent_terms_are_only_those_no_current_article_mentions(tool: ModuleType) -> None:
-    corpus = _corpus(tool)
+def test_absent_terms_are_only_those_no_current_article_mentions() -> None:
+    corpus = _corpus()
     first = tool.ABSENT_CANDIDATES[0]
     corpus["A0000001-art-1"] = _article(
-        tool, "A0000001", "空氣污染防制法", "1", f"本法不得{first}。", "statute"
+        "A0000001", "空氣污染防制法", "1", f"本法不得{first}。", "statute"
     )
 
     keep, present = tool.absent_terms(corpus)
@@ -224,10 +198,8 @@ def test_absent_terms_are_only_those_no_current_article_mentions(tool: ModuleTyp
     assert all(i["expected"] == [] for i in items)
 
 
-def test_the_split_follows_the_group_so_related_questions_stay_on_one_side(
-    tool: ModuleType,
-) -> None:
-    items = tool.gen_definitions(_corpus(tool))
+def test_the_split_follows_the_group_so_related_questions_stay_on_one_side() -> None:
+    items = tool.gen_definitions(_corpus())
 
     sides: dict[str, set[str]] = {}
     for i in items:
@@ -236,7 +208,7 @@ def test_the_split_follows_the_group_so_related_questions_stay_on_one_side(
     assert tool.split_of("排放標準") == tool.split_of("排放標準")
 
 
-def _doc(tool: ModuleType, articles: dict[str, Any]) -> dict[str, Any]:
+def _doc(articles: dict[str, Any]) -> dict[str, Any]:
     items = [i for generate in tool.GENERATORS for i in generate(articles)]
     for i in items:
         i["split"] = tool.split_of(i["group"])
@@ -248,22 +220,20 @@ def _doc(tool: ModuleType, articles: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def test_a_freshly_built_set_verifies_clean(tool: ModuleType) -> None:
-    articles = _corpus(tool)
+def test_a_freshly_built_set_verifies_clean() -> None:
+    articles = _corpus()
 
-    assert tool.verify(_doc(tool, articles), articles, 3) == []
+    assert tool.verify(_doc(articles), articles, 3) == []
 
 
-def test_verify_catches_a_wrong_answer_a_changed_corpus_and_a_present_absent_term(
-    tool: ModuleType,
-) -> None:
-    articles = _corpus(tool)
-    doc = _doc(tool, articles)
+def test_verify_catches_a_wrong_answer_a_changed_corpus_and_a_present_absent_term() -> None:
+    articles = _corpus()
+    doc = _doc(articles)
     duty = next(i for i in doc["items"] if i["kind"] == "duty_penalty")
     duty["expected"][0]["article"] = "A0000001-art-999"
     absent = next(i for i in doc["items"] if i["kind"] == "absent_term")
     articles["A0000001-art-1"] = _article(
-        tool, "A0000001", "空氣污染防制法", "1", f"本法不得{absent['group']}。", "statute"
+        "A0000001", "空氣污染防制法", "1", f"本法不得{absent['group']}。", "statute"
     )
 
     problems = tool.verify(doc, articles, 0)
@@ -273,13 +243,10 @@ def test_verify_catches_a_wrong_answer_a_changed_corpus_and_a_present_absent_ter
     assert any("重建" in p for p in problems)
 
 
-def test_the_completeness_check_finds_a_penalty_article_the_grammar_missed(
-    tool: ModuleType,
-) -> None:
-    articles = _corpus(tool)
-    doc = _doc(tool, articles)
+def test_the_completeness_check_finds_a_penalty_article_the_grammar_missed() -> None:
+    articles = _corpus()
+    doc = _doc(articles)
     articles["A0000001-art-22"] = _article(
-        tool,
         "A0000001",
         "空氣污染防制法",
         "22",
@@ -292,13 +259,10 @@ def test_the_completeness_check_finds_a_penalty_article_the_grammar_missed(
     assert any("A0000001-art-22 引用它" in p for p in problems)
 
 
-def test_derive_writes_the_documents_the_existing_measurement_reads(
-    tool: ModuleType, tmp_path: Path
-) -> None:
-    articles = _corpus(tool)
+def test_derive_writes_the_documents_the_existing_measurement_reads(tmp_path: Path) -> None:
+    articles = _corpus()
     path = tmp_path / "native-golden.json"
-    path.write_text(json.dumps(_doc(tool, articles), ensure_ascii=False, indent=1) + "\n")
-    gs = sys.modules["golden_set"]
+    path.write_text(json.dumps(_doc(articles), ensure_ascii=False, indent=1) + "\n")
 
     qrels_path, split_path = tool.derive(path, json.loads(path.read_text()))
 
@@ -312,31 +276,25 @@ def test_derive_writes_the_documents_the_existing_measurement_reads(
     assert not set(split["dev"]) & set(split["test"])
 
 
-def test_the_existing_evaluation_scores_a_native_set_without_a_name_mapping(
-    tool: ModuleType, tmp_path: Path
-) -> None:
+def test_the_existing_evaluation_scores_a_native_set_without_a_name_mapping(tmp_path: Path) -> None:
     """題庫的 id、bucket、question 與 derive 的 qrels 就足以讓 `golden_retrieval_eval` 計分。"""
-    articles = _corpus(tool)
+    articles = _corpus()
     path = tmp_path / "native-golden.json"
-    doc = _doc(tool, articles)
+    doc = _doc(articles)
     path.write_text(json.dumps(doc, ensure_ascii=False, indent=1) + "\n")
     qrels_path, split_path = tool.derive(path, doc)
-    gs = sys.modules["golden_set"]
-    evaluation = _load("golden_retrieval_eval")
-    items, _ = evaluation._golden(path)
+    items, _ = golden_eval._golden(path)
     qrels_doc, split_doc = gs.read(qrels_path), gs.read(split_path)
 
-    rows = evaluation.questions(items, qrels_doc, gs.subset_ids(split_doc, "dev"))
-    rows += evaluation.questions(items, qrels_doc, gs.subset_ids(split_doc, "test"))
+    rows = golden_eval.questions(items, qrels_doc, gs.subset_ids(split_doc, "dev"))
+    rows += golden_eval.questions(items, qrels_doc, gs.subset_ids(split_doc, "test"))
 
     assert {r.id for r in rows} == {i["id"] for i in items}
     assert {r.status for r in rows} <= {"scored", "negative"}  # 沒有 unmapped：答案本來就是條文代號
     assert {r.status for r in rows} == {"scored", "negative"}
 
 
-def test_articles_are_read_from_the_corpus_by_law_code_and_number(
-    tool: ModuleType, conn: Conn, sample: None
-) -> None:
+def test_articles_are_read_from_the_corpus_by_law_code_and_number(conn: Conn, sample: None) -> None:
     articles = tool.load_articles(conn, date.today().isoformat())
 
     first = articles[f"{AIR}-art-1"]

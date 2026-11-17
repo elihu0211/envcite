@@ -18,7 +18,6 @@
 import argparse
 import json
 import re
-import sys
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from datetime import datetime
@@ -26,8 +25,6 @@ from pathlib import Path
 from typing import Any
 
 import psycopg
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from duty_effect import context_of
 
@@ -72,13 +69,13 @@ def redundant(statements: Sequence[Mapping[str, Any]]) -> list[int]:
     confirmed_before: dict[int, list[tuple[int, tuple[int, int]]]] = defaultdict(list)
     for s in statements:
         if s["confirmed"]:
-            confirmed_before[s["provision_id"]].append((s["round"], tuple(s["span"])))  # type: ignore[arg-type]
+            confirmed_before[s["provision_id"]].append((s["round"], tuple(s["span"])))
     out = []
     for s in statements:
         if s["round"] < 1:
             continue
         if any(
-            r < s["round"] and overlaps(tuple(s["span"]), span)  # type: ignore[arg-type]
+            r < s["round"] and overlaps(tuple(s["span"]), span)
             for r, span in confirmed_before[s["provision_id"]]
         ):
             out.append(s["id"])

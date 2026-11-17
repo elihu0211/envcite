@@ -1,23 +1,13 @@
 """The floor tool: join the two reports by question and count passes the way consult does."""
 
-import importlib.util
-import sys
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 import pytest
 
+import answerability_floor as tool
+
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "answerability_floor.py"
-
-
-def _tool() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("answerability_floor", TOOL)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["answerability_floor"] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 def _report(
@@ -45,7 +35,6 @@ def _report(
 
 
 def test_the_reports_are_joined_by_question_and_unmapped_ones_are_left_out() -> None:
-    tool = _tool()
     lexical = _report(
         "lexical",
         [
@@ -72,7 +61,6 @@ def test_the_reports_are_joined_by_question_and_unmapped_ones_are_left_out() -> 
 
 
 def test_a_question_passes_when_either_arm_reaches_its_floor() -> None:
-    tool = _tool()
     rows = [
         tool.Row(True, 0.0, 0.7),  # negative, caught by the semantic arm
         tool.Row(True, 0.0, 0.1),
@@ -88,7 +76,6 @@ def test_a_question_passes_when_either_arm_reaches_its_floor() -> None:
 
 
 def test_a_question_missing_from_the_lexical_run_is_an_error() -> None:
-    tool = _tool()
     with pytest.raises(ValueError, match="missing"):
         tool.join(
             _report("lexical", []), _report("hybrid", [("a", "exact_id", "scored", 1.0, 0.7)])
@@ -96,7 +83,6 @@ def test_a_question_missing_from_the_lexical_run_is_an_error() -> None:
 
 
 def test_floors_are_chosen_on_the_dev_subset_only() -> None:
-    tool = _tool()
     row: list[tuple[str, str, str, float | None, float | None]] = [
         ("n1", "negative", "negative", 1.0, 0.5)
     ]

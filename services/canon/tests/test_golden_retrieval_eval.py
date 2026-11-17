@@ -2,16 +2,15 @@
 scoring a hit as any expected article within the top k."""
 
 import hashlib
-import importlib.util
-import sys
 from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 import pytest
 
+import golden_retrieval_eval as tool
+import golden_set as gs
 from canon import projection
 from canon.db import Conn
 from canon.store.canon_store import CanonStore
@@ -22,15 +21,6 @@ from tests.sample import AIR, WATER
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "golden_retrieval_eval.py"
 
 ON = "2026-10-23"
-
-
-def _tool() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("golden_retrieval_eval", TOOL)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["golden_retrieval_eval"] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 def _add_law(
@@ -77,12 +67,15 @@ def _add_law(
         )
 
 
+#: `tool.load_corpus` 的結果：標題 → 法規，（管轄, pcode, 條號）→ 條。
+type Corpus = tuple[dict[str, set[tuple[str, str]]], dict[tuple[str, str, str], tool.Provision]]
+
 #: 重名的兩部中央法規（標題路徑不得猜）、一部地方自治條例（管轄不是中央）。
 DUP_A, DUP_B, TPE = "X0000001", "X0000002", "01-02-1001"
 
 
 @pytest.fixture
-def corpus(conn: Conn, sample: None) -> tuple[ModuleType, Any, Any]:
+def corpus(conn: Conn, sample: None) -> Corpus:
     """匯入器匯入的空污法與水污法，加上直接寫入的重名法與地方條例；以工具的 `load_corpus` 讀。"""
     five = {str(n): f"重名法第{n}條" for n in range(1, 6)}
     for local_id in (DUP_A, DUP_B):
@@ -105,13 +98,10 @@ def corpus(conn: Conn, sample: None) -> tuple[ModuleType, Any, Any]:
         articles={"5": "於臺北市特定區域焚燒廢棄物者，處罰鍰。"},
     )
     conn.commit()
-    tool = _tool()
-    by_title, provisions = tool.load_corpus(conn)
-    return tool, by_title, provisions
+    return tool.load_corpus(conn)
 
 
 def test_article_number_reads_the_forms_the_set_uses() -> None:
-    tool = _tool()
     assert tool.article_number("第68條") == "68"
     assert tool.article_number("第15條之1") == "15-1"
     assert tool.article_number("第46-1條") == "46-1"
@@ -122,7 +112,6 @@ def test_article_number_reads_the_forms_the_set_uses() -> None:
 
 
 def test_alternatives_are_flattened_into_expected_articles() -> None:
-    tool = _tool()
     item = {
         "citation_allowlist": [
             {"statute": "甲法", "article": "第1條"},
@@ -137,10 +126,9 @@ def test_alternatives_are_flattened_into_expected_articles() -> None:
 
 
 def test_central_laws_are_keyed_by_the_jurisdiction_the_database_gives_them(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
-    _, by_title, provisions = corpus
-    gs = sys.modules["golden_set"]
+    by_title, provisions = corpus
 
     assert by_title["空氣污染防制法"] == {(gs.CENTRAL, AIR)}
     assert provisions[(gs.CENTRAL, AIR, "100")].jurisdiction == gs.CENTRAL
@@ -150,9 +138,9 @@ def test_central_laws_are_keyed_by_the_jurisdiction_the_database_gives_them(
 
 
 def test_mapping_prefers_the_article_id_and_names_each_reason_it_fails(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
-    tool, by_title, provisions = corpus
+    by_title, provisions = corpus
 
     def m(**kw: Any) -> tuple[Any, str]:
         found: tuple[Any, str] = tool.map_expected(tool.Expected(**kw), by_title, provisions)
@@ -173,10 +161,10 @@ def test_mapping_prefers_the_article_id_and_names_each_reason_it_fails(
 
 
 def test_unmapped_questions_are_set_aside_and_negatives_are_not_scored(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
-    tool, by_title, provisions = corpus
-    items = [
+    by_title, provisions = corpus
+    items: list[dict[str, Any]] = [
         {
             "id": "ok",
             "bucket": "exact_id",
@@ -271,14 +259,14 @@ ITEMS: list[dict[str, Any]] = [
 ]
 
 
-def _qrels_doc(corpus: tuple[ModuleType, Any, Any]) -> dict[str, Any]:
-    tool, by_title, provisions = corpus
+def _qrels_doc(corpus: Corpus) -> dict[str, Any]:
+    by_title, provisions = corpus
     qrels, unmapped = tool.build_qrels(tool.resolve(ITEMS, by_title, provisions))
     return {"qrels": qrels, "unmapped": unmapped, "relevant_from": 2}
 
 
 def test_qrels_hold_the_mapped_articles_of_answerable_questions_only(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
     doc = _qrels_doc(corpus)
 
@@ -290,11 +278,8 @@ def test_qrels_hold_the_mapped_articles_of_answerable_questions_only(
     assert set(doc["unmapped"]) == {"miss", "gone"}  # 「miss」只是部分對應
 
 
-def _measure(
-    corpus: tuple[ModuleType, Any, Any], doc: dict[str, Any], hits: Sequence[tuple[str, str]]
-) -> list[Any]:
-    tool, _, provisions = corpus
-    gs = sys.modules["golden_set"]
+def _measure(corpus: Corpus, doc: dict[str, Any], hits: Sequence[tuple[str, str]]) -> list[Any]:
+    _, provisions = corpus
     rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
     return list(
         tool.search_all(
@@ -311,9 +296,8 @@ def _measure(
 
 
 def test_a_hit_is_any_relevant_article_in_the_top_k_and_ranx_scores_it_by_bucket(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
-    tool = corpus[0]
     doc = _qrels_doc(corpus)
     out = _measure(corpus, doc, [(AIR, "1"), (DUP_A, "1"), (WATER, "40")])
     got = {r.id: r for r in out}
@@ -344,9 +328,8 @@ def test_a_hit_is_any_relevant_article_in_the_top_k_and_ranx_scores_it_by_bucket
 
 
 def test_an_article_graded_below_the_threshold_is_not_a_hole_and_not_a_hit(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
-    tool = corpus[0]
     doc = _qrels_doc(corpus)
     doc["qrels"]["first"][f"{DUP_A}-art-1"] = 1
     out = _measure(corpus, doc, [(DUP_A, "1"), (AIR, "1")])
@@ -357,17 +340,16 @@ def test_an_article_graded_below_the_threshold_is_not_a_hole_and_not_a_hit(
     assert s["by_bucket"]["exact_id"]["hole@10"] == 0.0
 
 
-def test_only_the_questions_of_the_subset_are_measured(corpus: tuple[ModuleType, Any, Any]) -> None:
-    tool = corpus[0]
+def test_only_the_questions_of_the_subset_are_measured(corpus: Corpus) -> None:
     rows = tool.questions(ITEMS, _qrels_doc(corpus), frozenset({"first", "neg"}))
     assert [r.id for r in rows] == ["first", "neg"]
 
 
 def test_the_top_scores_are_kept_for_the_first_k_hits_and_for_the_ten_consult_reads(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
     """分數隨名次升高、語意相似度只出現在第 13 條：前 10 條的最高分低於前 k 條的。"""
-    tool, _, provisions = corpus
+    _, provisions = corpus
     doc = _qrels_doc(corpus)
     rows = tool.questions(ITEMS[:1], doc, frozenset({"first"}))
 
@@ -383,10 +365,7 @@ def test_the_top_scores_are_kept_for_the_first_k_hits_and_for_the_ten_consult_re
                 for i, h in enumerate(hits)
             ]
 
-    store = Rising(
-        [provisions[(sys.modules["golden_set"].CENTRAL, DUP_A, str(i))] for i in (1, 2, 3, 4, 5)]
-        * 3
-    )
+    store = Rising([provisions[(gs.CENTRAL, DUP_A, str(i))] for i in (1, 2, 3, 4, 5)] * 3)
     got = tool.search_all(
         store, FakeSegmenter(), rows, None, qrels=doc["qrels"], relevant_from=2, k=15, on=ON
     )[0]
@@ -397,10 +376,10 @@ def test_the_top_scores_are_kept_for_the_first_k_hits_and_for_the_ten_consult_re
 
 
 def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mapped_to(
-    corpus: tuple[ModuleType, Any, Any], conn: Conn, store: CanonStore
+    corpus: Corpus, conn: Conn, store: CanonStore
 ) -> None:
     """從資料庫讀對應、真實的混合檢索、命中轉條文代號、對 qrels：中央與地方各一題。"""
-    tool, by_title, provisions = corpus
+    by_title, provisions = corpus
     projection.rebuild(conn)
     segmenter = Segmenter(store.retrieval.lexicon())
     items = [
@@ -434,10 +413,9 @@ def test_a_real_search_hit_lands_on_the_qrels_doc_id_of_the_article_it_was_mappe
 
 
 def test_article_texts_reads_the_text_in_force_by_jurisdiction_and_local_id(
-    corpus: tuple[ModuleType, Any, Any], conn: Conn
+    corpus: Corpus, conn: Conn
 ) -> None:
     """判定工具讀條文全文走這個查詢；管轄是列舉型別，與文字比較曾使整個查詢失敗。"""
-    gs = sys.modules["golden_set"]
     got = gs.article_texts(
         conn, [gs.doc_id(AIR, "1"), gs.doc_id(TPE, "5", "TW-TPE"), gs.doc_id(AIR, "999")], ON
     )
@@ -449,14 +427,12 @@ def test_article_texts_reads_the_text_in_force_by_jurisdiction_and_local_id(
 
 
 def test_a_published_row_keeps_the_question_hash_but_not_its_text_or_ranking() -> None:
-    tool = _tool()
     row = tool.publishable(tool.Measured("x", "exact_id", "某題目文字", "scored", ranking=["a"]))
     assert "question" not in row and "ranking" not in row
     assert row["question_sha256"] == hashlib.sha256("某題目文字".encode()).hexdigest()
 
 
-def _run(tool: ModuleType, ranking: dict[str, list[str]], subset: str = "dev") -> dict[str, Any]:
-    gs = sys.modules["golden_set"]
+def _run(ranking: dict[str, list[str]], subset: str = "dev") -> dict[str, Any]:
     sealed: dict[str, Any] = gs.seal(
         {"golden_sha256": "g", "split_sha256": "s", "subset": subset, "ranking": ranking}
     )
@@ -464,8 +440,6 @@ def _run(tool: ModuleType, ranking: dict[str, list[str]], subset: str = "dev") -
 
 
 def test_runs_are_compared_with_a_paired_test_and_must_share_a_subset() -> None:
-    tool = _tool()
-    gs = sys.modules["golden_set"]
     qrels_doc = gs.seal(
         {
             "golden_sha256": "g",
@@ -476,17 +450,17 @@ def test_runs_are_compared_with_a_paired_test_and_must_share_a_subset() -> None:
     good = {f"q{i}": ["A0000001-art-1"] for i in range(8)}
     bad = {f"q{i}": ["B0000001-art-1", "A0000001-art-1"] for i in range(8)}
 
-    c = tool.compared(qrels_doc, {"good": _run(tool, good), "bad": _run(tool, bad)}, 0.05)
+    c = tool.compared(qrels_doc, {"good": _run(good), "bad": _run(bad)}, 0.05)
     r1 = next(p for p in c["pairs"] if p["metric"] == "hit_rate@1")
     assert r1["difference"] == -1.0 and r1["significant"]
     ndcg = next(p for p in c["pairs"] if p["metric"] == "ndcg@10")
     assert ndcg["difference"] < 0
     assert c["runs"]["bad"]["hole@10"] == 0.5
-    same = tool.compared(qrels_doc, {"a": _run(tool, good), "b": _run(tool, good)}, 0.05)
+    same = tool.compared(qrels_doc, {"a": _run(good), "b": _run(good)}, 0.05)
     assert not any(p["significant"] for p in same["pairs"])
 
     with pytest.raises(SystemExit, match="切分子集"):
-        tool.compared(qrels_doc, {"a": _run(tool, good), "b": _run(tool, good, "test")}, 0.05)
+        tool.compared(qrels_doc, {"a": _run(good), "b": _run(good, "test")}, 0.05)
 
 
 class FixedReranker:
@@ -508,11 +482,8 @@ class FixedReranker:
         return list(self.scores[: len(documents)])
 
 
-def _rerank_run(
-    corpus: tuple[ModuleType, Any, Any], reranker: FixedReranker, candidates: int
-) -> dict[str, Any]:
-    tool, _, provisions = corpus
-    gs = sys.modules["golden_set"]
+def _rerank_run(corpus: Corpus, reranker: FixedReranker, candidates: int) -> dict[str, Any]:
+    _, provisions = corpus
     doc = _qrels_doc(corpus)
     rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
     hits = [provisions[(gs.CENTRAL, p, n)] for p, n in [(AIR, "1"), (DUP_A, "1"), (WATER, "40")]]
@@ -532,7 +503,7 @@ def _rerank_run(
 
 
 def test_the_rerank_arm_moves_the_head_and_leaves_the_tail_in_place(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
     """候選只有前兩條：第 2 條被精排拉到第 1，第 3 條不動，所以 R@50 與沒有精排的臂相同。"""
     got = _rerank_run(corpus, FixedReranker([0.1, 0.9]), candidates=2)
@@ -546,7 +517,7 @@ def test_the_rerank_arm_moves_the_head_and_leaves_the_tail_in_place(
 
 
 def test_the_rerank_arm_reads_the_negatives_scores_for_a_floor(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
     got = _rerank_run(corpus, FixedReranker([0.2, 0.7, 0.4]), candidates=3)
 
@@ -554,14 +525,14 @@ def test_the_rerank_arm_reads_the_negatives_scores_for_a_floor(
 
 
 def test_a_failed_rerank_aborts_the_measurement_instead_of_measuring_the_first_stage(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
     with pytest.raises(RuntimeError, match="endpoint down"):
         _rerank_run(corpus, FixedReranker([], fail=True), candidates=3)
 
 
 def test_arms_without_a_reranker_record_no_rerank_score(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
     out = _measure(corpus, _qrels_doc(corpus), [(AIR, "1")])
 
@@ -569,11 +540,10 @@ def test_arms_without_a_reranker_record_no_rerank_score(
 
 
 def test_depth_arms_share_one_scoring_pass_per_question(
-    corpus: tuple[ModuleType, Any, Any],
+    corpus: Corpus,
 ) -> None:
     """打分只呼叫一次（涵蓋最深的深度）；較淺的深度只重排自己的前 N 條，排名與各自單獨呼叫相同。"""
-    tool, _, provisions = corpus
-    gs = sys.modules["golden_set"]
+    _, provisions = corpus
     doc = _qrels_doc(corpus)
     rows = tool.questions(ITEMS, doc, frozenset(i["id"] for i in ITEMS))
     hits = [provisions[(gs.CENTRAL, p, n)] for p, n in [(AIR, "1"), (DUP_A, "1"), (WATER, "40")]]

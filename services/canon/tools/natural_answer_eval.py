@@ -15,16 +15,11 @@ commit、題庫與語料快照（不記本工具的執行時間，所以同一�
 
 import argparse
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import golden_set as gs
-
-from tools.answer_quality import (
+from answer_quality import (
     InputError,
     evaluate_records,
     format_markdown_report,

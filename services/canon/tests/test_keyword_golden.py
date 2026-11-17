@@ -1,29 +1,16 @@
 """關鍵字題庫工具的純邏輯：定義行的抽取、標題句、切分與規則。資料庫那一半由 `verify` 對原文核對。"""
 
 import argparse
-import importlib.util
 import re
-import sys
 from collections.abc import Callable
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 import pytest
 
+import keyword_golden as tool
+
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
-
-
-def _load() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("keyword_golden", TOOLS / "keyword_golden.py")
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["keyword_golden"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-tool = _load()
 
 
 @pytest.mark.parametrize(

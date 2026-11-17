@@ -4,33 +4,19 @@
 需判斷事項、按次處罰觸發與行政罰法總則阻卻各案例下的評估指標。
 """
 
-import importlib.util
 import json
-import sys
 from datetime import date
 from pathlib import Path
-from types import ModuleType
 
 import pytest
 
+import subsumption_eval as tool
 from canon.annotate import Loaded
 from canon.db import Conn
 from tests.reasoning_support import WATER
 from tests.verification_support import _with_penalties
 
 TOOL = Path(__file__).resolve().parents[1] / "tools" / "subsumption_eval.py"
-
-
-def _tool() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("subsumption_eval", TOOL)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["subsumption_eval"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-tool = _tool()
 
 
 @pytest.fixture

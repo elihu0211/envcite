@@ -31,7 +31,6 @@ import hashlib
 import json
 import random
 import re
-import sys
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
@@ -47,8 +46,6 @@ with warnings.catch_warnings():
     from ranx import Run
     from ranx import compare as rx_compare
     from ranx import evaluate as rx_evaluate
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 NEGATIVE = "negative"

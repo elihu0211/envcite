@@ -1,26 +1,13 @@
 """查詢分類與路由工具的純邏輯：規則、取捨選擇、分類器、類型後綴與檢定。收集那一半對運行中的服務跑。"""
 
-import importlib.util
-import sys
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 import pytest
 
+import query_routing as tool
+
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
-
-
-def _load() -> ModuleType:
-    spec = importlib.util.spec_from_file_location("query_routing", TOOLS / "query_routing.py")
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["query_routing"] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-tool = _load()
 
 
 def hit(

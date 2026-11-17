@@ -265,7 +265,7 @@ def passes(
         return True
     if hit["lx"] >= LEXICAL_FLOOR and hit["co"] >= theta:
         return True
-    return hit["lx"] > 0 and hit["co"] >= 1.0
+    return bool(hit["lx"] > 0 and hit["co"] >= 1.0)
 
 
 def outcome(case: Case, rule: str) -> tuple[bool | None, int]:
@@ -340,6 +340,11 @@ def choose(cases: Sequence[Case]) -> str:
     return min(near, key=lambda x: (x[1]["size"], changes(x[0]), -x[1]["found"]))[0]
 
 
+def _by_length(n: int) -> Callable[[Case], str]:
+    """查詢長度達 `n` 字為長查詢。"""
+    return lambda c: "long" if len(c["query"]) >= n else "short"
+
+
 def classifiers(suffixes: Sequence[str]) -> dict[str, Callable[[Case], str]]:
     """候選的分類器：只看查詢字串（平台拿得到的），與「型別已知」的上限。"""
 
@@ -361,7 +366,7 @@ def classifiers(suffixes: Sequence[str]) -> dict[str, Callable[[Case], str]]:
         "oracle": lambda c: c["cls"],
     }
     for length in (8, 10, 12, 14, 16, 20):
-        out[f"length>={length}"] = lambda c, n=length: "long" if len(c["query"]) >= n else "short"
+        out[f"length>={length}"] = _by_length(length)
     for length in (8, 10, 12):
         out[f"shape(len>={length})"] = shape(length)
     for length in (10, 12, 14):
@@ -564,7 +569,8 @@ def fetch_live(host: str, key: str, query: str) -> list[dict[str, Any]]:
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
-            return json.loads(response.read())
+            hits: list[dict[str, Any]] = json.loads(response.read())
+            return hits
     except urllib.error.HTTPError as error:
         raise SystemExit(explain_http_error(error.code)) from None
 

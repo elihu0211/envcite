@@ -1,9 +1,7 @@
 """The model relevance judges: the prompt, parsing the verdict, the conservative grade, agreement
 (Cohen's κ, weighted κ) and calibration. No model is called except a loopback endpoint."""
 
-import importlib.util
 import json
-import sys
 from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
@@ -11,20 +9,11 @@ from typing import Any
 
 import pytest
 
+import relevance_judge as rj
 from canon.verification.models import ChatCompletionsModel, ModelError
 from tests.test_chat_adapter import Endpoint
 
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
-
-
-def _tool() -> ModuleType:
-    for name in ("golden_set", "relevance_judge"):
-        spec = importlib.util.spec_from_file_location(name, TOOLS / f"{name}.py")
-        assert spec and spec.loader
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[name] = module
-        spec.loader.exec_module(module)
-    return sys.modules["relevance_judge"]
 
 
 @pytest.fixture
@@ -47,7 +36,6 @@ GOOD = '{"intent": "罰鍰額度", "M": 3, "T": 3, "O": 2, "reason": "有罰則�
     ],
 )
 def test_a_verdict_is_read_from_the_json_object_in_the_reply(reply: str) -> None:
-    rj = _tool()
     v = rj.parse_verdict(reply)
     assert (v.M, v.T, v.O) == (3, 3, 2)
     assert v.reason == "有罰則但夾雜他項" and v.intent == "罰鍰額度"
@@ -66,13 +54,11 @@ def test_a_verdict_is_read_from_the_json_object_in_the_reply(reply: str) -> None
     ],
 )
 def test_a_reply_without_valid_scores_is_not_a_verdict(reply: str, message: str) -> None:
-    rj = _tool()
     with pytest.raises(ValueError, match=message):
         rj.parse_verdict(reply)
 
 
 def test_the_prompt_carries_the_question_the_article_and_its_version() -> None:
-    rj = _tool()
     version = rj.version_note("2026-11-04", "2023-03-15", True)
     p = rj.render(" 罰多少？ ", "空氣污染防制法", "67", version, "處新臺幣…")
     assert "問題：罰多少？" in p
@@ -85,7 +71,6 @@ def test_the_prompt_carries_the_question_the_article_and_its_version() -> None:
 
 
 def test_the_final_grade_is_the_lower_and_a_missing_grade_leaves_a_hole() -> None:
-    rj = _tool()
     assert rj.conservative([3, 1]) == 1
     assert rj.conservative([2, 2]) == 2
     assert rj.conservative([3, None]) is None
@@ -93,7 +78,6 @@ def test_the_final_grade_is_the_lower_and_a_missing_grade_leaves_a_hole() -> Non
 
 
 def test_cohen_kappa_matches_the_textbook_example() -> None:
-    rj = _tool()
     # po = 3/4；兩人「1」的比例 1/2 與 1/4，pe = 1/2·1/4 + 1/2·3/4 = 1/2；κ = (3/4 − 1/2)/(1/2)
     assert rj.cohen_kappa([0, 1, 1, 0], [0, 1, 0, 0]) == pytest.approx(0.5)
     assert rj.cohen_kappa([0, 1], [0, 1]) == 1.0
@@ -104,7 +88,6 @@ def test_cohen_kappa_matches_the_textbook_example() -> None:
 
 
 def test_weighted_kappa_charges_distant_disagreements_more() -> None:
-    rj = _tool()
     assert rj.weighted_kappa([0, 1, 2, 3], [0, 1, 2, 3]) == pytest.approx(1.0)
     # 完全顛倒：觀察到的加權不一致 4，期望 2，κw = 1 − 4/2
     assert rj.weighted_kappa([0, 0, 3, 3], [3, 3, 0, 0]) == pytest.approx(-1.0)
@@ -116,7 +99,6 @@ def test_weighted_kappa_charges_distant_disagreements_more() -> None:
 
 
 def test_agreement_counts_only_items_both_judges_graded() -> None:
-    rj = _tool()
     got = rj.agreement({"a": [0, 3, 2, None, 1], "b": [0, 2, 1, 3, 1]})
     assert got["n"] == 4
     assert got["disagree_binary"] == 0.25  # (2, 1) 一個相關、一個不相關
@@ -126,7 +108,6 @@ def test_agreement_counts_only_items_both_judges_graded() -> None:
 
 
 def test_negatives_are_other_articles_of_the_same_law_fixed_by_the_seed() -> None:
-    rj = _tool()
     upstream = {"q1": ["A0000001-art-1", "A0000001-art-2"], "q2": ["B0000001-art-9"]}
     articles = {
         "A0000001": [f"A0000001-art-{i}" for i in range(1, 6)],
@@ -152,7 +133,6 @@ def _rows() -> list[dict[str, Any]]:
 
 
 def test_calibration_reports_recall_on_positives_and_false_positives_on_negatives() -> None:
-    rj = _tool()
     got = rj.rates(_rows(), ["a", "b"], 2)
     assert got["a"]["positives"] == 2 and got["a"]["recall"] == 1.0
     assert got["a"]["false_positive_rate"] == 0.5
@@ -173,7 +153,6 @@ def _judge(rj: ModuleType, endpoint: Endpoint, model_id: str = "judge-x") -> Any
 def test_a_judge_asks_for_the_schema_at_temperature_zero_and_counts_its_tokens(
     endpoint: Endpoint,
 ) -> None:
-    rj = _tool()
     endpoint.reply = {
         "model": "judge-x",
         "choices": [{"message": {"content": GOOD}}],
@@ -191,7 +170,6 @@ def test_a_judge_asks_for_the_schema_at_temperature_zero_and_counts_its_tokens(
 
 
 def test_a_reply_from_another_model_is_a_failed_call_not_a_verdict(endpoint: Endpoint) -> None:
-    rj = _tool()
     endpoint.reply = {"model": "fallback-y", "choices": [{"message": {"content": GOOD}}]}
     j = _judge(rj, endpoint)
     item = rj.Item("q1", "A0000001-art-1", "題", "某法", "2020-01-01", "條文")
@@ -220,7 +198,6 @@ class FakeJudge:
 
 
 def test_every_article_is_judged_once_per_judge_and_the_cache_resumes(tmp_path: Path) -> None:
-    rj = _tool()
     a, b = FakeJudge("fam-a:a", 3), FakeJudge("fam-b:b", 1)
     items = [
         rj.Item("q1", f"A0000001-art-{i}", "題", "某法", "2020-01-01", f"條文{i}") for i in (1, 2)
@@ -247,7 +224,6 @@ def test_every_article_is_judged_once_per_judge_and_the_cache_resumes(tmp_path: 
 
 
 def test_a_judge_that_cannot_answer_leaves_the_article_a_hole(tmp_path: Path) -> None:
-    rj = _tool()
     a, b = FakeJudge("fam-a:a", 2), FakeJudge("fam-b:b", None)
     items = [rj.Item("q1", "A0000001-art-1", "題", "某法", "2020-01-01", "條文")]
     out = rj.judge_all(
@@ -267,7 +243,6 @@ def test_a_judge_that_cannot_answer_leaves_the_article_a_hole(tmp_path: Path) ->
 def test_a_judge_that_keeps_failing_is_no_longer_asked_and_its_articles_stay_unjudged(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    rj = _tool()
     monkeypatch.setattr(rj, "BREAKER", 2)
     a, b = FakeJudge("fam-a:a", 2), FakeJudge("fam-b:b", None)
     items = [

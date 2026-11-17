@@ -35,7 +35,6 @@ import json
 import random
 import re
 import statistics
-import sys
 import threading
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
@@ -44,8 +43,6 @@ from pathlib import Path
 from typing import Any
 
 import psycopg
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from canon.verification.config import load_judges
 from canon.verification.jsonutil import object_from

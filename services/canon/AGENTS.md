@@ -45,7 +45,7 @@ uv sync --all-packages       # 整個 workspace（.venv 與 uv.lock 在倉庫根
 uv run python -m pytest
 uv run ruff check .          # --fix 可自動修
 uv run ruff format .
-uv run python -m mypy src tests
+uv run python -m mypy src tests tools   # 測試以模組名匯入評估工具，三者要一起檢查
 ../../libs/python/envcite-proto/scripts/generate.sh   # 改了 proto 之後重新產生 gRPC 程式碼
 docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 
@@ -169,4 +169,4 @@ uv run --env-file .env canon serve
 
 ## Done when
 
-- `ruff check .`、`mypy src tests`、`pytest` 通過。
+- `ruff check .`、`mypy src tests tools`、`pytest` 通過。

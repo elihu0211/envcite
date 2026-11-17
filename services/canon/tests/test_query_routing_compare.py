@@ -1,16 +1,11 @@
 """兩條規則逐題配對的比較：增減、誤放與列出條數。"""
 
-import importlib.util
-import sys
 from pathlib import Path
 from typing import Any
 
+import query_routing as tool
+
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
-spec = importlib.util.spec_from_file_location("query_routing", TOOLS / "query_routing.py")
-assert spec and spec.loader
-tool = importlib.util.module_from_spec(spec)
-sys.modules["query_routing"] = tool
-spec.loader.exec_module(tool)
 
 
 def case(kind: str, hits: list[dict[str, Any]], answer: list[str]) -> dict[str, Any]:

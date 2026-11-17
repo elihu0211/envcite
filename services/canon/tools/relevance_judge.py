@@ -49,7 +49,6 @@ import hashlib
 import json
 import random
 import re
-import sys
 import threading
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -57,17 +56,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import openai
 import psycopg
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 import golden_set as gs
-
 from canon.settings import DatabaseSettings, ModelsSettings, load
 from canon.verification.config import load as load_models
 from canon.verification.config import load_judges
@@ -261,6 +256,23 @@ def agreement(
     }
 
 
+class Grader(Protocol):
+    """判定流程只用到的部分：名字、補全一個提示、記一次失敗；`Judge` 是它的實作，測試以替身實作。"""
+
+    @property
+    def name(self) -> str:
+        """記進判定檔的 `家族:模型`。"""
+        ...
+
+    def complete(self, prompt: str, *, response_format: Mapping[str, object] | None = None) -> str:
+        """回覆的文字；呼叫失敗丟 `ModelError`。"""
+        ...
+
+    def failed(self) -> None:
+        """記一次解析失敗。"""
+        ...
+
+
 class Judge(ChatCompletionsModel):
     """判定用的轉接器：回覆的模型名與所問的不同（閘道的備援）視為失敗；呼叫數與詞元另記，執行緒安全。"""
 
@@ -344,7 +356,7 @@ class Cache:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def ask(judge: Judge, item: Item, as_of: str) -> dict[str, Any]:
+def ask(judge: Grader, item: Item, as_of: str) -> dict[str, Any]:
     """一位判定者對一條的判定；呼叫或解析失敗回傳 `error`，不拋出。"""
     _, number = gs.parse_doc(item.doc)
     version = version_note(as_of, item.version_date, item.in_force)
@@ -366,7 +378,7 @@ def ask(judge: Judge, item: Item, as_of: str) -> dict[str, Any]:
 
 def judge_all(
     items: Sequence[Item],
-    judges: Sequence[Judge],
+    judges: Sequence[Grader],
     cache: Cache,
     *,
     as_of: str,
@@ -392,7 +404,7 @@ def judge_all(
     streak = dict.fromkeys((j.name for j in judges), 0)
     tripped: set[str] = set()
 
-    def work(pair: tuple[Item, Judge]) -> None:
+    def work(pair: tuple[Item, Grader]) -> None:
         nonlocal done
         item, j = pair
         if j.name in tripped:
@@ -449,7 +461,7 @@ def grade_of(result: Mapping[str, Any]) -> int | None:
 def rows_of(
     items: Sequence[Item],
     results: Mapping[tuple[str, str], Mapping[str, Mapping[str, Any]]],
-    judges: Sequence[Judge],
+    judges: Sequence[Grader],
     upstream: Mapping[str, set[str]],
     labels: Mapping[tuple[str, str], str] | None = None,
 ) -> list[dict[str, Any]]:
@@ -480,7 +492,8 @@ def rates(rows: Sequence[Mapping[str, Any]], judges: Sequence[str], floor: int) 
     for who in (*judges, "conservative"):
 
         def grade(r: Mapping[str, Any]) -> int | None:
-            return r["grade"] if who == "conservative" else r["grades"][who]  # noqa: B023
+            value: int | None = r["grade"] if who == "conservative" else r["grades"][who]  # noqa: B023
+            return value
 
         pos = [g for r in rows if r["label"] == "positive" and (g := grade(r)) is not None]
         neg = [g for r in rows if r["label"] == "negative" and (g := grade(r)) is not None]
