@@ -1,10 +1,11 @@
 """Ablation of the reciprocal-rank-fusion constant k and the per-arm candidate pool P.
 
-    uv run python tools/ablation_fusion_eval.py arms <golden.yaml> --qrels eval/golden-qrels.json \\
-        --split eval/golden-split.json --subset dev --out <dir>/arms-dev-r1.json
-    uv run python tools/ablation_fusion_eval.py grid --qrels eval/golden-qrels.json \\
+    uv run python tools/ablation_fusion_eval.py arms <golden.yaml> --qrels \\
+        eval/datasets/golden-qrels.json \\
+        --split eval/datasets/golden-split.json --subset dev --out <dir>/arms-dev-r1.json
+    uv run python tools/ablation_fusion_eval.py grid --qrels eval/datasets/golden-qrels.json \\
         --arms <dir>/arms-dev-r1.json --arms <dir>/arms-dev-r2.json --arms <dir>/arms-dev-r3.json \\
-        [--export-runs <dir>/runs] --out eval/ablation-fusion-dev-<date>.json
+        [--export-runs <dir>/runs] --out eval/results/ablation-fusion-dev-<date>.json
 
 `arms` asks the database for each question's two candidate lists, once per pool size, through the
 service's own `retrieval.search_hybrid`: the lexical arm with no embedding, the semantic arm with an

@@ -1,8 +1,9 @@
 """The golden test collection: qrels, runs, the dev/test split, the judgement pool and its holes.
 
-    uv run python tools/golden_set.py split <golden.yaml> --out eval/golden-split.json
-    uv run python tools/golden_set.py judge --qrels eval/golden-qrels.json \\
-        --judgements eval/golden-judgements-<subset>-<date>.json --out eval/golden-qrels.json
+    uv run python tools/golden_set.py split <golden.yaml> --out eval/datasets/golden-split.json
+    uv run python tools/golden_set.py judge --qrels eval/datasets/golden-qrels.json \\
+        --judgements eval/results/golden-judgements-<subset>-<date>.json --out \\
+        eval/datasets/golden-qrels.json
 
 A qrels document maps each answerable question to the articles judged for it (`<pcode>-art-<n>`)
 with a graded relevance 0–3 (UMBRELA's scale); an article is relevant from `relevant_from` (2) up,

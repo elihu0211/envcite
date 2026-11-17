@@ -1,7 +1,8 @@
 """風險—覆蓋掃描：可答覆蓋率目標下，讓最少的無答案問句通過的兩個下界（只看開發集）。
 
     uv run python tools/floor_risk_coverage.py \
-        --lexical eval/golden-retrieval-<date>.json --semantic eval/golden-retrieval-<date>.json
+        --lexical eval/results/golden-retrieval-<date>.json --semantic \
+        eval/results/golden-retrieval-<date>.json
 
 輸入與配對同 `answerability_floor.py`（共用它的 `join`、`evaluate`、候選下界），只接受同一切分
 開發集的報告；選定的下界在測試集上的表現由端到端量測報告。只印出結果，不改任何下界。

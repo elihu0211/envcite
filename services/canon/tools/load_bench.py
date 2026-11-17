@@ -1,11 +1,11 @@
 """效能基準：延遲分佈、逐步加並行的吞吐與錯誤率，分冷熱快取（題庫外部，唯讀）。
 
     uv run --env-file <env> python tools/load_bench.py run <golden.yaml> \\
-        --split eval/golden-split.json [--subset dev|test] \\
+        --split eval/datasets/golden-split.json [--subset dev|test] \\
         (--pg-container <拋棄式容器> | --skip-cold) \\
         [--canon-address <host:port>] [--consult-address <host:port>] \\
         [--targets search,ground,evaluate,search-lexical] [--ladder 1,2,4,…] \\
-        --out eval/load-bench-<日期>
+        --out eval/results/load-bench-<日期>
 
 預設本程式自己起 canon 與 consult（Release），以 k6（`tools/load.js`）送 gRPC 負載，最後寫
 `<out>.json` 與 `<out>.md`。給 `--canon-address`／`--consult-address` 時改量該位址上已部署的

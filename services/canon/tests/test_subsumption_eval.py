@@ -21,7 +21,9 @@ from tests.reasoning_support import (
 )
 from tests.verification_support import _with_penalties
 
-BENCHMARK_PATH = Path(__file__).resolve().parents[1] / "eval" / "subsumption_benchmark.json"
+BENCHMARK_PATH = (
+    Path(__file__).resolve().parents[1] / "eval" / "datasets" / "subsumption_benchmark.json"
+)
 
 
 @pytest.fixture

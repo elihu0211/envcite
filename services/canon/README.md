@@ -145,7 +145,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
    | `duty_sample.py <dsn> <版本>` | 依種子抽樣印出已確認義務、原文、槽位與要件供人工核對 |
    | `duty_defects.py <dsn> <版本>…` | 量測主體與上位條件規則的攔截數 |
    | `duty_audit.py` | 由雙判定者量測語意主體與適用範圍瑕疵 |
-   | `duty_effect.py collect\|judge\|report\|bearer` | 盲測修復前後效果（判定者設定 `eval/duty-fix-effect-judges.toml`）與未明示義務實際負擔者 |
+   | `duty_effect.py collect\|judge\|report\|bearer` | 盲測修復前後效果（判定者設定 `eval/datasets/duty-fix-effect-judges.toml`）與未明示義務實際負擔者 |
    | `duty_cost.py cost\|unstated` | 統計重抽嘗試數、驗證列數、重複確認浪費與未明示義務罰則鏈 |
 
 ### 模型配置（`models.toml`）
@@ -186,19 +186,28 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 
 檢索的召回與拒答以外部黃金題庫（`golden.yaml`，不入庫）或倉庫內原生題庫量測，指標與顯著性檢定由 [ranx](https://github.com/AmenRa/ranx) 計算（工具在 `tools/`）。
 
+#### 目錄
+
+`eval/` 輸入與產出分開放，工具以 `--out` 指到 `results/`，不寫回 `datasets/`（建題與匯回 qrels 除外）：
+
+| 目錄 | 內容 | 規則 |
+|------|------|------|
+| `eval/datasets/` | 題庫、qrels、切分、案例庫、判定者設定 | 工具的輸入；改動即新版本，檔名帶建立日期（現行 qrels 與切分除外） |
+| `eval/results/` | 報告（`.json`＋`.md`）、各臂 `.run.json`、判定與校準檔、`.notes.md` | 工具的產出，檔名帶日期；報告記錄同目錄的 run，所以報告與其 run 放在一起；論文以此目錄的路徑引用 |
+
 #### 指令
 
 **標準評估流程（步驟 1–7）**：
 
 | 步驟 | 指令（在本目錄） | 產出與前置條件 |
 |------|------------------|----------------|
-| 1. 建 qrels | `uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out eval/golden-qrels.json` | 初始 qrels（需資料庫） |
-| 2. 切分題集 | `uv run python tools/golden_set.py split <golden.yaml> --out eval/golden-split.json` | `dev`／`test` 切分檔 |
-| 3. 量測檢索 | `uv run python tools/golden_retrieval_eval.py measure <golden.yaml> --qrels … --split … --subset dev --out eval/golden-retrieval-<日期>` | `.json`／`.md` 報告與各臂 `.run.json`；加 `--rerank [--rerank-depths 10,20,30,50]` 另測精排臂與延遲分布 |
+| 1. 建 qrels | `uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out eval/datasets/golden-qrels.json` | 初始 qrels（需資料庫） |
+| 2. 切分題集 | `uv run python tools/golden_set.py split <golden.yaml> --out eval/datasets/golden-split.json` | `dev`／`test` 切分檔 |
+| 3. 量測檢索 | `uv run python tools/golden_retrieval_eval.py measure <golden.yaml> --qrels … --split … --subset dev --out eval/results/golden-retrieval-<日期>` | `.json`／`.md` 報告與各臂 `.run.json`；加 `--rerank [--rerank-depths 10,20,30,50]` 另測精排臂與延遲分布 |
 | 4. 顯著性比較 | `uv run python tools/golden_retrieval_eval.py compare --qrels … <a>.run.json <b>.run.json [--out …]` | 各臂指標、Hole@10 與 Fisher 隨機化檢定 p 值 |
-| 5. 校準判定器 | `uv run python tools/relevance_judge.py calibrate <golden.yaml> --qrels … --split … --cache <倉庫外>/judge-cache.jsonl --out eval/golden-calibration-<日期>.json` | 開發集正／負例表現與 κ（只依此調整判定提示） |
-| 6. 補判空洞 | `uv run python tools/relevance_judge.py pool <golden.yaml> --qrels … --split … --subset dev --run <a>.run.json --calibration … --cache … --out eval/golden-judgements-<子集>-<日期>.json` | 封存判定檔（須與校準檔同提示雜湊；支援 `--as-of`、`--workers` 與快取續跑） |
-| 7. 匯回 qrels | `uv run python tools/golden_set.py judge --qrels eval/golden-qrels.json --judgements eval/golden-judgements-….json --out eval/golden-qrels.json` | 合併判定後的新版 qrels |
+| 5. 校準判定器 | `uv run python tools/relevance_judge.py calibrate <golden.yaml> --qrels … --split … --cache <倉庫外>/judge-cache.jsonl --out eval/results/golden-calibration-<日期>.json` | 開發集正／負例表現與 κ（只依此調整判定提示） |
+| 6. 補判空洞 | `uv run python tools/relevance_judge.py pool <golden.yaml> --qrels … --split … --subset dev --run <a>.run.json --calibration … --cache … --out eval/results/golden-judgements-<子集>-<日期>.json` | 封存判定檔（須與校準檔同提示雜湊；支援 `--as-of`、`--workers` 與快取續跑） |
+| 7. 匯回 qrels | `uv run python tools/golden_set.py judge --qrels eval/datasets/golden-qrels.json --judgements eval/results/golden-judgements-….json --out eval/datasets/golden-qrels.json` | 合併判定後的新版 qrels |
 
 **專項評估工具**：
 
@@ -213,7 +222,7 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 
 #### 原生題庫
 
-不依賴外部 `golden.yaml`：由 [`tools/native_golden.py`](tools/native_golden.py) 依語料結構程式化建題（與資料庫快照及 `--as-of` 決定性對應），題庫本體置於 `eval/native-golden-<日期>.json`。修改產生規則須遞增 `GENERATOR_VERSION` 並重建；不可為讓 `verify` 乾淨而放寬文法。
+不依賴外部 `golden.yaml`：由 [`tools/native_golden.py`](tools/native_golden.py) 依語料結構程式化建題（與資料庫快照及 `--as-of` 決定性對應），題庫本體置於 `eval/datasets/native-golden-<日期>.json`。修改產生規則須遞增 `GENERATOR_VERSION` 並重建；不可為讓 `verify` 乾淨而放寬文法。
 
 | 題型（`kind`） | 桶 | 查詢來源 | 標準答案 |
 |------|------|------|------|
@@ -223,9 +232,9 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 | `applies_mutatis_mutandis` | `multi_hop` | 某條準用哪一條 | 該條所寫被準用條 |
 | `absent_term`、`absent_question` | `negative` | 候選詞 | 無（全部現行條文皆不含） |
 
-1. **建題**：`uv run --env-file .env python tools/native_golden.py build --as-of <日期> --out eval/native-golden-<日期>.json`（只需語料 DB，不需嵌入）。
-2. **查證**：`uv run --env-file .env python tools/native_golden.py verify eval/native-golden-<日期>.json`（重建比對、證據句核對與獨立掃描）。
-3. **衍生**：`uv run python tools/native_golden.py derive eval/native-golden-<日期>.json`（輸出 `.qrels.json` 與 `.split.json` 供標準流程量測）。
+1. **建題**：`uv run --env-file .env python tools/native_golden.py build --as-of <日期> --out eval/datasets/native-golden-<日期>.json`（只需語料 DB，不需嵌入）。
+2. **查證**：`uv run --env-file .env python tools/native_golden.py verify eval/datasets/native-golden-<日期>.json`（重建比對、證據句核對與獨立掃描）。
+3. **衍生**：`uv run python tools/native_golden.py derive eval/datasets/native-golden-<日期>.json`（輸出 `.qrels.json` 與 `.split.json` 供標準流程量測）。
 
 #### 格式
 
@@ -245,7 +254,7 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 
 以真實條文規範陳述（水污染防治法第 7 條與第 40 條）為大前提、案件事實為小前提，呼叫 clingo 量測三值 Kleene 涵攝、缺漏事實識別、裁量判斷、責任主體分流與行政罰法總則阻卻之正確性（能力問題 C3、C5、C6、C7）。
 
-- **案例庫**：[`eval/subsumption_benchmark.json`](eval/subsumption_benchmark.json)
+- **案例庫**：[`eval/datasets/subsumption_benchmark.json`](eval/datasets/subsumption_benchmark.json)
 - **評估工具**：[`tools/subsumption_eval.py`](tools/subsumption_eval.py)（輸出 JSON 與 Markdown 報告）
 - **守門測試**：[`tests/test_subsumption_eval.py`](tests/test_subsumption_eval.py)
 

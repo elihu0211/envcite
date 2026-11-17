@@ -2,8 +2,9 @@
 
     ENVCITE_CANON_DSN=… ENVCITE_LLM_API_KEY=… \
         uv run python tools/grounding_check_eval.py <golden.yaml> --consult localhost:<port> \
-        --qrels eval/golden-qrels.json --split eval/golden-split.json --subset test \
-        --models models.toml --model mistral --out eval/grounding-check-<date>
+        --qrels eval/datasets/golden-qrels.json --split eval/datasets/golden-split.json --subset \
+        test \
+        --models models.toml --model mistral --out eval/results/grounding-check-<date>
 
 For every golden question of the split subset that has an answer (`scored`: the qrels has at least
 one relevant article for it) or none (`negative`), the same path the deployed answer service takes:
@@ -21,7 +22,8 @@ current version of a relevant provision is looked up in the database); a cited a
 no judgement for is a hole, not a miss. Nothing here judges whether the text is correct. The report
 records the sha256 of the golden set, the qrels and the split.
 
-With `--keyword-golden eval/keyword-golden-<date>.json` (instead of the positional golden set,
+With `--keyword-golden eval/datasets/keyword-golden-<date>.json` (instead of the positional
+golden set,
 `--qrels` and `--split`) the questions are the keyword golden set: the answers are the statutes'
 own definition lines, the subset is the file's `split` field, and the `absent` bucket is the
 negative one. A question the portal treats as a bare topic (`is_bare_topic`) goes to the model as
@@ -435,7 +437,7 @@ def main() -> None:
     p.add_argument("--qrels", type=Path)
     p.add_argument("--split", type=Path)
     p.add_argument(
-        "--keyword-golden", type=Path, help="關鍵字題庫 json（eval/keyword-golden-*.json）"
+        "--keyword-golden", type=Path, help="關鍵字題庫 json（eval/datasets/keyword-golden-*.json）"
     )
     p.add_argument("--subset", choices=("dev", "test"), required=True)
     p.add_argument("--models", type=Path, required=True)

@@ -1,8 +1,9 @@
 """關鍵字查詢的黃金題庫：以法規自己的用語定義條為標準答案（唯讀）。
 
-    uv run python tools/keyword_golden.py build  > eval/keyword-golden-<日期>.json
-    uv run python tools/keyword_golden.py verify eval/keyword-golden-<日期>.json
-    uv run python tools/keyword_golden.py measure eval/keyword-golden-<日期>.json [--address 位址]
+    uv run python tools/keyword_golden.py build  > eval/datasets/keyword-golden-<日期>.json
+    uv run python tools/keyword_golden.py verify eval/datasets/keyword-golden-<日期>.json
+    uv run python tools/keyword_golden.py measure eval/datasets/keyword-golden-<日期>.json \\
+        [--address 位址]
 
 既有的黃金題庫是自然語句問題；搜尋頁的使用情境是關鍵字，題庫量不到。這份題庫補它，而且標準答案不來自
 被測的檢索系統：
@@ -41,7 +42,9 @@ from canon.settings import ServerSettings, load
 
 #: 標準輸入餵給 `python -`（例如在 pod 裡跑）時沒有 `__file__`，種子改由 `--seeds` 給。
 _HERE = globals().get("__file__")
-SEED_QRELS = Path(_HERE).resolve().parents[1] / "eval" / "golden-qrels.json" if _HERE else None
+SEED_QRELS = (
+    Path(_HERE).resolve().parents[1] / "eval" / "datasets" / "golden-qrels.json" if _HERE else None
+)
 
 #: 定義條：第一行以「定義如下」「用辭之定義如左」「意義如下」「定義及計算公式如下」
 #: 這類句子結尾。
