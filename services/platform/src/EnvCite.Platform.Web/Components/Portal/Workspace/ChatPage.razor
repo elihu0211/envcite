@@ -18,7 +18,7 @@
 <div class="ep-ask" data-state="@(Session.Turns.Count > 0 ? "result" : "empty")">
     @if (_notFound)
     {
-        @* 不是自己的、已刪除、已過期、沒開啟：都是同一個畫面，不洩漏它存不存在。 *@
+        @* 不是自己的、不存在、已刪除、已過期：都是同一個畫面，不洩漏它存不存在。 *@
         <EmptyState Icon="@Icons.Material.Outlined.SearchOff" Title="@L["找不到這個對話"]" Description="@L["它可能已經被刪除，或已超過保留期限。"]">
             <a class="ep-btn ep-btn-primary" href="@PortalPaths.Home(Tenant)">@L["新增對話"]</a>
         </EmptyState>

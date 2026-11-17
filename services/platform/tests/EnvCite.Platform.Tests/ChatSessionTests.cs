@@ -273,7 +273,7 @@ public sealed class ChatSessionTests
         Assert.Null(session.ConversationId);
     }
 
-    // 歷史沒開啟：記不下來（回 null），對話沒有 Id，也不通知側欄。
+    // 記不下來（身分不是入口成員、找不到租戶或問題空白時回 null）：對話沒有 Id，也不通知側欄。
     [Fact]
     public async Task WithoutHistoryThereIsNoConversationAndTheSidebarIsNotTold()
     {
