@@ -638,6 +638,106 @@ const scenarios = {
         });
     },
 
+    // 授權知識圖譜的檢視面板：浮在畫布上、不占版面（開關不改變畫布寬度，圖才不會重新適應而跳動）；
+    // 預設收起，點節點打開並把被選的節點讓到面板左邊；Esc、✕、「法學檢視」都能收起，焦點不掉到 body。
+    async "law-graph-inspector"() {
+        const state = () => page.evaluate(() => {
+            const canvas = document.querySelector(".ep-graph-canvas");
+            const host = document.querySelector(".ep-graph-host");
+            const sheet = document.querySelector(".ep-graph-inspector");
+            const rect = sheet.getBoundingClientRect();
+            return {
+                canvasW: canvas.clientWidth,
+                open: host.dataset.inspectorOpen,
+                visibility: getComputedStyle(sheet).visibility,
+                position: getComputedStyle(sheet).position,
+                left: Math.round(rect.left),
+                right: Math.round(rect.right),
+                expanded: document.querySelector("[data-inspector-open-btn]").getAttribute("aria-expanded"),
+                title: document.querySelector(".ep-inspector-title")?.textContent ?? "",
+                focus: document.activeElement?.id || document.activeElement?.className?.toString() || document.activeElement?.tagName,
+            };
+        });
+        // 以標題找節點，回傳它在畫面上的中心與右緣（卡片寬 284、乘上縮放）。
+        const nodeScreen = (title) => page.evaluate((wanted) => {
+            const canvas = document.querySelector(".ep-graph-canvas");
+            const graph = canvas._g6Instance;
+            const found = graph.getNodeData().find((n) => n.data?.raw?.title === wanted);
+            if (!found) return null;
+            const box = canvas.getBoundingClientRect();
+            const [x, y] = graph.getViewportByCanvas(graph.getElementPosition(found.id));
+            return { x: box.left + x, y: box.top + y, right: box.left + x + 142 * graph.getZoom() };
+        }, title);
+
+        await step("登入後前往法規體系與合規：面板預設收起，不占畫布寬度", async () => {
+            await signIn();
+            // 側面板要容器寬度達 68rem（扣掉側欄約需 1600px 的視窗）；更窄是從底部升起的面板，在最後一步驗。
+            await page.setViewportSize({ width: 1700, height: 900 });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await until("圖譜應建好", async () => (await page.evaluate(() => Boolean(document.querySelector(".ep-graph-canvas")?._g6Instance))) === true);
+            await page.waitForTimeout(1500);
+            const s = await state();
+            if (s.open !== "false" || s.visibility !== "hidden" || s.expanded !== "false") throw new Error(`面板應預設收起：${JSON.stringify(s)}`);
+        });
+
+        let closed;
+        await step("點節點：面板打開、畫布寬度不變、節點讓到面板左邊", async () => {
+            await page.evaluate(() => document.querySelector(".ep-graph-canvas-wrap").scrollIntoView({ block: "center" }));
+            await page.waitForTimeout(300);
+            closed = await state();
+            const target = await nodeScreen("空氣污染防制法施行細則");
+            if (!target) throw new Error("圖上找不到「空氣污染防制法施行細則」");
+            await page.mouse.click(target.x, target.y);
+            await until("面板應打開", async () => (await state()).open === "true");
+            await page.waitForTimeout(500);
+            const opened = await state();
+            if (opened.visibility !== "visible" || opened.expanded !== "true") throw new Error(`面板沒有顯示：${JSON.stringify(opened)}`);
+            if (opened.canvasW !== closed.canvasW) throw new Error(`面板不該改變畫布寬度：${closed.canvasW} → ${opened.canvasW}`);
+            if (opened.title !== "空氣污染防制法施行細則") throw new Error(`面板應顯示被選的法規：${opened.title}`);
+            const after = await nodeScreen("空氣污染防制法施行細則");
+            if (after.right > opened.left) throw new Error(`被選的節點被面板蓋住：節點右緣 ${Math.round(after.right)} > 面板左緣 ${opened.left}`);
+            if (shots) await page.locator(".ep-graph-canvas-wrap").screenshot({ path: `${shots}/law-inspector-open.png` });
+        });
+
+        await step("關係清單：點母法在圖上選取它，面板換成它的資料", async () => {
+            const link = page.locator(".ep-inspector-rel-link").first();
+            const wanted = (await link.textContent())?.trim();
+            if (!wanted) throw new Error("面板沒有關係清單");
+            await link.click();
+            await until(`面板應換成「${wanted}」`, async () => (await state()).title === wanted);
+            if ((await state()).canvasW !== closed.canvasW) throw new Error("換選節點不該改變畫布寬度");
+        });
+
+        await step("Esc 收起；「法學檢視」開關；✕ 收起並把焦點還給「法學檢視」", async () => {
+            await page.keyboard.press("Escape");
+            await until("Esc 應收起面板", async () => (await state()).open === "false");
+            await page.waitForTimeout(400);
+            const afterEsc = await state();
+            if (afterEsc.visibility !== "hidden" || afterEsc.canvasW !== closed.canvasW) throw new Error(`Esc 之後：${JSON.stringify(afterEsc)}`);
+
+            await page.click("[data-inspector-open-btn]");
+            await until("按鈕應打開面板", async () => (await state()).open === "true");
+            if ((await state()).focus !== "ep-graph-inspector") throw new Error(`打開後焦點應在面板：${(await state()).focus}`);
+
+            await page.click("[data-inspector-close]");
+            await until("✕ 應收起面板", async () => (await state()).open === "false");
+            const afterClose = await state();
+            if (!String(afterClose.focus).includes("ep-inspector-reopen")) throw new Error(`收起後焦點應回到「法學檢視」：${afterClose.focus}`);
+            if (afterClose.canvasW !== closed.canvasW) throw new Error("✕ 不該改變畫布寬度");
+        });
+
+        await step("窄視窗：面板改為從底部升起", async () => {
+            await page.setViewportSize({ width: 800, height: 900 });
+            await page.waitForTimeout(500);
+            await page.click("[data-inspector-open-btn]");
+            await until("窄視窗按鈕應打開面板", async () => (await state()).open === "true");
+            await page.waitForTimeout(400);
+            const narrow = await state();
+            if (narrow.position !== "fixed" || narrow.visibility !== "visible") throw new Error(`窄視窗應為底部面板：${JSON.stringify(narrow)}`);
+            if (shots) await page.screenshot({ path: `${shots}/law-inspector-narrow.png` });
+        });
+    },
+
     // 法規體系與合規工作列：下拉選單帶統一右側安全距與箭頭、按鈕與欄位依容器斷點對齊且可 RWD 換列。
     async "laws-toolbar"() {
         await step("登入後前往法規體系與合規", async () => {
