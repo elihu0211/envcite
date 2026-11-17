@@ -109,9 +109,7 @@ EXCUSE = {
     "self_defense": pb.EXCUSE_SELF_DEFENSE,
     "necessity": pb.EXCUSE_NECESSITY,
     "criminal_priority": pb.EXCUSE_CRIMINAL_PRIORITY,
-    "unavoidable_ignorance": pb.EXCUSE_UNAVOIDABLE_IGNORANCE,
     "unexpectable": pb.EXCUSE_UNEXPECTABLE,
-    "petty_offense": pb.EXCUSE_PETTY_OFFENSE,
     "within_cure_period": pb.EXCUSE_WITHIN_CURE_PERIOD,
 }
 
@@ -121,6 +119,21 @@ MITIGATION = {
     "ignorance": pb.MITIGATION_IGNORANCE,
     "excessive_defense": pb.MITIGATION_EXCESSIVE_DEFENSE,
     "excessive_necessity": pb.MITIGATION_EXCESSIVE_NECESSITY,
+}
+
+DISCRETION_BASIS = {
+    "ignorance_of_law": pb.DISCRETION_BASIS_IGNORANCE_OF_LAW,
+    "petty_offense": pb.DISCRETION_BASIS_PETTY_OFFENSE,
+}
+
+DISCRETION_MEASURE = {
+    "reduce": pb.DISCRETION_MEASURE_REDUCE,
+    "exempt": pb.DISCRETION_MEASURE_EXEMPT,
+    "correct_or_advise": pb.DISCRETION_MEASURE_CORRECT_OR_ADVISE,
+}
+
+DISCRETION_NOTE = {
+    "unavoidable": pb.DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE,
 }
 
 REDUCTION_SHARE = {2: pb.REDUCTION_SHARE_HALF, 3: pb.REDUCTION_SHARE_THIRD}
