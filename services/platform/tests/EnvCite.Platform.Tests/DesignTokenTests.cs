@@ -852,6 +852,22 @@ public static partial class DesignTokenTests
     public static void TableScrollWrapContainsItsHiddenAbsoluteText() =>
         Assert.Contains("position: relative", CssBlock(File.ReadAllText(StylesheetPath()), ".ep-table-wrap"), StringComparison.Ordinal);
 
+    // 滾動更新後，舊分頁事後才載入的指紋檔（頭像裁切、圖表）在新版已不存在：asset-skew.js 偵測到就重新載入一次。
+    // 它要排在 Blazor 與其他腳本之前才接得到它們的載入失敗，且要在捕獲階段接（資源的 error 事件不冒泡）。
+    [Fact]
+    public static void AssetSkewScriptLoadsBeforeEveryOtherScript()
+    {
+        var web = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(StylesheetPath())!, "..", ".."));
+        var app = File.ReadAllText(Path.Combine(web, "Components", "App.razor"));
+        var script = File.ReadAllText(Path.Combine(web, "wwwroot", "design", "asset-skew.js"));
+
+        var skew = app.IndexOf("design/asset-skew.js", StringComparison.Ordinal);
+        Assert.True(skew >= 0, "App.razor 沒有載入 asset-skew.js");
+        Assert.True(skew < app.IndexOf("_framework/blazor.web.js", StringComparison.Ordinal), "asset-skew.js 要排在 blazor.web.js 之前");
+        Assert.True(skew < app.IndexOf("design/forms.js", StringComparison.Ordinal), "asset-skew.js 要排在 forms.js 之前");
+        Assert.Contains("}, true);", script, StringComparison.Ordinal);
+    }
+
     private static string CssBlock(string css, string selector)
     {
         var match = Regex.Match(css, @"(?m)^" + Regex.Escape(selector) + @"\s*\{(?<body>[^}]*)\}");
@@ -998,6 +1014,22 @@ public sealed class DesignPageTests(PlatformFactory factory)
             using var response = await client.GetAsync(new Uri(source, UriKind.RelativeOrAbsolute), TestContext.Current.CancellationToken);
             Assert.True(response.StatusCode == HttpStatusCode.OK, $"{source} -> {(int)response.StatusCode}");
         }
+    }
+
+    // asset-skew.js 靠這個判斷「新版已沒有這個檔」：對不存在的指紋檔做 HEAD，要回 404，或回 200 的 HTML 頁（被路由接走）。
+    // 回成別的（例如空的 200 腳本）就偵測不到，舊分頁的延遲載入會靜靜地壞掉。
+    [Fact]
+    public async Task AMissingFingerprintedAssetLooksMissingToTheSkewScript()
+    {
+        using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var request = new HttpRequestMessage(HttpMethod.Head, new Uri("/_content/EnvCite.Platform.Web/design/mermaid.min.gone0000.js", UriKind.Relative));
+        using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
+        Assert.True(
+            response.StatusCode == HttpStatusCode.NotFound
+                || (response.IsSuccessStatusCode && contentType.Contains("text/html", StringComparison.Ordinal)),
+            $"不存在的指紋檔回了 {(int)response.StatusCode} {contentType}，asset-skew.js 會認不出它已不存在");
     }
 
     // 靜態頁（登入、入口）沒有 MudBlazor 的元件，就不下載它的樣式與腳本；互動的後台頁才載入。

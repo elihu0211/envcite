@@ -38,6 +38,8 @@
 </head>
 <body>
     <Routes @rendermode="PageRenderMode" />
+    @* 版本偏移：滾動更新後舊分頁引用的指紋檔在新版已不存在時重新載入一次（說明在檔頭）。要在其他腳本之前，才接得到它們的載入失敗。 *@
+    <script src="@Assets["_content/EnvCite.Platform.Web/design/asset-skew.js"]"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     @* 表單的漸進增強（密碼顯示、復原碼的複製與列印、送出中的回饋）：靜態與互動的頁面都用得到。 *@
     <script src="@Assets["_content/EnvCite.Platform.Web/design/forms.js"]" data-cropper-src="@Assets["_content/EnvCite.Platform.Web/design/cropper.min.js"]"></script>
