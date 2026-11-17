@@ -22,6 +22,7 @@ from canon.db import Conn
 from canon.law import judgment, judgment_anchor
 from canon.law.judicial_api import AuthRejected, Client, EndpointError, removed
 from canon.law.judicial_credentials import CredentialsError, credentials_path, read_credentials
+from canon.rules import Rule
 from canon.settings import DatabaseSettings
 from canon.settings import load as load_settings
 from envcite_jobkit import ExitCode
@@ -31,7 +32,8 @@ log = logging.getLogger(__name__)
 PAUSE_SECONDS = 1.0
 _TAIPEI = ZoneInfo("Asia/Taipei")
 _WINDOW_END = time(6, 0)
-_AGENT = "canon-judicial-sync"
+#: 載入的裁判標的推導來源；版本跟著引用抽取規則走，改規則時標示隨之改變。
+RULE = Rule("canon-judicial-sync", judgment_anchor.RULE_VERSION)
 
 #: 法院代碼（jid 第一欄去掉末位類別碼）→ 審級。
 COURTS: Mapping[str, str] = {"TPA": "supreme", "TPB": "high", "TCB": "high", "KSB": "high"}
@@ -152,7 +154,7 @@ def _one(conn: Conn, client: Client, jid: str, now: Clock) -> str:
         judgment.load(
             conn,
             {
-                "derivation": {"method": "rule", "agent": _AGENT, "agent_version": "1"},
+                "derivation": RULE.derivation,
                 "decisions": [document],
             },
         )

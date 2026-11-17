@@ -1,10 +1,12 @@
 """The deterministic-rule extractors share one identity, one result type and one runner."""
 
 import psycopg
+import pytest
 
 from canon import rules, sync, violation
-from canon.law import delegation
-from canon.rules import Extracted, Extractor
+from canon.law import delegation, judgment_anchor, judgment_sync
+from canon.law.guidance_sync import provenance
+from canon.rules import Extracted, Extractor, Rule
 
 Conn = psycopg.Connection[tuple[object, ...]]
 
@@ -17,6 +19,41 @@ def test_an_extractor_names_the_derivation_it_records() -> None:
         "agent": "canon-example-rule",
         "agent_version": "3",
     }
+
+
+def test_a_rule_that_loads_documents_names_its_derivation_without_an_extract() -> None:
+    rule = Rule("canon-example-rule", 2)
+
+    assert rule.derivation == {
+        "method": "rule",
+        "agent": "canon-example-rule",
+        "agent_version": "2",
+    }
+    assert isinstance(delegation.EXTRACTOR, Rule)
+
+
+def test_a_version_below_one_is_refused() -> None:
+    with pytest.raises(ValueError, match="version must be positive"):
+        Rule("canon-example-rule", 0)
+
+
+def test_guidance_and_judgment_record_the_derivations_they_always_did() -> None:
+    """The text stored in `derivation.producer_version` does not change with the int version."""
+    assert provenance.DERIVATION == {
+        "method": "rule",
+        "agent": "canon-guidance-sync",
+        "agent_version": "2",
+    }
+    assert judgment_sync.RULE.derivation == {
+        "method": "rule",
+        "agent": "canon-judicial-sync",
+        "agent_version": "1",
+    }
+
+
+def test_the_judgment_derivation_follows_the_anchor_rule_version() -> None:
+    """Bumping the extraction rule must change what the loaded decisions are labelled with."""
+    assert judgment_sync.RULE.version == judgment_anchor.RULE_VERSION
 
 
 def test_the_registered_extractors_have_unique_names_and_positive_versions() -> None:
