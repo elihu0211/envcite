@@ -600,6 +600,28 @@ const scenarios = {
             await circuitConnected();
             await assertSmoothFrames("冷載入首頁", false);
         });
+
+        // Blazor 接手不是一批做完：外殼先換（bl-root 抽換、舊區塊移除），頁面內容晚幾毫秒（等授權查詢）才長出來。
+        // 用真的頁面與真的 forms.js、platform.css 模擬這兩批：動畫已播完時（接手比進場慢），晚到的區塊不能從 opacity 0 再播一次。
+        await step("接手分兩批渲染：晚到的區塊接續進場，不從頭播", async () => {
+            await page.goto(`${base}/ui/login`);
+            await page.waitForTimeout(900);
+            const opacities = await page.evaluate(async () => {
+                const body = document.querySelector(".ep-auth-body");
+                const blocks = [...body.children];
+                const marker = document.body.appendChild(document.createComment("/bl-root"));
+                await Promise.resolve();
+                marker.remove();
+                blocks.forEach((block) => block.remove());
+                await new Promise((resolve) => setTimeout(resolve, 5));
+                const fresh = blocks.map((block) => body.appendChild(block.cloneNode(true)));
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+                return fresh.map((block) => Number(getComputedStyle(block).opacity));
+            });
+            if (opacities.length === 0 || opacities.some((opacity) => opacity < 1)) {
+                throw new Error(`晚到的區塊的進場動畫從頭重播了（opacity ${JSON.stringify(opacities)}）`);
+            }
+        });
     },
 
     // 授權知識圖譜進頁面時，第一個看得到的畫面就是最後的視角：圖一建好是縮放 1 的實際大小，若直接露出來，
