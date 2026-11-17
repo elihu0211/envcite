@@ -17,7 +17,7 @@
 """
 
 import logging
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from typing import NamedTuple
 
@@ -61,9 +61,6 @@ _EMBED_PAGE = """
      WHERE i.content_sha256 > %(after)s
        AND i.model IS DISTINCT FROM %(model)s
        AND v.content IS NOT NULL
-       AND (%(pcodes)s::text[] IS NULL OR v.resource_id IN (
-            SELECT r.id FROM corpus.legal_resource AS r
-             WHERE r.id_scheme = 'moj_pcode' AND r.local_id = ANY(%(pcodes)s)))
      ORDER BY i.content_sha256
      LIMIT %(limit)s
 """
@@ -159,25 +156,8 @@ def _lexical(conn: Conn, segmenter: Segmenter) -> int:
         after = rows[-1].digest
 
 
-def embed_scope(
-    conn: Conn, embedder: Embedder, pcodes: Sequence[str], policy: Policy | None = None
-) -> int:
-    """只為這些法規（moj_pcode）現行版本的段落補嵌入，其餘不動；其餘同 `rebuild` 的嵌入步驟。
-
-    供範圍限定的量測用；字面向量須已建好（列要先在）。同一段文字也出現在範圍外的法規時，
-    它的列只有一列，嵌入隨之而有。
-    """
-    return _embed(conn, embedder, pcodes=list(pcodes), policy=policy)
-
-
-def _embed(
-    conn: Conn,
-    embedder: Embedder,
-    *,
-    pcodes: list[str] | None = None,
-    policy: Policy | None = None,
-) -> int:
-    """每頁 commit：全量第一次要很久，中斷後重跑只補沒做完的。`pcodes` 為空值時不限範圍。
+def _embed(conn: Conn, embedder: Embedder, *, policy: Policy | None = None) -> int:
+    """每頁 commit：全量第一次要很久，中斷後重跑只補沒做完的。
 
     一頁（`_EMBED_WORKERS` 批）是 jobkit 的一個工作項，批次並行送出以壓低全量的牆鐘時間，
     資料庫只由本執行緒寫。端點問題退避重試並計入斷路器（重試整頁），重試用盡或內容被拒的頁
@@ -196,7 +176,6 @@ def _embed(
                     "after": after,
                     "model": embedder.model,
                     "limit": _EMBED_BATCH * _EMBED_WORKERS,
-                    "pcodes": pcodes,
                 },
                 _PassageRow,
             )

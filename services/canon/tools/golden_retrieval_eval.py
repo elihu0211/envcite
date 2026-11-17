@@ -33,13 +33,6 @@ and the split. Database and embedder come from the environment (ENVCITE_CANON_DS
 ENVCITE_CANON_MODELS); with no embedding declared only the lexical arm runs and the result
 says so.
 
-`--scope <golden_scope.py output>` limits the search to that set of laws without touching the
-retrieval function: the service's `search` is asked for every candidate it can return and the hits
-of laws outside the scope are dropped before the first k are taken. Each arm's candidate pool is
-chosen before the filter, so a lexical pool crowded by out-of-scope laws yields fewer than k
-in-scope hits; the number dropped per question is recorded. The embedding completion of the
-scope is part of the meta.
-
 `--rerank` adds one arm per depth in `--rerank-depths` (default: the service's depth), named
 `<base>_rerank_d<depth>`: the arm's hits (hybrid when an embedding model is declared, otherwise
 lexical), with the top `<depth>` of them re-ordered by the cross-encoder declared in `models.toml`
@@ -77,7 +70,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import golden_set as gs
 from retrieval_eval import Embeds
-from scoped_search import resource_ids, scoped_search
 
 from canon import reranking
 from canon.law_names import LawNames
@@ -308,7 +300,6 @@ class Measured:
     top_rerank: float | None = None
     #: 精排打分那一次呼叫的毫秒數（各深度的臂共用同一次呼叫）。
     rerank_ms: float | None = None
-    out_of_scope_dropped: int | None = None
 
 
 def questions(
@@ -359,49 +350,27 @@ def _retrieve(
     *,
     k: int,
     on: str,
-    scope: frozenset[str] | None,
-    pool: tuple[psycopg.Connection[Any], list[int]] | None,
     law_names: LawNames | None,
-    cache: dict[tuple[str, str], tuple[list[SearchHit], int | None]] | None,
-) -> tuple[list[SearchHit], int | None]:
-    """一題的檢索結果與範圍外丟棄的條數。同一個嵌入模型、同一題只檢索一次：
+    cache: dict[tuple[str, str], list[SearchHit]] | None,
+) -> list[SearchHit]:
+    """一題的檢索結果。同一個嵌入模型、同一題只檢索一次：
     字面臂與各深度的精排臂的底是同一份命中，重複檢索只是白花時間。"""
     key = (embedder.model if embedder else "", r.id)
     if cache is not None and key in cache:
         return cache[key]
     vector = embedder.embed([r.question])[0] if embedder else None
-    terms = segmenter.to_tsvector_input(r.question)
-    if pool is not None:
-        hits = scoped_search(
-            pool[0],
-            terms,
-            tokenizer=segmenter.tokenizer_id,
-            as_of=on,
-            limit=k,
-            embedding=vector,
-            model=embedder.model if embedder else "",
-            scope=pool[1],
-        )
-    else:
-        hits = retrieval.search(
-            terms,
-            tokenizer=segmenter.tokenizer_id,
-            as_of=on,
-            limit=2 * SEARCH_POOL if scope is not None else k,
-            embedding=vector,
-            model=embedder.model if embedder else "",
-            laws=law_names.find(r.question) if law_names else (),
-        )
-    dropped = None
-    if scope is not None:
-        kept = [h for h in hits if h.local_id in scope]
-        dropped = len(hits) - len(kept)
-        hits = kept[:k]
-    if pool is not None:
-        assert dropped == 0, "候選池應只含範圍內的法規"
+    hits = retrieval.search(
+        segmenter.to_tsvector_input(r.question),
+        tokenizer=segmenter.tokenizer_id,
+        as_of=on,
+        limit=k,
+        embedding=vector,
+        model=embedder.model if embedder else "",
+        laws=law_names.find(r.question) if law_names else (),
+    )
     if cache is not None:
-        cache[key] = (hits, dropped)
-    return hits, dropped
+        cache[key] = hits
+    return hits
 
 
 def search_all(
@@ -414,14 +383,12 @@ def search_all(
     relevant_from: int,
     k: int,
     on: str,
-    scope: frozenset[str] | None = None,
-    pool: tuple[psycopg.Connection[Any], list[int]] | None = None,
     law_names: LawNames | None = None,
     reranker: Reranks | None = None,
     candidates: int = DEFAULT_RERANK_CANDIDATES,
     rerank_pool: int | None = None,
     rerank_cache: dict[str, tuple[list[float], float]] | None = None,
-    hits_cache: dict[tuple[str, str], tuple[list[SearchHit], int | None]] | None = None,
+    hits_cache: dict[tuple[str, str], list[SearchHit]] | None = None,
 ) -> list[Measured]:
     """逐題檢索前 k 條，回傳填了排序、第一個相關條的名次與最高分的新列；negative 只記最高分。
 
@@ -429,27 +396,14 @@ def search_all(
     精排失敗就整個中止，不退回精排前的次序。打分一次涵蓋前 `rerank_pool`（至少 `candidates`）條，
     結果記在 `rerank_cache`（題號 → 分數與毫秒數）：各深度的臂共用同一份，每題只呼叫一次端點。
     `hits_cache` 同理共用各臂的檢索結果。
-
-    有 `scope`（pcode 集合）時向檢索要它能給的全部候選，丟掉範圍外法規的命中後再取前 k 條。
-    有 `pool`（連線，範圍內的法規內部編號）時改走 `scoped_search`：兩臂的候選池在取候選之前就
-    限定在範圍內，取前 k 條後不再過濾（`out_of_scope_dropped` 照記，應為 0）。
     """
     out = []
     for r in rows:
         if r.status == "unmapped":
             out.append(r)
             continue
-        hits, dropped = _retrieve(
-            retrieval,
-            segmenter,
-            r,
-            embedder,
-            k=k,
-            on=on,
-            scope=scope,
-            pool=pool,
-            law_names=law_names,
-            cache=hits_cache,
+        hits = _retrieve(
+            retrieval, segmenter, r, embedder, k=k, on=on, law_names=law_names, cache=hits_cache
         )
         top_rerank = rerank_ms = None
         if reranker is not None and hits:
@@ -488,7 +442,6 @@ def search_all(
                 top10_semantic=max(seen_semantic, default=None),
                 top_rerank=top_rerank,
                 rerank_ms=rerank_ms,
-                out_of_scope_dropped=dropped,
             )
         )
     return out
@@ -496,37 +449,6 @@ def search_all(
 
 def ranking_of(rows: Iterable[Measured]) -> gs.Ranking:
     return {r.id: r.ranking for r in rows if r.status == "scored"}
-
-
-def check_equivalence(
-    retrieval: Retrieval,
-    conn: psycopg.Connection[Any],
-    segmenter: Segmenter,
-    results: Sequence[Measured],
-    embedder: Embeds | None,
-    *,
-    on: str,
-    n: int = 40,
-) -> dict[str, Any]:
-    """不加範圍時，`scoped_search` 與 `RetrievalRepository.search` 對 n 題（等距抽樣）的輸出
-    是否完全相同。"""
-    rows = [r for r in results if r.status != "unmapped"]
-    sample = rows[:: max(1, len(rows) // n)][:n]
-    compared = identical = 0
-    for r in sample:
-        terms = segmenter.to_tsvector_input(r.question)
-        vector = embedder.embed([r.question])[0] if embedder else None
-        for emb in (None, vector) if vector is not None else (None,):
-            args: dict[str, Any] = {
-                "tokenizer": segmenter.tokenizer_id,
-                "as_of": on,
-                "limit": max(KS),
-                "embedding": emb,
-                "model": embedder.model if (embedder and emb is not None) else "",
-            }
-            compared += 1
-            identical += retrieval.search(terms, **args) == scoped_search(conn, terms, **args)
-    return {"questions": len(sample), "comparisons": compared, "identical": identical}
 
 
 def _distribution(values: Sequence[float | None]) -> dict[str, float | int] | None:
@@ -642,18 +564,6 @@ def markdown(meta: dict[str, Any], arm: str, s: dict[str, Any]) -> str:
         f"{c['passages']} 筆 passage（其中有嵌入 {c['passages_with_embedding']}）",
         f"- 檢索：{r['arms']}；分詞器 `{r['tokenizer']}`；k = {r['k']}；"
         + ("問句點名的法規縮小範圍" if r.get("law_names") else "不依點名的法規縮小範圍"),
-        *(
-            [
-                f"- 範圍：{sc['counts']['laws']} 部法規（題庫所引 {sc['counts']['cited']}、"
-                f"授權命令 "
-                f"{sc['counts']['authorized']}、總則法 {sc['counts']['general']}），"
-                f"{sc['passages']} 段落，清單 sha256 `{sc['pcodes_sha256']}`（`{sc['path']}`）",
-                f"- 嵌入：模型 `{sc['embedding_model']}`，完成 {sc['embedded']}/{sc['passages']}"
-                f"（{sc['embedded'] / sc['passages']:.1%}）；方法：{sc['method']}",
-            ]
-            if (sc := meta.get("scope"))
-            else []
-        ),
         "- 指標由 ranx 以 qrels 與 run 算出：R@k 是 `hit_rate@k`（任一分數 ≥ 相關門檻的條在前 k"
         " 條），MRR 是 `mrr`，nDCG@10 以 0–3 分級為增益；"
         "Hole@10 是前 10 條中 qrels 沒有判定的比例，洞裡的條未經判定，Hole@10 不為 0 時召回是下界。"
@@ -706,28 +616,6 @@ def corpus_counts(conn: psycopg.Connection[Any]) -> dict[str, int]:
     return dict(zip(keys, (int(x) for x in row), strict=True))
 
 
-def load_scope(path: Path) -> dict[str, Any]:
-    scope: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-    pcodes = sorted(e["pcode"] for e in scope["laws"])
-    if hashlib.sha256("\n".join(pcodes).encode()).hexdigest() != scope["pcodes_sha256"]:
-        raise SystemExit(f"{path}: pcodes_sha256 與清單不符")
-    return scope
-
-
-def scope_completion(conn: psycopg.Connection[Any], embedder: Embeds, scope: frozenset[str]) -> int:
-    """範圍內不同段落文字中，已有這個模型嵌入的數量。"""
-    row = conn.execute(
-        "SELECT count(DISTINCT v.content_sha256) FROM corpus.provision_version AS v"
-        "  JOIN corpus.legal_resource AS r ON r.id = v.resource_id"
-        "  JOIN retrieval.passage AS i ON i.content_sha256 = v.content_sha256"
-        " WHERE v.superseded_at IS NULL AND r.local_id = ANY(%s)"
-        "   AND i.embedding IS NOT NULL AND i.model = %s",
-        (sorted(scope), embedder.model),
-    ).fetchone()
-    assert row is not None
-    return int(row[0])
-
-
 def _golden(path: Path) -> tuple[list[dict[str, Any]], str]:
     raw = path.read_bytes()
     items: list[dict[str, Any]] = yaml.safe_load(raw)["items"]
@@ -773,8 +661,6 @@ def cmd_qrels(args: argparse.Namespace) -> None:
 def cmd_measure(args: argparse.Namespace) -> None:
     if args.k < max(KS):
         raise SystemExit(f"--k 至少 {max(KS)}（R@{max(KS)} 需要）")
-    if args.scope_in_pool and not args.scope:
-        raise SystemExit("--scope-in-pool 需要 --scope")
     items, golden_sha = _golden(args.golden)
     qrels_doc, split_doc = gs.read(args.qrels), gs.read(args.split)
     gs.require_golden(qrels_doc, golden_sha, str(args.qrels))
@@ -793,30 +679,13 @@ def cmd_measure(args: argparse.Namespace) -> None:
     if args.rerank and (not depths or depths[0] < 1 or depths[-1] > SEARCH_POOL):
         raise SystemExit(f"--rerank-depths 要在 1 到 {SEARCH_POOL} 之間：{args.rerank_depths}")
     on = date.today().isoformat()
-    scope_doc = load_scope(args.scope) if args.scope else None
-    scope = frozenset(e["pcode"] for e in scope_doc["laws"]) if scope_doc else None
     with psycopg.connect(db.dsn) as conn:
         snaps = snapshots(conn)
         require_snapshots(qrels_doc, snaps)
         counts = corpus_counts(conn)
-        scope_embedded = scope_completion(conn, embedder, scope) if scope and embedder else None
-    equivalence = None
-    with (
-        CanonStore.from_dsn(db.dsn) as store,
-        psycopg.connect(db.dsn) as rconn,
-    ):
-        rconn.read_only = True
+    with CanonStore.from_dsn(db.dsn) as store:
         segmenter = Segmenter(store.retrieval.lexicon())
         law_names = None if args.no_law_names else store.retrieval.law_names()
-        pool = (rconn, resource_ids(rconn, sorted(scope))) if args.scope_in_pool and scope else None
-        if pool:
-            equivalence = check_equivalence(
-                store.retrieval, rconn, segmenter, rows, embedder, on=on
-            )
-            if equivalence["identical"] != equivalence["comparisons"]:
-                raise SystemExit(
-                    f"scoped_search 與 RetrievalRepository.search 不等價：{equivalence}"
-                )
         base = "hybrid" if embedder else "lexical"
         specs: list[tuple[str, Embeds | None, int | None]] = [("lexical", None, None)]
         if embedder:
@@ -824,7 +693,7 @@ def cmd_measure(args: argparse.Namespace) -> None:
         if reranker:
             specs += [(f"{base}_rerank_d{d}", embedder, d) for d in depths]
         rerank_cache: dict[str, tuple[list[float], float]] = {}
-        hits_cache: dict[tuple[str, str], tuple[list[SearchHit], int | None]] = {}
+        hits_cache: dict[tuple[str, str], list[SearchHit]] = {}
         arms = {
             name: search_all(
                 store.retrieval,
@@ -835,8 +704,6 @@ def cmd_measure(args: argparse.Namespace) -> None:
                 relevant_from=floor,
                 k=args.k,
                 on=on,
-                scope=scope,
-                pool=pool,
                 law_names=law_names,
                 reranker=reranker if depth else None,
                 candidates=depth or DEFAULT_RERANK_CANDIDATES,
@@ -881,25 +748,6 @@ def cmd_measure(args: argparse.Namespace) -> None:
             "law_names": law_names is not None,
         },
     }
-    if scope_doc and scope:
-        meta["scope"] = {
-            "path": str(args.scope),
-            "counts": scope_doc["counts"],
-            "passages": scope_doc["passages"],
-            "pcodes_sha256": scope_doc["pcodes_sha256"],
-            "rule": scope_doc["rule"],
-            "embedding_model": embedder.model if embedder else None,
-            "embedded": scope_embedded,
-            "method": (
-                "唯讀重現 search_hybrid（scoped_search.py）；兩臂候選池在取候選之前就限定在範圍內，"
-                "取前 k 條後不再過濾"
-                if args.scope_in_pool
-                else "檢索函式不變；取 2×候選池的候選，丟掉範圍外法規的命中後取前 k 條"
-                "（lexical 臂的候選池在過濾前以全庫決定）"
-            ),
-            "scope_in_pool": args.scope_in_pool,
-            "equivalence_check": equivalence,
-        }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     runs = {
         name: gs.write(
@@ -913,7 +761,6 @@ def cmd_measure(args: argparse.Namespace) -> None:
                 "git_dirty": meta["git_dirty"],
                 "snapshots": snaps,
                 "retrieval": meta["retrieval"],
-                "scope": meta.get("scope"),
                 "ranking": ranking_of(rs),
             },
         )
@@ -1049,12 +896,6 @@ def main() -> None:
     m.add_argument("--subset", choices=("dev", "test"), required=True)
     m.add_argument("--out", type=Path, required=True, help="輸出檔前綴（寫 .json、.md 與各臂 run）")
     m.add_argument("--k", type=int, default=max(KS))
-    m.add_argument("--scope", type=Path, help="golden_scope.py 的輸出；限定檢索範圍")
-    m.add_argument(
-        "--scope-in-pool",
-        action="store_true",
-        help="兩臂的候選池在取候選之前就限定在範圍內（唯讀重現 search_hybrid）",
-    )
     m.add_argument(
         "--no-law-names",
         action="store_true",
