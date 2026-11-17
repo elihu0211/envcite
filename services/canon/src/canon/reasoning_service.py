@@ -118,7 +118,6 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         case = request_codec.case_facts(request, v, conduct_ended, result_on, cleared)
         permits = request_codec.permit_limits(request, v)
         actor_bases = request_codec.actor_bases(request, v)
-        fact_units = request_codec.fact_units(request)
         act_groups = request_codec.act_groups(request)
         timeline = request_codec.timeline(request, v)
         scoring_inputs = disposition_codec.scoring_inputs(request, v)
@@ -145,7 +144,6 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 request_codec.measurements(request),
                 permits,
                 actor_bases,
-                fact_units,
                 act_groups,
                 timeline,
                 scoring_inputs,
@@ -164,7 +162,6 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         measurements: Measurements,
         permits: Permits,
         actor_bases: list[str],
-        fact_units: dict[str, str],
         act_groups: dict[str, list[int]],
         timeline: PerOccasionTimeline | None,
         scoring_inputs: list[ScoringInput],
@@ -180,7 +177,6 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     measurements=measurements,
                     permits=permits,
                     actor_bases=actor_bases,
-                    fact_units=fact_units or None,
                     act_groups=act_groups or None,
                     timeline=timeline,
                     scoring_inputs=scoring_inputs,

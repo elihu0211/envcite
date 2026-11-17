@@ -1178,7 +1178,9 @@ class Fact(_message.Message):
     """
     averaging_period: _builtins.str
     unit: _builtins.str
-    """量綱單位代碼（如 mg/L、ug/L、ppm、mg/Nm3、dB(A)）；留空不進行單位換算。"""
+    """這些值的量綱單位（如 mg/L、ppm、dB(A)）。服務不換算單位：值照原樣與門檻比較，門檻的
+    單位見 Condition.unit，呼叫端須先換算成該單位。
+    """
     @_builtins.property
     def values(self) -> _containers.RepeatedCompositeFieldContainer[Global___FactValue]: ...
     def __init__(
