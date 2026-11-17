@@ -29,7 +29,7 @@ from canon.law import cons, ruling
 from canon.law.ruling_extract import EXTRACTOR_VERSION, extract, should_keep
 from canon.settings import DatabaseSettings
 from canon.settings import load as load_settings
-from envcite_jobkit import Policy
+from envcite_jobkit import ExitCode, Policy
 
 log = logging.getLogger(__name__)
 
@@ -37,9 +37,6 @@ type Fetch = Callable[[str], str]
 
 #: 對來源網站的禮貌間隔（秒）；同一次執行逐頁循序抓。
 PAUSE_SECONDS = 0.5
-
-EXIT_TRANSIENT = 1
-EXIT_INVALID = 2
 
 
 @dataclass(frozen=True)
@@ -231,7 +228,7 @@ def main() -> None:
                 raise SystemExit(_fetch(conn, rescan=args.rescan))
     except (ruling.RulingError, json.JSONDecodeError) as e:
         log.error("ruling rejected: %s", e)
-        raise SystemExit(EXIT_INVALID) from e
+        raise SystemExit(ExitCode.FATAL) from e
 
 
 def _fetch(conn: Conn, *, rescan: bool) -> int:
@@ -239,5 +236,5 @@ def _fetch(conn: Conn, *, rescan: bool) -> int:
         result = sync(conn, rescan=rescan)
     except OSError as e:
         log.error("ruling fetch failed: %s", e)
-        return EXIT_TRANSIENT
-    return EXIT_INVALID if result.unreadable else 0
+        return ExitCode.FAILED
+    return ExitCode.FATAL if result.unreadable else ExitCode.OK

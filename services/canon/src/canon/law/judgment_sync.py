@@ -24,6 +24,7 @@ from canon.law.judicial_api import AuthRejected, Client, EndpointError, removed
 from canon.law.judicial_credentials import CredentialsError, credentials_path, read_credentials
 from canon.settings import DatabaseSettings
 from canon.settings import load as load_settings
+from envcite_jobkit import ExitCode
 
 log = logging.getLogger(__name__)
 
@@ -34,9 +35,6 @@ _AGENT = "canon-judicial-sync"
 
 #: 法院代碼（jid 第一欄去掉末位類別碼）→ 審級。
 COURTS: Mapping[str, str] = {"TPA": "supreme", "TPB": "high", "TCB": "high", "KSB": "high"}
-
-EXIT_TRANSIENT = 1
-EXIT_INVALID = 2
 
 type Clock = Callable[[], datetime]
 type Sleep = Callable[[float], None]
@@ -84,11 +82,11 @@ def sync(
     except EndpointError as e:
         log.error("裁判書同步中斷：%s", e)
         conn.rollback()
-        return _result(conn, stored, taken, files, EXIT_TRANSIENT)
+        return _result(conn, stored, taken, files, ExitCode.FAILED)
     except AuthRejected as e:
         log.error("裁判書同步拒絕：%s", e)
         conn.rollback()
-        return _result(conn, stored, taken, files, EXIT_INVALID)
+        return _result(conn, stored, taken, files, ExitCode.FATAL)
     return _result(conn, stored, taken, files, listed=listed)
 
 
@@ -313,7 +311,7 @@ def main() -> None:
         creds = read_credentials(credentials_path())
     except CredentialsError as e:
         log.error("裁判書密鑰：%s", e)
-        raise SystemExit(EXIT_INVALID) from e
+        raise SystemExit(ExitCode.FATAL) from e
     settings = load_settings(DatabaseSettings)
     client = Client(creds.user, creds.password)
     try:
@@ -321,4 +319,4 @@ def main() -> None:
             raise SystemExit(sync(conn, client, now=taipei_now).exit_code)
     except psycopg.Error as e:
         log.error("裁判書同步中斷：資料庫")
-        raise SystemExit(EXIT_TRANSIENT) from e
+        raise SystemExit(ExitCode.FAILED) from e

@@ -14,6 +14,7 @@ from pathlib import Path
 from canon import import_problems
 from canon.acquire.engine import Source
 from canon.db import Conn
+from canon.exit_codes import Unretryable
 from canon.import_problems import Problem
 from canon.law import parsing
 from canon.law.audit import Metrics
@@ -24,7 +25,7 @@ from canon.law.write import apply
 log = logging.getLogger(__name__)
 
 
-class BatchRejected(Exception):
+class BatchRejected(Unretryable):
     """整批比例越線：解析規則跟不上來源的格式。"""
 
 

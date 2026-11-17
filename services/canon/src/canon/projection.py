@@ -23,6 +23,7 @@ from typing import NamedTuple
 
 from canon.db import Conn, fetch, scalar
 from canon.embedding import Embedder, to_sql
+from canon.exit_codes import JobStopped
 from envcite_jobkit import ExitCode, NullMetrics, Policy, RunStats, run
 from envcite_segmenter import Segmenter
 
@@ -77,12 +78,12 @@ class _PassageRow(NamedTuple):
     text: str
 
 
-class EmbeddingStopped(RuntimeError):
+class EmbeddingStopped(JobStopped, RuntimeError):
     """嵌入沒有走完：政策判定致命，或遇到未分類的錯誤。`code` 是 jobkit 的結束碼。"""
 
     def __init__(self, code: ExitCode) -> None:
         super().__init__(f"嵌入中止（結束碼 {int(code)}）")
-        self.code = int(code)
+        self.code = code
 
 
 def rebuild(conn: Conn, embedder: Embedder | None = None, policy: Policy | None = None) -> int:

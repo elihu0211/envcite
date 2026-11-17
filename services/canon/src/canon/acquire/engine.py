@@ -21,6 +21,7 @@ from typing import Protocol
 
 from psycopg import Connection
 
+from canon.exit_codes import Unretryable
 from canon.net import HttpStatus, endpoint, urlopen
 from envcite_jobkit import Policy, backoff_delay
 
@@ -29,7 +30,7 @@ log = logging.getLogger(__name__)
 _CHUNK = 1 << 20
 
 
-class InvalidSnapshot(ValueError):
+class InvalidSnapshot(Unretryable, ValueError):
     """檔案下載完整，內容卻不合預期。重試不會改變結果。"""
 
 

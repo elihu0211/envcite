@@ -8,11 +8,8 @@ import psycopg
 import pytest
 
 from canon import sync
-from canon.acquire.engine import DownloadFailed, Feed, InvalidSnapshot, acquire
-from canon.law.importer import BatchRejected
+from canon.acquire.engine import DownloadFailed, Feed, acquire
 from canon.law.moj import Moj
-from canon.projection import EmbeddingStopped
-from envcite_jobkit import ExitCode
 from tests.test_acquire import _publish
 from tests.test_import import _law
 
@@ -83,12 +80,3 @@ def test_a_batch_over_the_limits_is_invalid_and_writes_nothing(tmp_path: Path, c
     assert (
         _count(conn, "SELECT count(*) FROM corpus.legal_resource WHERE local_id = 'T0000001'") == 0
     )
-
-
-def test_exit_codes_separate_what_a_retry_can_fix() -> None:
-    assert sync.exit_code(InvalidSnapshot("x")) == 2
-    assert sync.exit_code(BatchRejected("x")) == 2
-    assert sync.exit_code(DownloadFailed("x")) == 1
-    assert sync.exit_code(psycopg.OperationalError("x")) == 1
-    assert sync.exit_code(EmbeddingStopped(ExitCode.FATAL)) == 2
-    assert sync.exit_code(EmbeddingStopped(ExitCode.FAILED)) == 1

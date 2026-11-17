@@ -9,12 +9,13 @@ from pathlib import Path
 from canon import embedding, projection
 from canon.clock import Today
 from canon.db import Conn
+from canon.exit_codes import JobStopped
 from canon.law import delegation
 from canon.law.history_sources import HistorySource, Web
 from canon.law.history_sync.acquire import acquire
 from canon.law.history_sync.importing import import_
 from canon.law.history_sync.policy import LIMITS, POLICY
-from canon.law.history_sync.report import BatchRejected, Report
+from canon.law.history_sync.report import Report
 from envcite_jobkit import ExitCode, Policy
 
 log = logging.getLogger(__name__)
@@ -79,13 +80,10 @@ def sync(
                 conn.commit()
                 projection.rebuild(conn, embedder, policy)
                 code = _write_gate(report)
-    except BatchRejected as e:
-        conn.rollback()
-        log.error("history import rejected: %s", e)
-        code = ExitCode.FATAL
-    except projection.EmbeddingStopped as e:
+    except JobStopped as e:
         conn.rollback()
         code = e.code
+        log.error("history sync stopped (exit %d): %s", code, e)
     report.seconds = round(time.monotonic() - started, 1)
     log.info("歷史版本（%s）：%s", source.feed, report.line())
     return int(code)

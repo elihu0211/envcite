@@ -4,8 +4,10 @@ import json
 from collections import Counter
 from dataclasses import dataclass, field
 
+from canon.exit_codes import Unretryable
 
-class BatchRejected(Exception):
+
+class BatchRejected(Unretryable):
     """整批比例越線：轉錄的格式或回推規則跟不上來源。"""
 
 
