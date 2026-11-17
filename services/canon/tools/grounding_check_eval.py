@@ -42,8 +42,6 @@ import hashlib
 import json
 import re
 import tomllib
-import urllib.error
-import urllib.request
 from collections import Counter
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, date, datetime
@@ -56,7 +54,7 @@ import yaml
 
 import golden_set as gs
 from answer_quality import FINALS, FLOOR_REFUSALS, REFUSAL_FINAL
-from canon.net import json_headers
+from canon.net import HttpStatus, TransportError, endpoint, post_json
 from canon.settings import DatabaseSettings, load
 from canon.verification.config import ConfigError, resolve_secret, secret_name
 from envcite.consult.v3 import consult_pb2, consult_pb2_grpc
@@ -188,36 +186,37 @@ class Chat:
         self, system: str, user: str, *, retries: int = 2
     ) -> tuple[str | None, int, str | None]:
         """（文字, 本題用掉的呼叫數, 失敗原因）。暫時性失敗重試，每次都計入上限。"""
-        body = json.dumps(
-            {
-                "model": self.model_id,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                "temperature": 0,
-                "max_tokens": MAX_OUTPUT_TOKENS,
-            }
-        ).encode()
+        body = {
+            "model": self.model_id,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": 0,
+            "max_tokens": MAX_OUTPUT_TOKENS,
+        }
         used, last = 0, None
         for _ in range(retries + 1):
             if self.calls >= self.max_calls:
                 raise SystemExit(f"模型呼叫已達上限 {self.max_calls}，停止（已完成的題目在快取）")
             self.calls += 1
             used += 1
-            request = urllib.request.Request(self.url, body, json_headers(self.key), method="POST")
             try:
-                with urllib.request.urlopen(request, timeout=MODEL_TIMEOUT) as resp:
-                    doc = json.load(resp)
+                doc = post_json(self.url, body, api_key=self.key, timeout=MODEL_TIMEOUT)
+                if not isinstance(doc, dict):
+                    last = "InvalidReply"
+                    continue
                 usage = doc.get("usage") or {}
                 self.tokens["input"] += int(usage.get("prompt_tokens") or 0)
                 self.tokens["output"] += int(usage.get("completion_tokens") or 0)
                 return doc["choices"][0]["message"].get("content") or "", used, None
-            except urllib.error.HTTPError as e:
-                last = f"http {e.code}"
-                if e.code not in (408, 429) and e.code < 500:
+            except HttpStatus as e:
+                last = f"http {e.status}"
+                if not endpoint(e):
                     break
-            except (urllib.error.URLError, TimeoutError, KeyError, ValueError) as e:
+            except TransportError as e:
+                last = str(e).partition(":")[0]
+            except (KeyError, ValueError) as e:
                 last = type(e).__name__
         return None, used, last
 

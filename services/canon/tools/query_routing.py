@@ -40,7 +40,9 @@ from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+
+from canon.net import HttpStatus, post_json
 
 #: 查詢型別：決定哪一套列表規則適用。由題目的產生規則決定（不是由被測的分類器）。
 #: term 是短關鍵字；question 是整句問句；name 是法規名稱（含舊名）。
@@ -558,21 +560,18 @@ def stratified_sample(cases: Sequence[Case], n: int) -> list[Case]:
 
 def fetch_live(host: str, key: str, query: str) -> list[dict[str, Any]]:
     """對 `/v2/search` 查一次（查詢全文不寫日誌；key 只放在標頭）。"""
-    import urllib.error
-    import urllib.request
-
-    request = urllib.request.Request(
-        f"{host.rstrip('/')}/v2/search",
-        data=json.dumps({"query": query, "asOf": None, "limit": None}).encode(),
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            hits: list[dict[str, Any]] = json.loads(response.read())
-            return hits
-    except urllib.error.HTTPError as error:
-        raise SystemExit(explain_http_error(error.code)) from None
+        hits = post_json(
+            f"{host.rstrip('/')}/v2/search",
+            {"query": query, "asOf": None, "limit": None},
+            api_key=key,
+            timeout=60.0,
+        )
+    except HttpStatus as error:
+        raise SystemExit(explain_http_error(error.status)) from None
+    if not isinstance(hits, list):
+        raise SystemExit("線上回的不是陣列")
+    return cast(list[dict[str, Any]], hits)
 
 
 #: 線上查詢的錯誤碼對應的處理（`docs/tenants.md` 的「出錯對照」）。
