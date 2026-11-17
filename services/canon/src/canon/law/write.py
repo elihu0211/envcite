@@ -20,6 +20,7 @@ from typing import NamedTuple
 from psycopg.types.range import Range
 
 from canon.db import Conn, fetch, fetch_one, scalar
+from canon.law import articles
 from canon.law.headings import ParsedHeading
 from canon.law.parsing import ParsedLaw, ParsedUnit
 
@@ -173,8 +174,9 @@ def _replace_events(conn: Conn, resource: int, law: ParsedLaw) -> None:
     with conn.cursor() as cur:
         cur.executemany(
             "INSERT INTO corpus.lifecycle_event"
-            " (resource_id, event_kind, event_date, document_no, expression_id, source_text)"
-            " VALUES (%s, %s::corpus.event_kind, %s, %s, %s, %s)",
+            " (resource_id, event_kind, event_date, document_no, expression_id, source_text,"
+            "  effective_on, articles)"
+            " VALUES (%s, %s::corpus.event_kind, %s, %s, %s, %s, %s, %s)",
             [
                 (
                     resource,
@@ -183,6 +185,8 @@ def _replace_events(conn: Conn, resource: int, law: ParsedLaw) -> None:
                     e.document_no,
                     expressions.get(e.date) if e.kind in promulgations and e.date else None,
                     e.text,
+                    e.effective,
+                    sorted(e.articles, key=articles.sort_key) if e.articles else None,
                 )
                 for e in law.events
             ],

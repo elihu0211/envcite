@@ -14,7 +14,7 @@ from canon.law import articles, commencement, headings, history
 from canon.numerals import parse_yyyymmdd
 
 #: 解析邏輯的版本。改變輸出的修改必須遞增，快照才會以新版重匯。
-PARSER_VERSION = 4
+PARSER_VERSION = 5
 
 _KINDS = {"憲法": "constitution", "法律": "statute", "命令": "regulation"}
 
@@ -82,7 +82,11 @@ def parse(law: dict[str, Any], *, pcode: str, data_date: date) -> ParsedLaw:
     title = str(law.get("LawName", "")).strip()
     problems = _header_problems(level, title)
 
-    events = history.parse(str(law.get("LawHistories") or ""), statute=level in ("法律", "憲法"))
+    events = history.parse(
+        str(law.get("LawHistories") or ""),
+        statute=level in ("法律", "憲法"),
+        known=_article_paths(law),
+    )
     problems += _event_problems(events, data_date)
 
     modified = parse_yyyymmdd(str(law.get("LawModifiedDate", "")))
@@ -122,6 +126,16 @@ def parse(law: dict[str, Any], *, pcode: str, data_date: date) -> ParsedLaw:
             raw = [a for a in law.get("LawArticles") or [] if isinstance(a, dict)]
             parsed.headings = headings.extract(raw)
     return parsed
+
+
+def _article_paths(law: dict[str, Any]) -> set[str]:
+    """`LawArticles` 的條號（`art_N`，含已刪除的條），供沿革展開「第 24～26 條」這類範圍。"""
+    paths = (
+        articles.article_path(str(a.get("ArticleNo", "")))
+        for a in law.get("LawArticles") or []
+        if isinstance(a, dict) and a.get("ArticleType") == "A"
+    )
+    return {p for p in paths if p}
 
 
 def _header_problems(level: str, title: str) -> list[Problem]:

@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry, golden-test-collection, judicial-credentials]
+owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, competency-registry, golden-test-collection, judicial-credentials, law-suspension]
 -->
 
 # canon
@@ -19,6 +19,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 |----|----|------|
 | 入口 | [入口](#入口) | 同一映像裡的伺服器、同步、歷史、標註、行政規則、違憲失效 |
 | 語料 | [歷史版本](#歷史版本) | 法律自立法院，命令自環境部 |
+| 語料 | [停止與恢復適用](#停止與恢復適用) | 停止適用中的條不是有效規範 |
 | 語料 | [行政規則的取得](#行政規則的取得) | 公報與環境部函釋 |
 | 語料 | [裁判書帳密](#裁判書帳密) | 司法院帳號的檔案、路徑與權限 |
 | 語料 | [違憲失效](#違憲失效) | 憲法法庭宣告失效的條文 |
@@ -74,6 +75,20 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
    - 更換來源時以新來源文字取代同日版本列；已寫入版本日不在新目標內則整部不寫（`history_reshaped`）；寫入遭 DB 約束擋下記 `history_write_rejected` 並略過該部。
 3. **讀取**：不另立介面，由 `corpus.provisions_at` 與依日檢索沿同一條時間軸逐條解析。
 4. **結束碼**：`0` 成功；`1` 暫時性錯誤（含隔離超過 1%）；`2` 資料不合預期、比例越線或寫入被拒超限；`75` 斷路器開啟。問題記於 `source.import_problem`。
+
+### 停止與恢復適用
+
+中央法規標準法第 19 條：法規得暫停適用其一部或全部；停止或恢復適用之程序，準用廢止或制定之規定。沿革裡的停止適用（`suspension`）與恢復適用（`resumption`）記於 `corpus.lifecycle_event`，歸類在 [`law/history.py`](src/canon/law/history.py)。
+
+| 欄 | 內容 |
+|----|------|
+| `effective_on` | 生效日：原文的起日（「自即日起」為發文日，「自發布日」起算至第三日）。停止適用沒寫起日者，準用第 22 條第 3 項自公布或發布之日起算至第三日；恢復適用沒寫起日者不推定第 13 條，記為 `unknown` |
+| `articles` | 所及的條（`art_N`），NULL 為整部。部分修正也記所列的條，供下面第 3 點判斷 |
+
+1. **範圍**：只認整部與列出的條。範圍或終點不明者（沒列條號的「關於某某條文」、條以下的但書、附期限的暫停）與只記立法院通過者，記為 `unknown`、保留原文。一筆裡有修正也有停止適用時，種類是修正。
+2. **讀取**：`corpus.provisions_at` 對停止適用中的條回 `suspended`：文字與現行版本都在，但不是有效規範。只取 `in_force` 的讀取（推論的陳述、限值來源、授權鏈、依日列條）因此不含它；恢復適用生效之日起回到原狀態。
+3. **之後的新文字**：停止適用只及於當時的條文。之後公布或發布而觸及該條的文字（全文修正，或列出該條的部分修正）依自己的施行日生效，不在停止適用中（`corpus.suspended`），與[違憲失效](#違憲失效)不及於裁判後修正的新文字同理。
+4. **沒有生效日的停止適用列不生效力**：範圍沒有記下，不能當成整部；解析器重匯時補上。
 
 ### 裁判書帳密
 
