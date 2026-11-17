@@ -47,18 +47,21 @@ _SEARCH = """
      ORDER BY s.rank
 """
 
+#: 次序照函式回傳的：函釋解釋的條各自帶著它的處罰條（件數 0）緊跟在後。外層不能再依件數排序，否則
+#: 展開出來的處罰條全被排到所有來源之後，名次太後、被融合的截斷丟掉。
 _GUIDANCE = """
     SELECT corpus.version_iri(g.version_id), r.jurisdiction, r.id_scheme, r.local_id, e.title,
            corpus.article_number(g.path), corpus.article_text(g.version_id), g.documents
       FROM retrieval.guidance_articles(
                %(phrases)s::text[], %(on)s::date, %(language)s, %(limit)s,
-               %(max_df)s::double precision) AS g
+               %(max_df)s::double precision)
+           WITH ORDINALITY AS g(version_id, resource_id, path, documents, ord)
       JOIN corpus.legal_resource AS r ON r.id = g.resource_id
       JOIN corpus.provision_version AS v ON v.id = g.version_id
       JOIN corpus.legal_expression AS e ON e.id = v.expression_id
      WHERE (%(jurisdiction)s::corpus.jurisdiction IS NULL
             OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
-     ORDER BY g.documents DESC, g.version_id
+     ORDER BY g.ord
 """
 
 #: 每一臂的候選池（條數）。融合前各取這麼多；取 `limit` 上限的數倍。
