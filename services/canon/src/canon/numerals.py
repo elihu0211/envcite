@@ -64,15 +64,6 @@ def roc_date(year: str, month: str, day: str) -> date | None:
         return None
 
 
-def first_date(text: str, *, era_required: bool = True) -> date | None:
-    """text 中第一個可讀的民國日期。era_required=False 時接受省略「中華民國」的寫法。"""
-    pattern = DATE_WITH_ERA if era_required else DATE_BARE
-    for m in pattern.finditer(text):
-        if (d := roc_date(*m.groups())) is not None:
-            return d
-    return None
-
-
 def parse_yyyymmdd(s: str) -> date | None:
     """來源的 `20140122` 形式；空字串或不合法為 None。"""
     if not re.fullmatch(r"\d{8}", s or ""):

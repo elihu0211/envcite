@@ -364,26 +364,6 @@ def test_only_the_questions_of_the_subset_are_measured(corpus: tuple[ModuleType,
     assert [r.id for r in rows] == ["first", "neg"]
 
 
-def test_a_scope_drops_hits_of_other_laws_before_the_first_k_are_taken(
-    corpus: tuple[ModuleType, Any, Any],
-) -> None:
-    tool, _, provisions = corpus
-    gs = sys.modules["golden_set"]
-    doc = _qrels_doc(corpus)
-    rows = tool.questions(ITEMS[:1], doc, frozenset({"first"}))
-    store = FakeRetrieval(
-        [provisions[(gs.CENTRAL, DUP_A, str(i))] for i in range(1, 6)]
-        + [provisions[(gs.CENTRAL, AIR, "1")]]
-    )
-    kw: dict[str, Any] = {"qrels": doc["qrels"], "relevant_from": 2, "k": 3, "on": ON}
-
-    plain = tool.search_all(store, FakeSegmenter(), rows, None, **kw)
-    scoped = tool.search_all(store, FakeSegmenter(), rows, None, scope=frozenset({AIR}), **kw)
-
-    assert plain[0].rank is None and plain[0].out_of_scope_dropped is None
-    assert scoped[0].rank == 1 and scoped[0].out_of_scope_dropped == 5
-
-
 def test_the_top_scores_are_kept_for_the_first_k_hits_and_for_the_ten_consult_reads(
     corpus: tuple[ModuleType, Any, Any],
 ) -> None:

@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from canon.numerals import first_date, parse_int, parse_yyyymmdd, roc_date
+from canon.numerals import parse_int, parse_yyyymmdd, roc_date
 
 
 @pytest.mark.parametrize(
@@ -30,14 +30,6 @@ def test_roc_date_converts_and_validates() -> None:
     assert roc_date("一百三", "一", "二十二") == date(2014, 1, 22)
     assert roc_date("一百零七", "十三", "一") is None  # 13 月
     assert roc_date("一百零七", "二", "三十") is None  # 2 月 30 日
-
-
-def test_first_date_needs_the_era_unless_told_otherwise() -> None:
-    text = "中華民國一百零七年八月一日總統令修正公布，並自一百零八年七月一日施行"
-    assert first_date(text) == date(2018, 8, 1)
-    assert first_date("並自一百零八年七月一日施行") is None
-    assert first_date("並自一百零八年七月一日施行", era_required=False) == date(2019, 7, 1)
-    assert first_date("中華民國三十六年七月訂定發布") is None  # 只有年月：不猜日
 
 
 def test_parse_yyyymmdd() -> None:
