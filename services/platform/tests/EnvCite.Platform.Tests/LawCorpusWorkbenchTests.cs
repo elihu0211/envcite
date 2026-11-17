@@ -35,6 +35,11 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("data-graph-guide-toggle=\"true\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-graph-guide-close=\"true\"", page.Html, StringComparison.Ordinal);
         Assert.Contains("data-graph-options=\"true\"", page.Html, StringComparison.Ordinal);
+        // 起手問題：不知道從哪裡看起時的三個入口，放在說明裡、由腳本在圖分層時才打開。
+        Assert.Contains("data-graph-starters=\"true\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-graph-starter=\"search\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-graph-starter=\"invalid\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-graph-starter=\"expand-all\"", page.Html, StringComparison.Ordinal);
         Assert.True(
             page.Html.IndexOf("data-graph-options=\"true\"", StringComparison.Ordinal)
                 < page.Html.IndexOf("data-graph-action=\"layout-stufenbau\"", StringComparison.Ordinal),
@@ -59,6 +64,9 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("DISCLOSURE_PREFIX", script.Html, StringComparison.Ordinal);
         Assert.Contains("revealPath", script.Html, StringComparison.Ordinal);
         Assert.Contains("setGuideOpen", script.Html, StringComparison.Ordinal);
+        // 違憲失效要先把收在膠囊後面的節點露出來才打亮，否則打亮的只是眼前看得到的幾個。
+        Assert.Contains("revealInvalidNodes", script.Html, StringComparison.Ordinal);
+        Assert.Contains("toggleAllDisclosure", script.Html, StringComparison.Ordinal);
         Assert.Contains("collectLineage", script.Html, StringComparison.Ordinal);
         Assert.Contains("labelAutoRotate: false", script.Html, StringComparison.Ordinal);
         Assert.Contains("palantir-law-node", script.Html, StringComparison.Ordinal);
@@ -98,6 +106,7 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains(".ep-legend-edges", stylesheet.Html, StringComparison.Ordinal);
         // 說明用 display: flex，會蓋掉 hidden 屬性，所以收起時要有自己的規則。
         Assert.Contains(".ep-graph-guide[hidden]", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Contains(".ep-graph-starters[hidden]", stylesheet.Html, StringComparison.Ordinal);
         Assert.Contains(".ep-graph-options-panel", stylesheet.Html, StringComparison.Ordinal);
     }
 

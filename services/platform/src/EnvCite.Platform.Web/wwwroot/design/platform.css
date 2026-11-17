@@ -5375,6 +5375,26 @@ html[data-reveal]::view-transition-new(root) {
     margin-inline-start: auto;
 }
 
+/* 起手問題：獨占說明列的最後一行。display 會蓋掉 hidden 屬性，收起的整排與沒有違憲失效時的那一顆都要另外寫。 */
+.ep-graph-starters {
+    flex: 1 1 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2) var(--ep-space-3);
+}
+
+.ep-graph-starters[hidden],
+.ep-graph-starters [hidden] {
+    display: none;
+}
+
+.ep-graph-starters-label {
+    color: var(--ep-text);
+    font-weight: var(--ep-label-s-weight);
+    white-space: nowrap;
+}
+
 /* 檢視選項：排版、授權條號、全螢幕收在這裡，首屏只留搜尋與三個入口。 */
 .ep-graph-options {
     position: relative;

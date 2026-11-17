@@ -914,6 +914,8 @@ const scenarios = {
                         edges.push({ source: `L${i}`, target: `C${i}${key}`, kind: "delegation", anchorArticles: [], allRooted: false });
                     });
                 }
+                // 法律 7 底下的命令被宣告違憲失效：它一開始收在膠囊後面，用來驗「看哪些命令被宣告違憲失效」會先把它露出來。
+                nodes.find((n) => n.id === "C7a").invalidationCount = 1;
                 payload.nodes = nodes;
                 payload.edges = edges;
                 el.dataset.canonGraph = JSON.stringify(payload);
@@ -935,6 +937,8 @@ const scenarios = {
                 capsules: capsules.map((n) => n.id),
                 labels: Object.fromEntries(capsules.map((n) => [n.id, n.data.cardLabel])),
                 selected: all.filter((n) => (graph.getElementState(n.id) || []).includes("selected")).map((n) => n.id),
+                shown: all.filter((n) => n.data?.raw).map((n) => n.id),
+                dimmed: all.filter((n) => (graph.getElementState(n.id) || []).includes("inactive")).length,
             };
         });
         const settled = async (what, probe) => {
@@ -1011,6 +1015,44 @@ const scenarios = {
             if (await page.locator("[data-graph-guide]").isVisible()) throw new Error("關掉過的說明重新整理後不該又出現");
             await page.click("[data-graph-guide-toggle]");
             await until("「怎麼讀」應叫回說明", async () => await page.locator("[data-graph-guide]").isVisible());
+        });
+
+        await step("起手問題：違憲失效的命令原本收在膠囊後面，按下去先把它們露出來再打亮；再按一次取消", async () => {
+            await page.setViewportSize({ width: 1700, height: 900 });
+            if (!(await page.locator("[data-graph-starters]").isVisible())) throw new Error("圖分層時說明裡應有「從這裡開始」");
+            for (const kind of ["search", "invalid", "expand-all"]) {
+                if (!(await page.locator(`[data-graph-starter='${kind}']`).isVisible())) throw new Error(`起手問題應有 ${kind}`);
+            }
+            const before = await graphState();
+            if (before.shown.includes("C7a")) throw new Error("違憲失效的 C7a 一開始應該還收著");
+            await page.click("[data-graph-starter='invalid']");
+            await settled("違憲失效的命令應露出並打亮", (s) => s.shown.includes("C7a") && s.dimmed > 0);
+            const on = await graphState();
+            if (!on.capsules.includes("dsc__L7") || !on.labels.dsc__L7.includes("收合")) throw new Error(`通往它的膠囊應已展開：${JSON.stringify(on.labels.dsc__L7)}`);
+            if ((await page.locator("[data-graph-starter='invalid']").getAttribute("aria-pressed")) !== "true") throw new Error("按下後應是按下狀態");
+            if ((await page.locator(".ep-swimlane-pill[data-graph-filter-tier='invalid']").getAttribute("aria-pressed")) !== "true") throw new Error("圖例上的「違憲失效」也該同步打亮");
+            await page.click("[data-graph-starter='invalid']");
+            await settled("再按一次應取消打亮", (s) => s.dimmed === 0);
+        });
+
+        await step("起手問題：全部展開與收回法律層", async () => {
+            await page.click("[data-graph-starter='expand-all']");
+            await settled("全部展開", (s) => s.capsules.filter((id) => id.startsWith("dsc__")).every((id) => s.labels[id].includes("收合")) && s.commands >= 13);
+            if ((await page.locator("[data-graph-starter='expand-all']").textContent()).trim() !== "收回法律層") throw new Error("展開後這顆應改叫「收回法律層」");
+            await page.click("[data-graph-starter='expand-all']");
+            await settled("收回法律層", (s) => s.commands === 0 && s.laws === 14);
+            if ((await page.locator("[data-graph-starter='expand-all']").textContent()).trim() !== "全部展開") throw new Error("收回後這顆應改回「全部展開」");
+        });
+
+        await step("起手問題：找一部法規——邊打只選取，按 Enter 才展開它授權的命令", async () => {
+            await page.click("[data-graph-starter='search']");
+            const focused = await page.evaluate(() => document.activeElement?.hasAttribute("data-graph-search"));
+            if (!focused) throw new Error("「找一部法規」應把焦點帶進搜尋框");
+            await page.keyboard.type("合成法律 9");
+            await settled("只打字應選取法律 9", (s) => s.selected.includes("L9"));
+            if (!(await graphState()).labels.dsc__L9.includes("點擊展開")) throw new Error("只打字不該展開它授權的命令");
+            await page.keyboard.press("Enter");
+            await settled("按 Enter 應展開法律 9 授權的命令", (s) => s.labels.dsc__L9?.includes("收合"));
         });
 
         await step("檢視選項：點開看得到排版與全螢幕；Esc 收起並把焦點還給標題；選了排版就收起", async () => {
