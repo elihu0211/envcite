@@ -24,7 +24,7 @@
             <div class="ep-drawer-title-group">
                 @if (!string.IsNullOrWhiteSpace(Code))
                 {
-                    <span class="ep-citation-badge">[@Code]</span>
+                    <span class="ep-citation-badge">@Code</span>
                 }
                 <h2 id="ep-citation-drawer-title" class="ep-drawer-title">@effectiveTitle</h2>
                 @if (!string.IsNullOrWhiteSpace(AsOfLabel) && Article is null)
@@ -83,7 +83,7 @@
                                 aria-current="@(isCurrent ? "true" : null)"
                                 title="@src.Citation"
                                 @onclick="() => OnSelectSource.InvokeAsync(src)">
-                            <span class="ep-citation-badge">[@src.Code]</span>
+                            <span class="ep-citation-badge">@src.Code</span>
                             <span class="ep-drawer-source-label">@src.Citation</span>
                         </button>
                     }

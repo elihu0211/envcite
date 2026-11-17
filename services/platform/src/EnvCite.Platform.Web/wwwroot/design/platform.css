@@ -2090,6 +2090,8 @@ a.ep-brand {
     align-items: center;
     gap: var(--ep-space-2);
     padding-block-start: var(--ep-space-1);
+    /* 無外框的動作鈕自帶左右內距：外移一個內距，字才與正文同一條左緣。 */
+    margin-inline-start: calc(-1 * var(--ep-space-3));
 }
 
 .ep-answer-action {
@@ -2136,6 +2138,11 @@ a.ep-brand {
 .ep-answer > .ep-alert,
 .ep-answer > .ep-status {
     margin: 0;
+}
+
+/* 進度與結果筆數的說明文字與頁首、卡片同一條左緣：.ep-status 預設的左右內距是給獨立的狀態列用的。 */
+.ep-answer .ep-status {
+    padding-inline: 0;
 }
 
 /* 輸入框：雕塑感圓角卡片，底部整合提示與送出鈕；問了之後黏在底部，對話從毛玻璃後方滑過。 */
