@@ -317,6 +317,17 @@ def test_a_sanction_shares_the_rank_of_its_source_and_pushes_no_other_source_dow
     assert kept == [iri for iri in plain if iri in kept]  # 原有的次序一個都沒變
 
 
+def test_a_sanction_already_among_the_hits_gets_no_second_vote() -> None:
+    """展開是從來源推導的，不是獨立的證據：處罰條本來就在兩臂的結果裡，維持原名次，不因展開而竄升。"""
+    hits = [_hit(n) for n in range(1, 11)]
+    guided = [(_hit(20), 2), (_hit(9), 0)]  # 第 9 名的條同時是第 20 條的處罰條
+
+    fused = fuse(hits, guided, limit=10)
+
+    assert [h.iri for h, _ in fused if h.iri != "iri-20"] == [f"iri-{n}" for n in range(1, 11)]
+    assert dict((h.iri, d) for h, d in fused)["iri-9"] == 0
+
+
 def test_an_article_in_both_ranks_above_one_in_either() -> None:
     fused = fuse([_hit(1), _hit(2)], [(_hit(2), 4)], limit=10)
 
