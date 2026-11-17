@@ -5854,6 +5854,22 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
     line-height: 1.3;
 }
 
+/* 手機與平板：抽屜蓋住大半個畫面，是 modal，背後的頁面不跟著捲。gutter 已固定，鎖捲動不會讓版面跳動。
+   桌機起：抽屜是並排閱讀的側欄，不加遮罩、不鎖捲動，背後的頁面照常用滾輪捲；用關閉鈕收起（焦點在抽屜內時 Esc 也行）。 */
+html:has(.ep-drawer-backdrop) {
+    overflow: hidden;
+}
+
+@media (width >= 80rem) {
+    html:has(.ep-drawer-backdrop) {
+        overflow: visible;
+    }
+
+    .ep-drawer-backdrop {
+        display: none;
+    }
+}
+
 .ep-drawer-backdrop {
     position: fixed;
     inset: 0;
@@ -6078,6 +6094,7 @@ html[data-js] .ep-copy-value:not([data-reveal]) {
 .ep-drawer-body {
     flex: 1 1 auto;
     overflow-y: auto;
+    overscroll-behavior: contain; /* 捲到底不把滾輪交給背後的頁面（觸控的橡皮筋也是） */
     padding: var(--ep-space-4) var(--ep-space-6);
 }
 
