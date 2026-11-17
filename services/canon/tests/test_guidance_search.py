@@ -164,6 +164,45 @@ def test_the_repository_keeps_each_sanction_right_after_the_article_that_brought
     assert [(h.number, documents) for h, documents in hits] == [("1", 2), ("2", 0), ("3", 1)]
 
 
+def test_an_article_that_is_both_interpreted_and_a_sanction_takes_its_sources_place(
+    conn: Conn, tmp_path: Path, dsn: str
+) -> None:
+    """既被函釋直接解釋、又是名次靠前來源的處罰條：緊跟在來源之後，件數仍是它自己的。
+    只留自己那一列時，它依件數排在後面，候選一截就掉了。"""
+    _first(
+        conn,
+        tmp_path,
+        _law_v1(
+            LawArticles=law_articles("甲一", "違反第一條規定者，處新臺幣一萬元以上罰鍰。", "丙三")
+        ),
+    )
+    violation.extract(conn)
+    penalty = {
+        "law": LAW,
+        "path": "art_2",
+        "text": "違反第一條規定者，處新臺幣一萬元以上罰鍰。",
+    }
+    third = {"law": LAW, "path": "art_3", "text": "丙三"}
+    load(
+        conn,
+        _doc(
+            # 第 1 條 3 件、第 3 條 2 件、第 2 條（第 1 條的處罰條）只有 1 件
+            _burning("甲字第1號", "2019-01-01"),
+            _burning("甲字第2號", "2019-02-01"),
+            _burning("甲字第3號", "2019-03-01"),
+            _burning("甲字第4號", "2019-04-01", interprets=[third]),
+            _burning("甲字第5號", "2019-05-01", interprets=[third]),
+            _burning("甲字第6號", "2019-05-15", interprets=[penalty]),
+        ),
+    )
+    conn.commit()
+
+    with CanonStore.from_dsn(dsn) as store:
+        hits = store.retrieval.guidance_hits([PHRASE], as_of=ON, limit=10)
+
+    assert [(h.number, documents) for h, documents in hits] == [("1", 3), ("2", 1), ("3", 2)]
+
+
 def test_every_phrase_must_appear_in_the_letter(conn: Conn, tmp_path: Path) -> None:
     _first(conn, tmp_path, _law_v1())
     load(conn, _doc(_burning("甲字第1號", "2019-03-01")))
@@ -317,15 +356,29 @@ def test_a_sanction_shares_the_rank_of_its_source_and_pushes_no_other_source_dow
     assert kept == [iri for iri in plain if iri in kept]  # 原有的次序一個都沒變
 
 
-def test_a_sanction_already_among_the_hits_gets_no_second_vote() -> None:
-    """展開是從來源推導的，不是獨立的證據：處罰條本來就在兩臂的結果裡，維持原名次，不因展開而竄升。"""
+def test_a_sanction_already_among_the_hits_takes_the_better_place_without_a_second_vote() -> None:
+    """展開是從來源推導的，不是獨立的證據：處罰條本來就在兩臂的結果裡，取兩個位置中較前的，不相加。"""
     hits = [_hit(n) for n in range(1, 11)]
     guided = [(_hit(20), 2), (_hit(9), 0)]  # 第 9 名的條同時是第 20 條的處罰條
 
     fused = fuse(hits, guided, limit=10)
 
-    assert [h.iri for h, _ in fused if h.iri != "iri-20"] == [f"iri-{n}" for n in range(1, 11)]
+    order = [h.iri for h, _ in fused]
+    # 來源是函釋名次 1：第 9 條升到同名次（排在第 1 名之後、來源之前），不是只照自己的第 9 名
+    assert order[:3] == ["iri-1", "iri-9", "iri-20"]
+    assert order[3:] == [f"iri-{n}" for n in range(2, 9)] + ["iri-10"]
+    # 同名次的份額一份，沒有「兩處都有」的加分：不會超過兩臂的第 1 名
     assert dict((h.iri, d) for h, d in fused)["iri-9"] == 0
+
+
+def test_a_sanction_among_the_hits_is_never_demoted_to_its_source_rank() -> None:
+    hits = [_hit(n) for n in range(1, 11)]
+    # 第 22 條只是函釋名次 3，它的處罰條第 2 名的條本來在兩臂的第 2 名：不因來源較後而退
+    guided = [(_hit(20), 3), (_hit(21), 2), (_hit(22), 1), (_hit(2), 0)]
+
+    order = [h.iri for h, _ in fuse(hits, guided, limit=10)]
+
+    assert order.index("iri-2") < order.index("iri-21")  # 兩臂名次 2 與函釋名次 2 同分、兩臂在前
 
 
 def test_an_article_in_both_ranks_above_one_in_either() -> None:
