@@ -42,6 +42,8 @@ def fuse(
 
     函釋帶出的名次只算有函釋提到的條（件數 > 0）；緊跟在來源之後展開出來的處罰條（件數 0）與它的來源
     同名次、同份額：處罰條占一個位置，不把後面的來源往後推，其他條文與兩臂結果的相對次序不因展開而變。
+    展開是從來源推導的，不是獨立的證據：處罰條若已在兩臂的結果裡就維持原名次、不再加「兩處都有」的分
+    （混合檢索自己的展開也是沿用來源的分數，不另加分）。
     """
     scored: dict[str, tuple[float, int, int, SearchHit, int]] = {}
     for rank, hit in enumerate(hits, 1):
@@ -51,6 +53,8 @@ def fuse(
         if documents > 0 and position > 0:
             rank += 1
         share = 1 / (RRF_K + rank)
+        if hit.iri in scored and documents == 0:
+            continue
         if hit.iri in scored:
             score, side, order, found, _ = scored[hit.iri]
             scored[hit.iri] = (score + share, side, order, found, documents)
