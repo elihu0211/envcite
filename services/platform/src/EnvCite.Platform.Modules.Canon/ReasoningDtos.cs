@@ -166,6 +166,8 @@ public enum ProblemKindDto
     MeasurementUnlabeled,
     /// <summary>授權命令的限值所在的條文版本已違憲失效：該要件為未知。</summary>
     InvalidatedDelegation,
+    /// <summary>授權的限值出自授權鏈到不了法律的命令而照常比較：結論不變，所依限值的授權依據待查。</summary>
+    UnrootedDelegation,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<CourtInstanceDto>))]

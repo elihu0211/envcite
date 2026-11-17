@@ -59,10 +59,11 @@ _OVERRIDES = """
      ORDER BY prevailing_id, subordinate_id
 """
 
+# 所罰的陳述與推論同一個解析（`annotation.sanctions_at`），列出的就是 `Evaluate` 那天處罰的。
 _SANCTIONS = """
     SELECT statement_id, punished_statement_id, legal_effect, amount_text,
            min_amount, max_amount, per_occasion, discretionary
-      FROM annotation.sanctions_of(%(ids)s::bigint[])
+      FROM annotation.sanctions_at(%(ids)s::bigint[], %(language)s, %(on)s)
 """
 
 _TRIGGERS = """
@@ -273,7 +274,7 @@ def list_statements(conn: Conn, resource_id: int, on: date) -> pb.ListStatements
 
     for exc in fetch(conn, _EXCEPTIONS, by_id, _ExceptionRow):
         statements[exc.exception].exception_of.append(exc.excluded)
-    for sanc in fetch(conn, _SANCTIONS, by_id, _SanctionRow):
+    for sanc in fetch(conn, _SANCTIONS, params | by_id, _SanctionRow):
         sanction = statements[sanc.statement_id].sanction
         sanction.punishes = sanc.punishes
         sanction.effect = enums.LEGAL_EFFECT[sanc.effect]

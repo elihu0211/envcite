@@ -11,7 +11,7 @@
 %       subject_basis/2 subject_any/1（罰則主體槽位標的責任基礎）  actor_basis/1（呼叫端說明的行為人責任基礎）
 %       fmethod/2 favg/2（案件事實的認定方式）  permit_in/3（呼叫端提供的許可量值：許可種類、概念、值）
 %       void_limit/1（授權限值的條文版本已違憲失效；違憲失效的陳述本身不進來）
-%       unrooted/1（命令陳述，命令的授權鏈到不了法律）
+%       unrooted/1（命令陳述，命令的授權鏈到不了法律；罰則、受罰的義務與限值的來源都看它）
 %       criminal_cleared/0（刑事程序以不起訴等確定）  benefit_over/1（所得利益超過該罰鍰的最高額）
 %       deduction_given/0 wage_missing/0（第 26 條的扣抵額已定；有勞務時數而沒有基本工資）
 role(scope;duty).
@@ -226,6 +226,9 @@ needs_judgement(S,M) :- verdict(S,undetermined), cond(C,S,_,_,_,_,_), limit_cand
                         judgement(KC), not given(M).
 problem(unresolved_delegation, C) :- delegated(C), not limit_cand(C,_,_), not thr(C,_), not void_limit(C).
 problem(invalidated_delegation, C) :- void_limit(C).
+% 限值出自授權鏈到不了法律的命令：系統不宣告命令無效，照常以它比較、結論不變，但結論倚賴一個
+% 授權依據待查的限值，要標出來。只在真的比較過時列出；沒比較的，結論不倚賴它。
+problem(unrooted_delegation, C) :- thr_src(C,Lim), unrooted(Lim), v(C,_).
 % 許可量值沒提供：缺的是（許可，概念）這筆事實，不是概念本身，另列。
 unk_permit(S,K,M) :- cond(C,S,R,Kl,M,_,_), permit_cond(C,K), unk(C), not clause_f(S,R,Kl),
                      not permit_given(K,M).

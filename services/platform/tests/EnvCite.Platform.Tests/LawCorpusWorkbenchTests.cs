@@ -46,6 +46,22 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains("labelFillOpacity: 0.94", script.Html, StringComparison.Ordinal);
         Assert.Contains("mixRgb", script.Html, StringComparison.Ordinal);
         Assert.DoesNotContain("color-mix(", script.Html, StringComparison.Ordinal);
+        // 第一個視角定好之前圖譜不顯示（先放大再縮小的跳動）：建圖進 loading、定好才 ready；使用者動過視角就不再替他重新適應。
+        Assert.Contains("container.dataset.graphState = \"loading\"", script.Html, StringComparison.Ordinal);
+        Assert.Contains("container.dataset.graphState = \"ready\"", script.Html, StringComparison.Ordinal);
+        Assert.Contains("viewportTouched", script.Html, StringComparison.Ordinal);
+        // 檢視面板只有一個開關狀態（data-inspector-open）；以前的「收起」另一個旗標已經沒有了。
+        Assert.Contains("setInspectorOpen", script.Html, StringComparison.Ordinal);
+        Assert.Contains("revealBesideInspector", script.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("inspectorDismissed", script.Html, StringComparison.Ordinal);
+        // 面板是畫布上的浮層、預設收起，並帶開關語意。
+        Assert.Contains("id=\"ep-graph-inspector\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("aria-controls=\"ep-graph-inspector\"", page.Html, StringComparison.Ordinal);
+        Assert.Contains("data-inspector-open=\"false\"", page.Html, StringComparison.Ordinal);
+        // 圖例：層級是可複選的顯示／隱藏開關，違憲失效是另一種標記（只打亮）；原本單選打亮層級的做法已經沒有了。
+        Assert.Contains("toggleTierVisibility", script.Html, StringComparison.Ordinal);
+        Assert.Contains("applyInvalidSpotlight", script.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("applyTierFilter", script.Html, StringComparison.Ordinal);
 
         var stylesheet = await browser.GetAsync("/_content/EnvCite.Platform.Web/design/platform.css");
         Assert.Equal(HttpStatusCode.OK, stylesheet.Status);
@@ -53,6 +69,13 @@ public sealed class LawCorpusWorkbenchTests(PlatformFactory factory)
         Assert.Contains(".ep-graph-canvas .tooltip", stylesheet.Html, StringComparison.Ordinal);
         Assert.Contains("background-color: var(--ep-surface-raised) !important;", stylesheet.Html, StringComparison.Ordinal);
         Assert.Contains("--ep-success", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Matches(@"\.ep-graph-canvas\[data-graph-state=""loading""\]\s*\{[^}]*opacity:\s*0", stylesheet.Html);
+        Assert.Contains(".ep-graph-host[data-inspector-open=\"true\"] .ep-graph-inspector", stylesheet.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-inspector-dismissed", stylesheet.Html, StringComparison.Ordinal);
+        // 面板不再是並排的欄位：host 沒有雙欄 grid，開關才不會改變畫布寬度。
+        Assert.DoesNotContain("grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem)", stylesheet.Html, StringComparison.Ordinal);
+        Assert.Contains(".ep-swimlane-pill[data-tier][aria-pressed=\"false\"]", stylesheet.Html, StringComparison.Ordinal); // 關掉的層級有自己的樣子
+        Assert.Contains(".ep-legend-edges", stylesheet.Html, StringComparison.Ordinal);
     }
 
     [Fact]

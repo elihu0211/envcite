@@ -1,4 +1,4 @@
-"""整合測試：行政罰法三階審查、跨法概念、度量衡正規化、多重法規命令限值與裁罰矩陣計算（01-08）。"""
+"""整合測試：行政罰法三階審查、跨法概念、多重法規命令限值與裁罰矩陣計算（01-08）。"""
 
 from datetime import date
 from decimal import Decimal
@@ -19,7 +19,6 @@ from canon.reasoning.scoring.audit import (
 from canon.reasoning.scoring.evaluate import evaluate_matrix
 from canon.reasoning.scoring.matrices import load_matrices
 from canon.reasoning.scoring.models import FactorSpec, PenaltyMatrixSpec, ScoringInput
-from canon.reasoning.units import canonical_unit_name, normalize_value
 from canon.reasoning_codec import disposition as disposition_codec
 from canon.reasoning_codec import outcome as outcome_codec
 from canon.reasoning_codec import request as request_codec
@@ -79,40 +78,7 @@ def _penalty_stmt(
     )
 
 
-# ── 1. 度量衡正規化與異質單位檢查 ──────────────────────────────────────────
-
-
-def test_units_normalization_and_mismatch_detection() -> None:
-    # mg/L 與 ug/L 換算：500 ug/L == 0.5 mg/L
-    val, ok = normalize_value(Decimal("500"), "ug/L", "mg/L")
-    assert ok is True
-    assert val == Decimal("0.5")
-    assert canonical_unit_name("μg/L") == "μg/L"
-
-    # mg/Nm3 vs ppm 為不同維度，應報 mismatch (None, False)
-    bad_val, bad_ok = normalize_value(Decimal("120"), "mg/Nm3", "ppm")
-    assert bad_ok is False
-    assert bad_val is None
-
-
-def test_reasoning_normalizes_fact_unit_to_limit_unit(conn: Conn, tmp_path: Path) -> None:
-    _first(conn, tmp_path, _law_v1())
-    doc = _water_and_air_doc(
-        _duty(),
-        _limit("乙一", 100),
-        _penalty_stmt("pen_fine", "duty", "fine", floor=60000, cap=6000000),
-    )
-    ids = load(conn, doc).ids
-    result = evaluate(
-        conn,
-        BEFORE,
-        {"discharging": 1.0, "cod": 150000.0, "ap_negligence": 1.0},
-        fact_units={"cod": "ug/L"},
-    )
-    assert any(p.statement_id == ids["pen_fine"] for p in result.penalties)
-
-
-# ── 2. 多重法規命令限值適用範圍（annotation.threshold_sources_at）──────────
+# ── 1. 多重法規命令限值適用範圍（annotation.threshold_sources_at）──────────
 
 
 def test_multi_scope_delegated_limits_select_by_scope_and_surface_ambiguity(
@@ -169,7 +135,7 @@ def test_multi_scope_delegated_limits_select_by_scope_and_surface_ambiguity(
     )
 
 
-# ── 3. 跨法不推上位：子概念的量測值不當成上位概念的值 ──────────────────────
+# ── 2. 跨法不推上位：子概念的量測值不當成上位概念的值 ──────────────────────
 
 
 def test_child_concept_facts_are_not_lifted_to_a_broader_concept(
@@ -202,7 +168,7 @@ def test_child_concept_facts_are_not_lifted_to_a_broader_concept(
     assert res.problems == ()
 
 
-# ── 4. 行政罰法三階審查、原因自由行為、釋字 604 與多行為群組 ───────────────
+# ── 3. 行政罰法三階審查、原因自由行為、釋字 604 與多行為群組 ───────────────
 
 
 def test_three_tier_jurisprudence_justified_excused_and_self_induced(
@@ -338,7 +304,7 @@ def test_per_occasion_grace_period_and_multi_act_groups(conn: Conn, tmp_path: Pa
     }
 
 
-# ── 5. 裁罰矩陣計算引擎、環境講習時數與處分書要件檢核（CQ D1–D3）──────────
+# ── 4. 裁罰矩陣計算引擎、環境講習時數與處分書要件檢核（CQ D1–D3）──────────
 
 
 def test_scoring_models_water_air_waste_construction_and_lecture() -> None:
@@ -555,8 +521,7 @@ def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path)
         facts=[
             pb.Fact(
                 concept="cod",
-                values=[pb.FactValue(number=pb.Decimal(value="150000"))],
-                unit="ug/L",
+                values=[pb.FactValue(number=pb.Decimal(value="150"))],
             )
         ],
         administrative_penalty_facts=pb.AdministrativePenaltyFacts(
@@ -593,18 +558,15 @@ def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path)
     )
     v = errors.Validator()
     case = request_codec.case_facts(req, v, None, None, None)
-    units = request_codec.fact_units(req)
     tl = request_codec.timeline(req, v)
     sc = disposition_codec.scoring_inputs(req, v)
     v.check()
     assert case["ap_fact_mistake"] == 1.0
-    assert units == {"cod": "ug/L"}
     assert tl is not None and tl.reinspection_on == date(2019, 1, 5)
     res = evaluate(
         conn,
         BEFORE,
         case,
-        fact_units=units,
         timeline=tl,
         scoring_inputs=sc,
     )

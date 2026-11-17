@@ -1,6 +1,7 @@
 @* 客戶入口的外殼，純呈現（不讀登入狀態）：已登入進入工作區時採用現代 AI 瀏覽器雙欄版面——
-   左側為全高導覽欄，Claude 式的純列（頂部為品牌與收合控制；功能區固定在上：新對話與各功能入口，沒有框、沒有分隔線；
-   其下是最近的對話：一張平面的清單，占剩下的高度、只有它自己捲動，沒有篩選框也沒有日期分組；左下角為帳號選單並向上彈出）；
+   左側為全高導覽欄（頂部為品牌與收合控制；功能區固定在上：頂端是唯一的主要動作「新對話」（Grok 式的外框膠囊），
+   其下才是與首頁不同的業務模塊入口；首頁就是新對話，不在導覽裡再列一次；
+   再下是法規諮詢的對話：一張平面的清單，標題寫它屬於哪個功能，占剩下的高度、只有它自己捲動，沒有篩選框也沒有日期分組；左下角為帳號選單並向上彈出）；
    右側為主工作區舞台（精簡上下文頂欄與置中問答／內容區）。還沒登入或還有強制步驟時，只有頂欄。
    側欄每項是圖示加文字：桌機可收成窄欄、手機為全高滑出抽屜（forms.js 切換）；側欄只放業務模塊。
    租戶的系統設定（成員、目錄同步、帳號與組織）依角色收在帳號選單，排在個人項目之後、以細線隔開。
@@ -31,44 +32,47 @@
                 </div>
 
                 <div class="ep-side-body">
-                    @* 功能區（Claude 式的純列）：新對話與各功能入口，固定在上、不跟著對話清單捲動。
-                       沒有群組標題也沒有分隔線，群組之間只留一點間距（群組名留在 nav 的 aria-label）。 *@
+                    @* 功能區：頂端是「新對話」主要動作（它就是首頁，所以導覽裡沒有第二個指向首頁的項目），其下是業務模塊入口，
+                       固定在上、不跟著對話清單捲動。沒有群組標題也沒有分隔線，群組之間只留一點間距（群組名留在 nav 的 aria-label）。 *@
                     <div class="ep-side-actions">
                         @if (!string.IsNullOrEmpty(HomeHref))
                         {
                             <a class="ep-side-new-chat" href="@HomeHref" title="@L["新對話"]">
-                                <NavIcon Path="@Icons.Material.Outlined.Add" />
+                                <span class="ep-side-new-chat-mark" aria-hidden="true"><NavIcon Path="@Icons.Material.Outlined.Add" /></span>
                                 <span class="ep-side-label">@L["新對話"]</span>
                             </a>
                         }
 
-                        <div class="ep-side-modules">
-                            @foreach (var group in NavItems.GroupBy(i => i.Group))
-                            {
-                                <nav class="ep-side-nav" aria-label="@group.Key">
-                                    @foreach (var item in group)
-                                    {
-                                        <NavLink class="ep-side-link" href="@item.Href" Match="@(item.Exact ? NavLinkMatch.All : NavLinkMatch.Prefix)" title="@item.Label">
-                                            @if (!string.IsNullOrEmpty(item.Icon))
-                                            {
-                                                <NavIcon Path="@item.Icon" />
-                                            }
-                                            <span class="ep-side-label">@item.Label</span>
-                                        </NavLink>
-                                    }
-                                </nav>
-                            }
-                        </div>
+                        @if (NavItems.Count > 0)
+                        {
+                            <div class="ep-side-modules">
+                                @foreach (var group in NavItems.GroupBy(i => i.Group))
+                                {
+                                    <nav class="ep-side-nav" aria-label="@group.Key">
+                                        @foreach (var item in group)
+                                        {
+                                            <NavLink class="ep-side-link" href="@item.Href" Match="NavLinkMatch.Prefix" title="@item.Label">
+                                                @if (!string.IsNullOrEmpty(item.Icon))
+                                                {
+                                                    <NavIcon Path="@item.Icon" />
+                                                }
+                                                <span class="ep-side-label">@item.Label</span>
+                                            </NavLink>
+                                        }
+                                    </nav>
+                                }
+                            </div>
+                        }
                     </div>
 
-                    @* 最近的對話：Gemini 風格「全部 >」可摺疊清單（沒有日期分組；釘選的排最前、帶圖釘），占去側欄剩下的高度，只有它自己捲動。
-                       還沒有對話時畫引導提示（ep-history-empty）。 *@
+                    @* 最近的對話：標題是它所屬的功能（法規諮詢）的可摺疊清單（沒有日期分組；釘選的排最前、帶圖釘），占去側欄剩下的高度，只有它自己捲動。
+                       「新對話」開的就是這一區的對話。還沒有對話時畫引導提示（ep-history-empty）。 *@
                     @if (Recent.Count > 0 || !string.IsNullOrEmpty(HistoryHref))
                     {
                         <section class="@(Recent.Count > 0 ? "ep-recent" : "ep-history-empty")" aria-label="@L["最近的對話"]">
                             <details class="ep-history-details" open>
                                 <summary class="ep-history-heading ep-history-summary">
-                                    <span>@L["全部"]</span>
+                                    <span>@L["法規諮詢"]</span>
                                     <NavIcon Path="@Icons.Material.Outlined.ChevronRight" />
                                 </summary>
                                 @if (Recent.Count > 0)
@@ -94,7 +98,7 @@
                                 }
                                 else
                                 {
-                                    <p class="ep-history-empty-note">@L["在首頁問一個問題，它就會出現在這裡。"]</p>
+                                    <p class="ep-history-empty-note">@L["暫無對話"]</p>
                                 }
                             </details>
                             @if (!string.IsNullOrEmpty(HistoryHref))
@@ -281,9 +285,9 @@
     public IReadOnlyList<RecentConversation> Recent { get; set; } = [];
 
     /// <param name="Group">側欄的群組標題；同一群組的項目連續排列。</param>
-    /// <param name="Exact">只有網址完全相同才標成目前頁（首頁要這樣，否則每一頁都算在首頁底下）。</param>
     /// <param name="Icon">項目前面的圖示（MudBlazor 的 Material 圖示常數）；收成窄欄時只剩它，所以每一項都該有。</param>
-    public sealed record NavItem(string Href, string Label, string Group, bool Exact = false, string? Icon = null);
+    /// <remarks>目前頁以路徑前綴比對，所以項目不能是首頁（每一頁都在首頁底下）；首頁是外殼頂端的「新對話」。</remarks>
+    public sealed record NavItem(string Href, string Label, string Group, string? Icon = null);
 
     [Parameter]
     public string? TenantName { get; set; }
@@ -342,7 +346,7 @@
     [Parameter]
     public IReadOnlyList<NavItem> SettingsItems { get; set; } = [];
 
-    private bool HasSideNav => ShowMenu && NavItems.Count > 0;
+    private bool HasSideNav => ShowMenu;
 
     /// <summary>選單項目指向目前頁（或它底下的頁）時標 <c>aria-current</c>，其餘不輸出屬性。</summary>
     private string? CurrentOf(string href)
@@ -374,14 +378,12 @@
                 return conv.Title;
         }
 
-        foreach (var item in NavItems.Where(i => i.Exact))
-        {
-            if (string.Equals(NormalizePath(item.Href), path, StringComparison.OrdinalIgnoreCase))
-                return item.Label;
-        }
+        // 首頁是法規諮詢的新對話：頂欄寫它所屬的功能（和側欄對話清單的標題同一個詞）。只比對完全相同的網址，其他頁都在首頁底下。
+        if (!string.IsNullOrEmpty(HomeHref) && string.Equals(NormalizePath(HomeHref), path, StringComparison.OrdinalIgnoreCase))
+            return L["法規諮詢"];
 
         var prefixMatch = NavItems.Concat(SettingsItems)
-            .Where(i => !i.Exact && path.StartsWith(NormalizePath(i.Href), StringComparison.OrdinalIgnoreCase))
+            .Where(i => path.StartsWith(NormalizePath(i.Href), StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(i => i.Href.Length)
             .FirstOrDefault();
         if (prefixMatch is not null)

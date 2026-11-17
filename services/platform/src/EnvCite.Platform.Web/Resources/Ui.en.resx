@@ -249,9 +249,6 @@
   <data name="在手機安裝驗證器 App（例如 Google Authenticator、Microsoft Authenticator、1Password 或 Authy）。" xml:space="preserve">
     <value>Install an authenticator app on your phone (for example Google Authenticator, Microsoft Authenticator, 1Password or Authy).</value>
   </data>
-  <data name="在首頁問一個問題，它就會出現在這裡。" xml:space="preserve">
-    <value>Ask a question on the home page and it will appear here.</value>
-  </data>
   <data name="套用" xml:space="preserve">
     <value>Apply</value>
   </data>
@@ -374,6 +371,18 @@
   </data>
   <data name="帳號選單" xml:space="preserve">
     <value>Account menu</value>
+  </data>
+  <data name="層級（點選顯示或隱藏）" xml:space="preserve">
+    <value>Tiers (select to show or hide)</value>
+  </data>
+  <data name="連線" xml:space="preserve">
+    <value>Links</value>
+  </data>
+  <data name="全部顯示" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="至少要保留一個層級" xml:space="preserve">
+    <value>Keep at least one tier visible</value>
   </data>
   <data name="系統設定" xml:space="preserve">
     <value>System settings</value>
@@ -969,8 +978,8 @@
   <data name="還沒有使用紀錄" xml:space="preserve">
     <value>No usage yet</value>
   </data>
-  <data name="還沒有對話" xml:space="preserve">
-    <value>No conversations yet</value>
+  <data name="暫無對話" xml:space="preserve">
+    <value>No conversations</value>
   </data>
   <data name="還沒有成員" xml:space="preserve">
     <value>No members yet</value>

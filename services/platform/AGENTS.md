@@ -19,6 +19,7 @@
   4. **禁用可處置 Transient**：不將實作 `IDisposable`／`IAsyncDisposable` 的自有型別註冊為 transient（測試主機啟用 `ValidateScopes` 與 `ValidateOnBuild`）。
 - **入口導覽擴充**：功能模組實作 `IPortalNavContributor`（`Components/Layout/Navigation/`，以 `AddPortalNavContributor<T>()` 註冊為 scoped），宣告位置 `Slot`、群組與 `Order`；文字須經 `L` 以便資源檔掃描。
   - **側欄只放業務模塊**（`Slot = Sidebar`，服務群組 `Order` 10–29）；租戶的系統設定（成員、目錄同步、帳號與組織）放頭像的帳號選單（`Slot = AccountMenu`，系統設定群組 `Order` 30–59），排在個人項目之後。
+  - **首頁不是導覽項目**：首頁就是法規諮詢的新對話，由外殼畫成側欄頂端唯一的主要動作「新對話」；項目不得指向首頁（目前頁以路徑前綴比對，列了它就會一直亮著；同一個目的地也不在導覽再列一次）。功能名稱「法規諮詢」是對話清單的標題與首頁的頂欄標題（由 `PortalNavigationTests`、`PortalShellTests` 守門）。
   - **項目由角色決定出不出現**：各來源依 `PortalNavContext.User` 的角色與功能開關自己判斷（由 `PortalNavigationTests` 守門）。顯示與否不是授權，授權由頁面與服務層執行。
 
 ### 資料存取、租戶範圍與中介層
@@ -207,6 +208,9 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
   - 租戶頁存取網址取自請求來源（`PortalPaths`、`ApiPaths`）。
   - 營運者頁面每次呼叫開獨立 scope 讀 `SharedKernel` 契約。
   - 新發出的 key／一次性密碼僅於不可隨意關閉的對話框顯示一次；時間顯示臺北時間（UTC+8），長 id 縮短留尾端（UUIDv7）。
+  - 授權知識圖譜（`canon-graph.js`）建圖時為 `data-graph-state="loading"`（透明），第一個視角定好才轉 `ready` 淡入，使用者不會看到縮放 1 的中間態；畫布沒有寬度時不建圖；使用者動過視角後，容器變寬窄只 `resize`、不再重新適應（`law-graph-viewport` E2E 守門）。
+  - 授權知識圖譜的檢視面板（`.ep-graph-inspector`）是畫布外框 grid 裡與畫布疊在同一格的浮層，不是並排欄位：開關不改變畫布寬度，圖不因此重新適應。預設收起，只有一個狀態 `data-inspector-open`（點節點、「法學檢視」開，Esc、✕、點空白處收；焦點進出面板要回到「法學檢視」）；被選的節點若在面板底下，畫面往左讓位；容器窄於 68rem 改為底部面板（`law-graph-inspector` E2E 守門）。
+  - 授權知識圖譜的圖例列（`.ep-graph-swimlanes`）：層級是可複選的顯示／隱藏開關（`aria-pressed` = 顯示中，被關掉的整層不畫、依剩下的重排；至少留一層，說明走 `role="status"`），重畫時焦點還給同一個控制項；「違憲失效」是另一種標記，只打亮相關節點、不改畫的內容；連線樣式（實線直接授權、虛線再授權）以線形加文字說明，不只靠顏色（`law-graph-legend` E2E 守門）。
   - `Api.csproj` 須設 `RequiresAspNetWebAssets` 以提供 `_framework/blazor.web.js`（`DesignPageTests` 守門）。
 
 ## Conventions

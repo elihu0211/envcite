@@ -101,10 +101,12 @@ def relation_facts(conn: Conn, ids_param: Mapping[str, list[int]]) -> list[str]:
     return out
 
 
+# 所罰的陳述依該日解析（`annotation.sanctions_at`）：義務條文修正、罰則條文沒改時，
+# 罰則處罰該日的義務。
 _SANCTIONS = """
     SELECT statement_id, punished_statement_id, legal_effect, min_amount, max_amount,
            per_occasion
-      FROM annotation.sanctions_of(%(ids)s::bigint[])
+      FROM annotation.sanctions_at(%(ids)s::bigint[], %(lang)s, %(on)s)
      WHERE punished_statement_id = ANY(%(ids)s)
 """
 
@@ -120,9 +122,11 @@ class SanctionRow(NamedTuple):
     per_occasion: bool
 
 
-def fetch_sanctions(conn: Conn, ids_param: Mapping[str, list[int]]) -> list[SanctionRow]:
-    """這些陳述的罰則列。"""
-    return fetch(conn, _SANCTIONS, ids_param, SanctionRow)
+def fetch_sanctions(
+    conn: Conn, params: Mapping[str, object], ids_param: Mapping[str, list[int]]
+) -> list[SanctionRow]:
+    """這些陳述在 `params`（語言、日期）那天的罰則列。"""
+    return fetch(conn, _SANCTIONS, {**params, **ids_param}, SanctionRow)
 
 
 def sanction_lines(sanctions: Sequence[SanctionRow]) -> list[str]:

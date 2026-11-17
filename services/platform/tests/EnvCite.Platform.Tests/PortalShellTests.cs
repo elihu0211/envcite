@@ -48,8 +48,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var home = await browser.GetAsync(Home(tenant.Identifier));
 
         var prefix = Home(tenant.Identifier);
-        // 側欄只有業務模塊：不論角色，成員、目錄同步、帳號與組織都不在側欄。
-        Assert.Equal([prefix, $"{prefix}/laws"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history"));
+        // 側欄導覽只有業務模塊（首頁是頂端的「新對話」，不在導覽裡）：不論角色，成員、目錄同步、帳號與組織都不在側欄。
+        Assert.Equal([$"{prefix}/laws"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history"));
 
         // 個人項目（外觀、兩步驟驗證、改密碼）在前；其後是系統設定，依角色出現：
         // 成員給擁有者與管理員，目錄同步（共用的測試主機開著）只給擁有者（設定與 token 只有擁有者能管），帳號與組織每個角色都有。
@@ -133,6 +133,16 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var historyPos = home.Html.IndexOf("class=\"ep-history-empty\"", StringComparison.Ordinal);
         var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
         Assert.True(modulesPos > 0 && historyPos > modulesPos && footPos > historyPos);
+
+        // 空的歷史區只留一句短提示，不教人怎麼開始（「新對話」就在上面）。
+        Assert.Contains("<p class=\"ep-history-empty-note\">暫無對話</p>", home.Html, StringComparison.Ordinal);
+
+        // 對話紀錄頁的空狀態同一句：標題「暫無對話」，不再附說明與第二個入口（頁首已有「新對話」）。
+        var history = await browser.GetAsync($"{Home(tenant.Identifier)}/history");
+        var emptyState = Regex.Match(history.Html, "<div class=\"ep-empty\">.*?</div>", RegexOptions.Singleline).Value;
+        Assert.Contains("<h2 class=\"ep-empty-title\">暫無對話</h2>", emptyState, StringComparison.Ordinal);
+        Assert.DoesNotContain("<p>", emptyState, StringComparison.Ordinal);
+        Assert.DoesNotContain("<a ", emptyState, StringComparison.Ordinal);
     }
 
     // 功能區（新對話、各功能入口）與對話歷史區是並列的兩塊，不是同一條清單：歷史區在功能區之外，才能各自配置高度、只有歷史區捲動。
@@ -159,12 +169,37 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var side = home.Html[actionsPos..footPos];
         Assert.DoesNotContain("class=\"ep-side-group\"", side, StringComparison.Ordinal);
         Assert.DoesNotContain("data-recent-filter", side, StringComparison.Ordinal); // Claude 式：沒有篩選框
-        // 功能區不另設「搜尋對話」列，搜尋與篩選統一走歷史區「全部」旁的圖示（ep-history-filter）到對話紀錄頁。
+        // 功能區不另設「搜尋對話」列，搜尋與篩選統一走歷史區標題旁的圖示（ep-history-filter）到對話紀錄頁。
         Assert.DoesNotContain("ep-side-search", side, StringComparison.Ordinal);
         var filterPos = side.IndexOf("ep-history-filter", StringComparison.Ordinal);
         Assert.True(filterPos > side.IndexOf("<section class=\"ep-history-empty\"", StringComparison.Ordinal));
         Assert.Contains($"href=\"{Home(tenant.Identifier)}/history\"", side, StringComparison.Ordinal);
         Assert.Contains("<nav class=\"ep-side-nav\" aria-label=\"服務\"", side, StringComparison.Ordinal);
+    }
+
+    // 首頁就是法規諮詢的新對話：側欄只有「新對話」這一個入口指向它，導覽裡不再列第二個「法規諮詢」；
+    // 功能名稱改成對話清單的標題（「新對話」開的就是這一區的對話），頂欄在首頁也寫同一個詞。
+    [Fact]
+    public async Task TheHomeIsTheNewChatActionAndTheHistoryIsTitledByTheFeatureItBelongsTo()
+    {
+        var (tenant, email, initial) = await MemberAsync(factory, "sh-cta");
+        using var browser = new PortalBrowser(factory);
+        await SignInFullyAsync(browser, tenant.Identifier, email, initial);
+        var prefix = Home(tenant.Identifier);
+
+        var home = await browser.GetAsync(prefix);
+
+        var actionsPos = home.Html.IndexOf("<div class=\"ep-side-actions\">", StringComparison.Ordinal);
+        var footPos = home.Html.IndexOf("class=\"ep-side-foot\"", StringComparison.Ordinal);
+        var side = home.Html[actionsPos..footPos];
+        Assert.Equal(1, Regex.Count(side, $"href=\"{Regex.Escape(prefix)}\""));
+        Assert.Contains($"<a class=\"ep-side-new-chat\" href=\"{prefix}\"", side, StringComparison.Ordinal);
+        Assert.DoesNotContain(SideNavHrefs(home.Html), href => href == prefix);
+        Assert.Matches("<summary class=\"ep-history-heading ep-history-summary\">\\s*<span>法規諮詢</span>", side);
+
+        var stageStart = home.Html.IndexOf("class=\"ep-portal-stage\"", StringComparison.Ordinal);
+        var stageTop = Regex.Match(home.Html[stageStart..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;
+        Assert.Matches("class=\"ep-portal-route\"[^>]*>法規諮詢</span>", stageTop);
     }
 
     private sealed class ExtraNav : IPortalNavContributor
@@ -188,7 +223,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         var home = await browser.GetAsync(prefix);
 
-        Assert.Equal([prefix, $"{prefix}/laws", $"{prefix}/extra"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history"));
+        Assert.Equal([$"{prefix}/laws", $"{prefix}/extra"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history"));
     }
 
     // 還在改初始密碼、註冊驗證器時只開那一頁：其他連結點了也會被導回去，所以沒有選單，只留登出。

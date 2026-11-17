@@ -248,11 +248,6 @@ def case_facts(
     return case
 
 
-def fact_units(request: pb.EvaluateRequest) -> dict[str, str]:
-    """萃取各事實所帶之量綱單位代碼。"""
-    return {fact.concept: fact.unit for fact in request.facts if fact.concept and fact.unit}
-
-
 def act_groups(request: pb.EvaluateRequest) -> dict[str, list[int]]:
     """萃取行為分組（§24/§25）。"""
     return {

@@ -442,6 +442,11 @@ class _ProblemKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ProblemKi
     """授權的限值所在的條文版本在該日已違憲失效（subject 為要件識別碼）：要件為未知，裁判見
     Outcome.invalidated。
     """
+    PROBLEM_KIND_UNROOTED_DELEGATION: _ProblemKind.ValueType  # 8
+    """授權的限值出自授權鏈到不了法律的命令（subject 為要件識別碼）：系統不宣告命令無效，照常
+    以該限值比較，結論不變，但所依的限值授權依據待查。只在該要件確實比較過時列出。限值陳述見
+    Outcome.limit_sources，其授權鏈見 Outcome.delegation_bases。
+    """
 
 class ProblemKind(_ProblemKind, metaclass=_ProblemKindEnumTypeWrapper): ...
 
@@ -462,6 +467,11 @@ PROBLEM_KIND_MEASUREMENT_UNLABELED: ProblemKind.ValueType  # 6
 PROBLEM_KIND_INVALIDATED_DELEGATION: ProblemKind.ValueType  # 7
 """授權的限值所在的條文版本在該日已違憲失效（subject 為要件識別碼）：要件為未知，裁判見
 Outcome.invalidated。
+"""
+PROBLEM_KIND_UNROOTED_DELEGATION: ProblemKind.ValueType  # 8
+"""授權的限值出自授權鏈到不了法律的命令（subject 為要件識別碼）：系統不宣告命令無效，照常
+以該限值比較，結論不變，但所依的限值授權依據待查。只在該要件確實比較過時列出。限值陳述見
+Outcome.limit_sources，其授權鏈見 Outcome.delegation_bases。
 """
 Global___ProblemKind: _TypeAlias = ProblemKind  # noqa: Y015
 
@@ -1178,7 +1188,9 @@ class Fact(_message.Message):
     """
     averaging_period: _builtins.str
     unit: _builtins.str
-    """量綱單位代碼（如 mg/L、ug/L、ppm、mg/Nm3、dB(A)）；留空不進行單位換算。"""
+    """這些值的量綱單位（如 mg/L、ppm、dB(A)）。服務不換算單位：值照原樣與門檻比較，門檻的
+    單位見 Condition.unit，呼叫端須先換算成該單位。
+    """
     @_builtins.property
     def values(self) -> _containers.RepeatedCompositeFieldContainer[Global___FactValue]: ...
     def __init__(

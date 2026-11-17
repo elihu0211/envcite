@@ -235,7 +235,7 @@
             if (phone.matches) {
                 root.toggleAttribute("data-drawer");
                 if (root.hasAttribute("data-drawer")) {
-                    document.querySelector(".ep-side-link")?.focus();
+                    document.querySelector(".ep-side-new-chat, .ep-side-link")?.focus(); // 文件順序的第一個：頂端的「新對話」
                 }
             } else {
                 setSideCollapsed(!sideCollapsed);

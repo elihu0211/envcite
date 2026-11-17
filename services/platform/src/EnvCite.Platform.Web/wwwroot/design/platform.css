@@ -3808,11 +3808,23 @@ html[data-reveal]::view-transition-new(root) {
     display: none;
 }
 
-.ep-side-new-chat .ep-icon {
+/* 「新對話」是側欄唯一的主要動作（Grok 式）：外框膠囊加實心主色的加號圓，和下面的導覽列分得開；
+   導覽列的目前項是淡藍底，所以這顆不用填色，只靠外框與加號圓成為視覺重心。 */
+.ep-side-new-chat-mark {
     flex: none;
-    inline-size: calc(var(--ep-space-4) + var(--ep-space-1));
-    block-size: calc(var(--ep-space-4) + var(--ep-space-1));
-    color: var(--ep-text-secondary);
+    display: grid;
+    place-items: center;
+    inline-size: var(--ep-space-6);
+    block-size: var(--ep-space-6);
+    border-radius: 50%;
+    background: var(--ep-primary);
+    color: var(--ep-on-primary);
+}
+
+.ep-side-new-chat-mark .ep-icon {
+    inline-size: var(--ep-space-4);
+    block-size: var(--ep-space-4);
+    color: inherit;
 }
 
 .ep-portal-new-chat {
@@ -4124,12 +4136,14 @@ html[data-reveal]::view-transition-new(root) {
         flex: none;
         inline-size: 100%;
         min-block-size: var(--ep-touch-target);
-        padding-inline: var(--ep-space-3);
+        margin-block: var(--ep-space-1) var(--ep-space-3);
+        padding-inline: var(--ep-space-2) var(--ep-space-4);
+        border: 1px solid var(--ep-border-control);
         border-radius: var(--ep-radius-pill);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
-        font-weight: var(--ep-body-l-weight);
+        font-weight: var(--ep-label-m-weight);
         white-space: nowrap;
         transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
     }
@@ -4223,12 +4237,14 @@ html[data-reveal]::view-transition-new(root) {
         flex: none;
         inline-size: 100%;
         min-block-size: var(--ep-control-height);
-        padding-inline: var(--ep-space-3);
+        margin-block: var(--ep-space-1) var(--ep-space-3);
+        padding-inline: var(--ep-space-2) var(--ep-space-4);
+        border: 1px solid var(--ep-border-control);
         border-radius: var(--ep-radius-pill);
         color: var(--ep-text);
         text-decoration: none;
         font-size: var(--ep-label-m-size);
-        font-weight: var(--ep-body-l-weight);
+        font-weight: var(--ep-label-m-weight);
         white-space: nowrap;
         transition: background-color var(--ep-motion-fast) var(--ep-motion-ease-standard);
     }
@@ -4302,10 +4318,12 @@ html[data-reveal]::view-transition-new(root) {
         padding-inline: var(--ep-space-2);
     }
 
+    /* 窄欄：只剩加號圓（外框拿掉，圓本身就是鈕）。 */
     html[data-side="collapsed"] .ep-portal.ep-console .ep-side-new-chat {
         inline-size: var(--ep-control-height);
         margin-inline: auto;
         padding-inline: 0;
+        border-color: transparent;
         justify-content: center;
     }
 
@@ -5062,10 +5080,7 @@ html[data-reveal]::view-transition-new(root) {
 }
 
 .ep-graph-host {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--ep-space-3);
-    align-items: stretch;
+    min-inline-size: 0;
 }
 
 .ep-graph-stage {
@@ -5075,7 +5090,89 @@ html[data-reveal]::view-transition-new(root) {
     gap: var(--ep-space-2);
 }
 
+/* ── 檢視面板：浮在畫布上的側面板，不占版面 ─────────────────────────────────────────────
+ * 畫布外框是一格 grid：群組列在第 1 列，畫布與面板疊在第 2 列。面板不再是並排的欄位，
+ * 開關不會改變畫布寬度，所以不會觸發重新適應、圖也不會跳。預設收起，點節點或「法學檢視」才打開；
+ * 窄容器改成從底部升起的面板（position: fixed）。 */
+.ep-graph-canvas-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.ep-graph-canvas-wrap > .ep-graph-swimlanes {
+    grid-area: 1 / 1;
+}
+
+.ep-graph-canvas-wrap > .ep-graph-canvas {
+    grid-area: 2 / 1;
+}
+
+.ep-graph-inspector {
+    grid-area: 2 / 1;
+    z-index: 5;
+    justify-self: end;
+    align-self: start;
+    inline-size: min(24rem, calc(100% - var(--ep-space-6)));
+    max-block-size: calc(100% - var(--ep-space-6));
+    margin: var(--ep-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ep-space-3);
+    padding: 0 var(--ep-space-4) var(--ep-space-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--ep-border-subtle);
+    border-radius: var(--ep-radius-card);
+    background: var(--ep-surface-raised);
+    box-shadow: var(--ep-elevation-3);
+    /* 收起：慢起快收，visibility 延後到過渡跑完，收起後不能被 Tab 到也不會被讀出。 */
+    visibility: hidden;
+    opacity: 0;
+    translate: var(--ep-motion-travel-sm) 0;
+    transition:
+        opacity var(--ep-motion-fast) var(--ep-motion-ease-exit),
+        translate var(--ep-motion-fast) var(--ep-motion-ease-exit),
+        visibility 0s linear var(--ep-motion-fast);
+}
+
+.ep-graph-inspector:focus-visible {
+    outline: 2px solid var(--ep-primary);
+    outline-offset: -2px;
+}
+
+.ep-graph-host[data-inspector-open="true"] .ep-graph-inspector {
+    visibility: visible;
+    opacity: 1;
+    translate: 0 0;
+    transition:
+        opacity var(--ep-motion-fast) var(--ep-motion-ease-enter),
+        translate var(--ep-motion-fast) var(--ep-motion-ease-enter),
+        visibility 0s linear 0s;
+}
+
 .ep-inspector-sheet-bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ep-space-2);
+    margin-inline: calc(var(--ep-space-4) * -1);
+    padding: var(--ep-space-2) var(--ep-space-4);
+    border-block-end: 1px solid var(--ep-border-subtle);
+    background: var(--ep-surface-raised);
+}
+
+.ep-inspector-sheet-title {
+    margin: 0;
+    font-size: var(--ep-title-s-size);
+    line-height: var(--ep-title-s-leading);
+    font-weight: var(--ep-title-s-weight);
+    color: var(--ep-text);
+}
+
+.ep-inspector-sheet-handle {
     display: none;
 }
 
@@ -5083,82 +5180,34 @@ html[data-reveal]::view-transition-new(root) {
     .ep-graph-inspector {
         position: fixed;
         inset-inline: 0;
-        inset-block-end: 0;
+        inset-block: auto 0;
         z-index: 55;
+        inline-size: auto;
+        justify-self: stretch; /* 上面為側面板設的 end 對齊，會讓有左右邊界的絕對定位面板縮成內容寬並靠右 */
+        align-self: auto;
         max-block-size: 62dvh;
-        overflow-y: auto;
-        border-start-start-radius: var(--ep-radius-card);
-        border-start-end-radius: var(--ep-radius-card);
+        margin: 0;
         border-end-start-radius: 0;
         border-end-end-radius: 0;
         box-shadow: 0 -12px 32px color-mix(in srgb, var(--ep-text) 22%, transparent);
-        transform: translateY(105%);
-        visibility: hidden;
-        transition:
-            transform var(--ep-motion-fast) var(--ep-motion-ease-settle),
-            visibility 0s linear var(--ep-motion-fast);
+        opacity: 1;
+        translate: 0 105%;
     }
 
     .ep-graph-host[data-inspector-open="true"] .ep-graph-inspector {
-        transform: translateY(0);
-        visibility: visible;
-        transition:
-            transform var(--ep-motion-fast) var(--ep-motion-ease-settle),
-            visibility 0s linear 0s;
-    }
-
-    .ep-inspector-sheet-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--ep-space-2);
-        padding-block-end: var(--ep-space-2);
-        margin-block-end: var(--ep-space-2);
-        border-block-end: 1px solid var(--ep-border-subtle);
+        translate: 0 0;
     }
 
     .ep-inspector-sheet-handle {
+        display: block;
+        position: absolute;
+        inset-block-start: var(--ep-space-1);
+        inset-inline: 0;
+        margin-inline: auto;
         inline-size: var(--ep-space-8);
         block-size: var(--ep-space-1);
         border-radius: var(--ep-radius-pill);
         background: var(--ep-border-control);
-    }
-}
-
-@container workbench (width >= 68rem) {
-    .ep-graph-host {
-        grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
-        gap: var(--ep-space-4);
-    }
-
-    .ep-graph-host[data-inspector-dismissed="true"] {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .ep-graph-host[data-inspector-dismissed="true"] .ep-graph-inspector {
-        display: none;
-    }
-
-    .ep-graph-host:not([data-inspector-dismissed="true"]) .ep-inspector-reopen {
-        display: none;
-    }
-
-    .ep-inspector-sheet-bar {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding-block-end: var(--ep-space-2);
-        margin-block-end: var(--ep-space-2);
-        border-block-end: 1px solid var(--ep-border-subtle);
-    }
-
-    .ep-inspector-sheet-handle {
-        display: none;
-    }
-
-    .ep-graph-inspector {
-        max-block-size: 48rem;
-        overflow-y: auto;
     }
 }
 
@@ -5268,6 +5317,25 @@ html[data-reveal]::view-transition-new(root) {
     block-size: 62dvh;
     max-block-size: 48rem;
     background: var(--ep-bg);
+    transition: opacity var(--ep-motion-fast) var(--ep-motion-ease-enter);
+}
+
+/* 第一個視角定好之前不顯示（canon-graph.js 設 data-graph-state）：圖一建好是縮放 1 的實際大小，
+   隨後才縮到適合視窗；藏到定好視角再淡入，使用者看不到那一段「先放大、再縮小」。沒有 JavaScript 時沒有這個屬性，照常顯示。 */
+.ep-graph-canvas[data-graph-state="loading"] {
+    opacity: 0;
+    transition: none; /* 進入 loading 要立刻消失；淡出會讓縮放 1 的畫面又被看到一小段 */
+}
+
+/* 藏著的這段（建圖與排版要一點時間）給一條脈動的細線，說明正在載入，而不是一塊空白。 */
+.ep-graph-canvas-wrap:has(> .ep-graph-canvas[data-graph-state="loading"])::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    block-size: var(--ep-space-1);
+    background: var(--ep-primary);
+    animation: ep-pulse var(--ep-motion-pulse) ease-in-out infinite;
 }
 
 @container workbench (width >= 68rem) {
@@ -5353,10 +5421,75 @@ html[data-reveal]::view-transition-new(root) {
     color: var(--ep-text);
 }
 
-.ep-swimlane-pill[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--ep-primary) 16%, var(--ep-surface));
-    border-color: var(--ep-primary);
+/* 層級開關：aria-pressed = 顯示中（預設全部顯示，維持各層級自己的底色）；關掉的層級退成透明底、名稱劃線。 */
+.ep-swimlane-pill[data-tier][aria-pressed="false"] {
+    background: transparent;
+    border-style: dashed;
+    border-inline-start-style: solid;
+    color: var(--ep-text-secondary);
+}
+
+.ep-swimlane-pill[data-tier][aria-pressed="false"] .ep-legend-name {
+    text-decoration: line-through;
+}
+
+/* 違憲失效標記：aria-pressed = 正在打亮相關節點。 */
+.ep-swimlane-pill[data-graph-filter-tier="invalid"][aria-pressed="true"] {
+    background: color-mix(in srgb, var(--ep-error) 24%, var(--ep-surface));
+    border-color: var(--ep-error);
     color: var(--ep-text);
+}
+
+.ep-legend-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
+.ep-legend-count {
+    margin-inline-start: var(--ep-space-1);
+    color: var(--ep-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.ep-legend-reset {
+    min-block-size: 0;
+    padding: var(--ep-space-1) var(--ep-space-2);
+    font-size: var(--ep-label-s-size);
+}
+
+/* 連線樣式說明：線形（實線／虛線）加文字，不只靠顏色分辨。 */
+.ep-legend-edges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-3);
+    margin: 0;
+    padding: 0 0 0 var(--ep-space-3);
+    list-style: none;
+    border-inline-start: 1px solid var(--ep-border-subtle);
+}
+
+.ep-legend-edge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ep-space-1);
+    white-space: nowrap;
+}
+
+.ep-legend-line {
+    flex: none;
+    inline-size: 1.75rem;
+    block-size: 0.5rem;
+}
+
+.ep-legend-edge[data-kind="direct"] .ep-legend-line {
+    color: var(--ep-primary);
+}
+
+.ep-legend-edge[data-kind="sub"] .ep-legend-line {
+    color: var(--ep-accent);
 }
 
 .ep-swimlane-pill[data-graph-filter-tier] {
@@ -5401,16 +5534,6 @@ html[data-reveal]::view-transition-new(root) {
     .ep-graph-canvas .g6-minimap {
         display: none !important;
     }
-}
-
-.ep-graph-inspector {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ep-space-3);
-    padding: var(--ep-space-4);
-    border: 1px solid var(--ep-border-subtle);
-    border-radius: var(--ep-radius-control);
-    background: var(--ep-surface-raised);
 }
 
 .ep-inspector-head {
@@ -5542,11 +5665,20 @@ html[data-reveal]::view-transition-new(root) {
     background: var(--ep-surface);
 }
 
-.ep-inspector-rel-link {
-    color: var(--ep-link);
-    text-decoration: none;
+\1
+.ep-inspector-rel-heading .ep-badge {
+    margin-inline-start: var(--ep-space-2);
+}
+
+button.ep-inspector-rel-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
     font-size: var(--ep-label-m-size);
     font-weight: var(--ep-label-m-weight);
+    text-align: start;
+    cursor: pointer;
 }
 
 @media (hover: hover) {
