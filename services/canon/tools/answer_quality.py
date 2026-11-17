@@ -242,7 +242,7 @@ def format_markdown_report(
         f"- **無答案題給出有引用回答的比例（上界）**：{n.answered}／{n.total}"
         f"（{_pct(n.answered, n.total)}）。這不是不當作答率：被放過的題要逐題檢視"
         "（題庫標註錯、澄清題、灰區都可能在其中；做法與一次結果見"
-        " `eval/grounding-check-leaked-2026-11-03.md`）。",
+        " `eval/results/grounding-check-leaked-2026-11-03.md`）。",
         f"- 無答案題最後拒答（下界、模型自認不足、引用查核作廢）：{n.not_answered}／{n.total}"
         f"（{_pct(n.not_answered, n.total)}）。",
         f"- 可答題最後沒有回答：{a.not_answered}／{a.total}（{_pct(a.not_answered, a.total)}）；"

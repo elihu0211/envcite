@@ -1,7 +1,7 @@
 """義務確認的稽核：兩位判定者回答兩個窄問題，量主體與適用範圍的實質瑕疵（唯讀）。
 
     # 以抽查報告的人工判斷校準（判定者要抓到 C、不誤抓 A）
-    uv run python tools/duty_audit.py calibrate eval/duty-reextraction-2026-11-06.md \
+    uv run python tools/duty_audit.py calibrate eval/results/duty-reextraction-2026-11-06.md \
         --dsn 'postgresql://…@127.0.0.1:55440/{db}' --out calib.json
 
     # 稽核一個抽取版本已確認的義務與禁止陳述

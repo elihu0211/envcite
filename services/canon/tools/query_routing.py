@@ -1,7 +1,8 @@
 """查詢分類與路由：列表規則依查詢型別選用，離線比較各方案（唯讀）。
 
-    uv run python tools/query_routing.py prepare --keyword eval/keyword-golden-<日期>.json \\
-        --native eval/native-golden-<日期>.json --out queries.json
+    uv run python tools/query_routing.py prepare --keyword \\
+        eval/datasets/keyword-golden-<日期>.json \\
+        --native eval/datasets/native-golden-<日期>.json --out queries.json
     # 在 staging 的 canon pod 內以標準輸入執行；輸出一題一行（JSONL）
     python - collect queries.json --skip done.txt < tools/query_routing.py > hits.jsonl
     uv run python tools/query_routing.py evaluate queries.json hits.jsonl --splits dev
@@ -20,8 +21,10 @@
 - `compare-rules` 兩條規則逐題配對；`live-check` 對線上的 `/v2/search` 逐題查詢，與離線預測比對：
 
       ENVCITE_API_KEY 不設時會提示輸入（不顯示）；每題計入該租戶的搜尋用量。
-      uv run python tools/query_routing.py live-check eval/query-routing-queries-2026-11-13.json \\
-          eval/query-routing-hits-2026-11-13.jsonl --meta eval/query-routing-meta-2026-11-13.json \\
+      uv run python tools/query_routing.py live-check \\
+          eval/datasets/query-routing-queries-2026-11-13.json \\
+          eval/results/query-routing-hits-2026-11-13.jsonl --meta \\
+          eval/datasets/query-routing-meta-2026-11-13.json \\
           --split dev --host https://<主機> --sample 60
 
 方案只能依開發集選；測試集在定案後報一次。

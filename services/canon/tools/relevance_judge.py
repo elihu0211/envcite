@@ -1,12 +1,14 @@
 """Graded relevance judgements by two models for the golden set (UMBRELA, adapted), no person.
 
-    uv run python tools/relevance_judge.py calibrate <golden.yaml> --qrels eval/golden-qrels.json \\
-        --split eval/golden-split.json --cache <outside the repo>/judge-cache.jsonl \\
-        --out eval/golden-calibration-<date>.json
-    uv run python tools/relevance_judge.py pool <golden.yaml> --qrels eval/golden-qrels.json \\
-        --split eval/golden-split.json --subset dev --run <a>.run.json [--run …] \\
-        --calibration eval/golden-calibration-<date>.json --cache … \\
-        --out eval/golden-judgements-dev-<date>.json
+    uv run python tools/relevance_judge.py calibrate <golden.yaml> --qrels \\
+        eval/datasets/golden-qrels.json \\
+        --split eval/datasets/golden-split.json --cache <outside the repo>/judge-cache.jsonl \\
+        --out eval/results/golden-calibration-<date>.json
+    uv run python tools/relevance_judge.py pool <golden.yaml> --qrels \\
+        eval/datasets/golden-qrels.json \\
+        --split eval/datasets/golden-split.json --subset dev --run <a>.run.json [--run …] \\
+        --calibration eval/results/golden-calibration-<date>.json --cache … \\
+        --out eval/results/golden-judgements-dev-<date>.json
 
 The prompt is UMBRELA's zero-shot Bing prompt (Upadhyay et al. 2024, the descriptive–narrative–
 aspect structure of Thomas et al. 2023) in Traditional Chinese for statutes: the question, the law's

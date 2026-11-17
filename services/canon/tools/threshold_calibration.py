@@ -1,8 +1,9 @@
 """How much of the answerability floor's pass rate depends on seeing 10 hits instead of k.
 
-    uv run python tools/threshold_calibration.py --eval eval/golden-retrieval-dev-<date>.json \\
+    uv run python tools/threshold_calibration.py --eval \\
+        eval/results/golden-retrieval-dev-<date>.json \\
         [--arm hybrid] [--floors ../../libs/dotnet/EnvCite.ServiceDefaults/relevance-floors.json] \\
-        --out eval/golden-truncation-dev-<date>.json
+        --out eval/results/golden-truncation-dev-<date>.json
 
 Input is the report `golden_retrieval_eval.py measure` writes: per question the highest lexical and
 semantic score among the first k hits (`top_lexical`, `top_semantic`) and among the first

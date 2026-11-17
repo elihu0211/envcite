@@ -1,7 +1,8 @@
 """Re-derive consult's relevance floors from the golden-set reports of the dev subset, offline.
 
     uv run python tools/answerability_floor.py \\
-        --lexical eval/golden-retrieval-<date>.json --semantic eval/golden-retrieval-<date>.json
+        --lexical eval/results/golden-retrieval-<date>.json --semantic \\
+        eval/results/golden-retrieval-<date>.json
 
 Each report records, per question, the best score of each arm over the top 50. A question
 passes consult's floor when either arm reaches its floor, so the pass rate of the out-of-scope

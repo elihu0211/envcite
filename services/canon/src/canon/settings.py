@@ -63,7 +63,8 @@ class ServerSettings(DatabaseSettings, ModelsSettings):
     # 相關條文，但精排的延遲與候選數成正比（端點實測 3 條約 0.7 秒、30 條約 1.3 秒）。
     # 上限與兩臂的候選池（`store.SEARCH_POOL`）一致，再深也沒有候選；端點一次最多收 32 條，
     # 超過 30 條要分批（`reranking.MAX_BATCH`），延遲跟著加倍。預設值 30 在原生題庫的開發集量過
-    # （`eval/rerank-effect-dev-2026-11-13.md`）；改它要先用 `--rerank-depths` 在開發集量過。
+    # （`eval/results/rerank-effect-dev-2026-11-13.md`）；改它要先用 `--rerank-depths`
+    # 在開發集量過。
     rerank_candidates: int = Field(
         default=30,
         ge=1,

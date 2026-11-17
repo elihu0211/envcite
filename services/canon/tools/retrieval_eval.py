@@ -1,7 +1,8 @@
 """Retrieval evaluation with LLM-written questions: build the set once, then measure.
 
-    uv run python tools/retrieval_eval.py generate --models models.toml --out eval/retrieval.jsonl
-    uv run python tools/retrieval_eval.py run eval/retrieval.jsonl
+    uv run python tools/retrieval_eval.py generate --models models.toml --out \\
+        eval/results/retrieval.jsonl
+    uv run python tools/retrieval_eval.py run eval/results/retrieval.jsonl
 
 `generate` draws one in-force article per law (a seeded, repeatable draw), asks a model for a
 question only that article answers — reworded, with no law name, article number or copied

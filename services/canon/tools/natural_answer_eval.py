@@ -6,9 +6,9 @@ commit、題庫與語料快照（不記本工具的執行時間，所以同一�
 見 `tools/load_bench.py`。
 
     uv run python tools/natural_answer_eval.py \\
-        --input eval/grounding-check-<日期>.json \\
-        [--split eval/golden-split.json --subset test] \\
-        --out eval/natural-answer-quality-<日期>
+        --input eval/results/grounding-check-<日期>.json \\
+        [--split eval/datasets/golden-split.json --subset test] \\
+        --out eval/results/natural-answer-quality-<日期>
 
 沒有 `--out` 時只印出 Markdown。
 """

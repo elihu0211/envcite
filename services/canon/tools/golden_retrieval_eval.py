@@ -1,11 +1,13 @@
 """Retrieval against the golden question set (read-only): qrels, runs, metrics and tests.
 
-    uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out eval/golden-qrels.json
+    uv run python tools/golden_retrieval_eval.py qrels <golden.yaml> --out \\
+        eval/datasets/golden-qrels.json
     uv run python tools/golden_retrieval_eval.py measure <golden.yaml> \\
-        --qrels eval/golden-qrels.json --split eval/golden-split.json --subset dev \\
-        --out eval/golden-retrieval-<date>
-    uv run python tools/golden_retrieval_eval.py compare --qrels eval/golden-qrels.json \\
-        <a>.hybrid.run.json <b>.hybrid.run.json [--out eval/golden-compare-<date>]
+        --qrels eval/datasets/golden-qrels.json --split eval/datasets/golden-split.json --subset \\
+        dev \\
+        --out eval/results/golden-retrieval-<date>
+    uv run python tools/golden_retrieval_eval.py compare --qrels eval/datasets/golden-qrels.json \\
+        <a>.hybrid.run.json <b>.hybrid.run.json [--out eval/results/golden-compare-<date>]
 
 `qrels` maps each answerable question's expected articles (`citation_allowlist`: law name, article
 number, sometimes a `<pcode>-art-<n>` id) to this corpus — law name to pcode by exact

@@ -1,8 +1,8 @@
 """原生黃金題庫：由語料自己的條文結構產生，標準答案不來自被測的檢索系統（唯讀）。
 
-    uv run python tools/native_golden.py build  --out eval/native-golden-<日期>.json
-    uv run python tools/native_golden.py verify eval/native-golden-<日期>.json
-    uv run python tools/native_golden.py derive eval/native-golden-<日期>.json
+    uv run python tools/native_golden.py build  --out eval/datasets/native-golden-<日期>.json
+    uv run python tools/native_golden.py verify eval/datasets/native-golden-<日期>.json
+    uv run python tools/native_golden.py derive eval/datasets/native-golden-<日期>.json
 
 題庫自成一格：條文以語料的法規代碼加條號為鍵（`<pcode>-art-<n>`），不依任何外部題庫、法規名稱對照或
 領域種子；題目與答案都由條文原文的結構程式化產生，

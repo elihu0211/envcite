@@ -366,7 +366,9 @@ def evaluate_subsumption(
     )
 
 
-DEFAULT_BENCHMARK = Path(__file__).resolve().parents[1] / "eval" / "subsumption_benchmark.json"
+DEFAULT_BENCHMARK = (
+    Path(__file__).resolve().parents[1] / "eval" / "datasets" / "subsumption_benchmark.json"
+)
 
 
 def load_benchmark(path: Path) -> list[SubsumptionCase]:

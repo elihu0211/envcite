@@ -9,12 +9,13 @@
     uv run python tools/duty_effect.py judge items.json --cache judge-cache.jsonl \\
         --out judgements.json
     # 三、彙整：這一步才把匿名編號對回條件
-    uv run python tools/duty_effect.py report index.json judgements.json --out eval/<檔名>.json
+    uv run python tools/duty_effect.py report index.json judgements.json --out \\
+        eval/results/<檔名>.json
     # 四、未明示的主體實際由誰負擔（輸入是 duty_cost.py unstated 的輸出）
     uv run python tools/duty_effect.py bearer unstated.json \\
         --cache bearer-cache.jsonl --out bearer.json
 
-判定者取自 `--models`（預設 `eval/duty-fix-effect-judges.toml`，格式同 `models.toml` 的
+判定者取自 `--models`（預設 `eval/datasets/duty-fix-effect-judges.toml`，格式同 `models.toml` 的
 `[relevance]`），彼此不同家族、都與被測的抽取者不同家族；判定前以 `SameModel` 探測別名。
 判定者看到的標註，對兩個條件用同一個函式轉成文字：不標「承自上位」，主體空白一律寫成同一句，
 條件、執行與輪號都不在 items.json。
@@ -553,7 +554,8 @@ def judge_all(
 
 DEFECTS = ("subject", "scope")
 
-#: 先前抽查（eval/duty-reextraction-2026-11-06.md）判為實質瑕疵的單元。這些單元的瑕疵在修復前就有，
+#: 先前抽查（eval/results/duty-reextraction-2026-11-06.md）判為實質瑕疵的單元。
+#: 這些單元的瑕疵在修復前就有，
 #: 逐單元看修復前後各有幾筆已確認的陳述、被判有瑕疵幾筆。
 KNOWN_DEFECT_UNITS = (
     "O0040001 art_25/para_2",
@@ -1154,7 +1156,7 @@ def main() -> None:
     col.add_argument("--index", required=True)
     jud = sub.add_parser("judge")
     jud.add_argument("items")
-    jud.add_argument("--models", default="eval/duty-fix-effect-judges.toml")
+    jud.add_argument("--models", default="eval/datasets/duty-fix-effect-judges.toml")
     jud.add_argument("--pipeline-models", default="models.toml")
     jud.add_argument("--no-distinct-check", action="store_true")
     jud.add_argument("--cache", required=True)
@@ -1163,7 +1165,7 @@ def main() -> None:
     jud.add_argument("--out", required=True)
     bea = sub.add_parser("bearer")
     bea.add_argument("unstated", help="duty_cost.py unstated 的輸出")
-    bea.add_argument("--models", default="eval/duty-fix-effect-judges.toml")
+    bea.add_argument("--models", default="eval/datasets/duty-fix-effect-judges.toml")
     bea.add_argument("--cache", required=True)
     bea.add_argument("--out", required=True)
     rep = sub.add_parser("report")
