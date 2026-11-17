@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from canon.db import Conn
+from canon.law.judgment_pdf import PdfRejected
 from canon.law.judgment_sync import SyncResult, sync
 from canon.law.judicial_api import (
     AUTH_URL,
@@ -73,8 +74,19 @@ def _text(jid: str = JID, body: str = "本件適用噪音管制法第二條。")
     }
 
 
-def _sync(conn: Conn, api: _Api, *hours: int) -> SyncResult:
-    return sync(conn, Client("user", "secret", api), now=_at(*hours), pause=0)
+def _sync(
+    conn: Conn, api: _Api, *hours: int, files: Callable[[str], str | None] | None = None
+) -> SyncResult:
+    return sync(conn, Client("user", "secret", api), now=_at(*hours), pause=0, files=files)
+
+
+def _pdf_doc(jid: str = JID) -> dict[str, object]:
+    return {
+        "JTITLE": "噪音管制法事件",
+        "JDATE": "20210101",
+        "JFULLX": {"JFULLTYPE": "file", "JFULLPDF": "https://data.judicial.gov.tw/a.pdf"},
+        "JID": jid,
+    }
 
 
 def test_outside_the_window_nothing_is_called(conn: Conn) -> None:
@@ -100,7 +112,9 @@ def test_an_administrative_text_is_stored_and_other_categories_are_not_asked(con
     assert criminal not in "".join(api.calls)
 
 
-def test_a_missing_document_is_deleted_and_a_file_is_not_downloaded(conn: Conn) -> None:
+def test_a_missing_document_is_deleted_and_a_file_is_not_downloaded_without_a_fetcher(
+    conn: Conn,
+) -> None:
     gone = "TPAA,110,上,2,20210101,1"
     filed = "KSBA,110,訴,3,20210101,1"
     api = _Api()
@@ -217,3 +231,61 @@ def test_credentials_must_be_unreadable_by_others_and_errors_omit_the_secret(
     with pytest.raises(CredentialsError, match="其他人可讀") as raised:
         read_credentials(path)
     assert "s3cret" not in str(raised.value)
+
+
+def test_a_pdf_with_a_text_layer_is_stored_like_a_text(conn: Conn) -> None:
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": [JID]}]
+    api.docs[JID] = _pdf_doc()
+    asked: list[str] = []
+
+    def files(url: str) -> str | None:
+        asked.append(url)
+        return "本件適用噪音管制法第二條。"
+
+    result = _sync(conn, api, 1, files=files)
+
+    assert (result.stored, result.file_only) == (1, 0)
+    assert asked == ["https://data.judicial.gov.tw/a.pdf"]
+    assert _scalar(conn, "SELECT body FROM judgment.decision") == "本件適用噪音管制法第二條。"
+    assert _scalar(conn, "SELECT status::text FROM judgment.fetch") == "stored"
+
+
+@pytest.mark.parametrize("reason", ["untrusted_url", "too_large", "unreadable", "download_failed"])
+def test_a_rejected_pdf_is_file_only_with_the_reason(conn: Conn, reason: str) -> None:
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": [JID]}]
+    api.docs[JID] = _pdf_doc()
+
+    def files(url: str) -> str | None:
+        raise PdfRejected(reason)
+
+    result = _sync(conn, api, 1, files=files)
+
+    assert (result.stored, result.file_only) == (0, 1)
+    assert _scalar(conn, "SELECT last_error FROM judgment.fetch") == reason
+
+
+def test_a_scanned_pdf_without_text_is_file_only(conn: Conn) -> None:
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": [JID]}]
+    api.docs[JID] = _pdf_doc()
+
+    result = _sync(conn, api, 1, files=lambda _url: None)
+
+    assert (result.stored, result.file_only) == (0, 1)
+    assert _scalar(conn, "SELECT last_error FROM judgment.fetch") == "no_text_layer"
+
+
+def test_a_download_failure_stays_pending_for_the_next_night(conn: Conn) -> None:
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": [JID]}]
+    api.docs[JID] = _pdf_doc()
+
+    def files(url: str) -> str | None:
+        raise EndpointError("pdf")
+
+    result = _sync(conn, api, 1, files=files)
+
+    assert (result.stored, result.file_only, result.pending) == (0, 0, 1)
+    assert _scalar(conn, "SELECT status::text FROM judgment.fetch") == "pending"

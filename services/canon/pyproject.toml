@@ -24,6 +24,7 @@ dependencies = [
     "psycopg[binary]",
     "pydantic",
     "pydantic-settings",
+    "pypdf",
 ]
 
 [project.urls]

@@ -1,7 +1,8 @@
 """每晚取司法院裁判書異動：先消化佇列，再要新清單，只收行政類全文。
 
 服務時段是臺灣時間 0 時至 6 時。窗外出門不呼叫。JList 的非行政類 jid 不入佇列。
-未知的行政法院代碼記 `unmapped`，不重試。`查無資料` 才撤下。全文是檔案則只記 `file_only`。
+未知的行政法院代碼記 `unmapped`，不重試。`查無資料` 才撤下。全文是 PDF 時下載並抽文字層，
+與 HTML 全文同一條入庫路徑；沒有文字層（掃描檔）、網址不可信或檔案不合，才記 `file_only` 與原因。
 同一 jid 再出現改回 `pending`，因為內容可能已改。
 
 審級代碼取自司法陽光網公開的法院表：TPA 最高、TPB 臺北高等、TCB 臺中高等、KSB 高雄高等。
@@ -18,10 +19,12 @@ from zoneinfo import ZoneInfo
 
 import psycopg
 
+from canon.acquire.web import Http
 from canon.clock import taipei_now
 from canon.db import Conn, fetch, scalar
 from canon.exit_codes import JobStopped, fail
 from canon.law import judgment, judgment_anchor
+from canon.law.judgment_pdf import FileText, PdfRejected, fetcher
 from canon.law.judicial_api import Client, EndpointError, removed
 from canon.law.judicial_credentials import CredentialsError, credentials_path, read_credentials
 from canon.rules import Rule
@@ -74,23 +77,31 @@ def sync(
     now: Clock,
     sleep: Sleep = lambda _seconds: None,
     pause: float = PAUSE_SECONDS,
+    files: FileText | None = None,
 ) -> SyncResult:
-    """取完佇列裡的待取 jid，窗還開著才要新清單。整次不把密鑰寫進結果。"""
+    """取完佇列裡的待取 jid，窗還開著才要新清單。整次不把密鑰寫進結果。
+
+    `files` 取 PDF 全文；沒給就不下載，全文是檔案的裁判記 `file_only`。
+    """
     if not in_window(now()):
         log.info("裁判書同步：不在服務時段")
         return SyncResult(skipped=True)
-    stored = taken = files = listed = 0
+    stored = taken = filed = listed = 0
     try:
-        stored, taken, files = _drain(conn, client, now, sleep, pause, stored, taken, files)
+        stored, taken, filed = _drain(
+            conn, client, now, sleep, pause, files, (stored, taken, filed)
+        )
         if not in_window(now()):
-            return _result(conn, stored, taken, files)
+            return _result(conn, stored, taken, filed)
         days = _changes(client.changes())
         listed = _enqueue(conn, days)
-        stored, taken, files = _drain(conn, client, now, sleep, pause, stored, taken, files)
+        stored, taken, filed = _drain(
+            conn, client, now, sleep, pause, files, (stored, taken, filed)
+        )
     except JobStopped as e:
         code = fail(conn, e, "judgment sync")
-        return _result(conn, stored, taken, files, code)
-    return _result(conn, stored, taken, files, listed=listed)
+        return _result(conn, stored, taken, filed, code)
+    return _result(conn, stored, taken, filed, listed=listed)
 
 
 def _drain(
@@ -99,9 +110,8 @@ def _drain(
     now: Clock,
     sleep: Sleep,
     pause: float,
-    stored: int,
-    taken: int,
-    files: int,
+    files: FileText | None,
+    counts: tuple[int, int, int],
 ) -> tuple[int, int, int]:
     pending = [
         row.jid
@@ -112,19 +122,20 @@ def _drain(
             _JidRow,
         )
     ]
+    stored, taken, filed = counts
     for index, jid in enumerate(pending):
         if not in_window(now()):
             break
         if index:
             sleep(pause)
-        outcome = _one(conn, client, jid, now)
+        outcome = _one(conn, client, jid, now, files)
         stored += outcome == "stored"
         taken += outcome == "taken_down"
-        files += outcome == "file_only"
-    return stored, taken, files
+        filed += outcome == "file_only"
+    return stored, taken, filed
 
 
-def _one(conn: Conn, client: Client, jid: str, now: Clock) -> str:
+def _one(conn: Conn, client: Client, jid: str, now: Clock, files: FileText | None) -> str:
     """處理一筆。回傳新狀態；留下 pending 的不計入完成數。"""
     if _court(jid) is None:
         _mark(conn, jid, "unmapped", "unknown_court")
@@ -139,15 +150,11 @@ def _one(conn: Conn, client: Client, jid: str, now: Clock) -> str:
         _mark(conn, jid, "taken_down", None)
         return "taken_down"
     built = _decision(jid, payload)
+    if built == "file":
+        built = _from_file(jid, payload, files)
     if isinstance(built, str):
-        status = (
-            "unmapped"
-            if built == "unknown_court"
-            else "file_only"
-            if built == "file"
-            else "pending"
-        )
-        _mark(conn, jid, status, None if status == "file_only" else built)
+        status, error = _unfinished(built)
+        _mark(conn, jid, status, error)
         return status
     decided_on, document = built
     body = document["body"]
@@ -168,6 +175,49 @@ def _one(conn: Conn, client: Client, jid: str, now: Clock) -> str:
         return "pending"
     _mark(conn, jid, "stored", None)
     return "stored"
+
+
+#: 全文是檔案、記 `file_only` 的原因；`file` 是沒給下載函式，不記原因。
+_FILE_REASONS = frozenset(
+    {
+        "no_text_layer",
+        "untrusted_url",
+        "too_large",
+        "too_many_pages",
+        "unreadable",
+        "download_failed",
+    }
+)
+
+
+def _unfinished(problem: str) -> tuple[str, str | None]:
+    """未入庫的問題代碼 → （狀態，原因）。"""
+    if problem == "unknown_court":
+        return "unmapped", problem
+    if problem == "file":
+        return "file_only", None
+    if problem in _FILE_REASONS:
+        return "file_only", problem
+    return "pending", problem
+
+
+def _from_file(
+    jid: str, payload: object, files: FileText | None
+) -> tuple[date, dict[str, object]] | str:
+    """全文是 PDF：下載抽字，當成文字全文走同一條路。對不上時回問題代碼。"""
+    full = payload.get("JFULLX") if isinstance(payload, dict) else None
+    url = full.get("JFULLPDF") if isinstance(full, dict) else None
+    if files is None or not isinstance(url, str) or not isinstance(payload, dict):
+        return "file"
+    try:
+        text = files(url)
+    except PdfRejected as e:
+        return str(e)
+    except EndpointError:
+        return "transient"
+    if text is None:
+        return "no_text_layer"
+    return _decision(jid, {**payload, "JFULLX": {"JFULLTYPE": "text", "JFULLCONTENT": text}})
 
 
 def _decision(jid: str, payload: object) -> tuple[date, dict[str, object]] | str:
@@ -316,9 +366,13 @@ def main() -> None:
         raise SystemExit(ExitCode.FATAL) from e
     settings = load_settings(DatabaseSettings)
     client = Client(creds.user, creds.password)
+    http = Http(PAUSE_SECONDS)
     try:
         with psycopg.connect(settings.dsn) as conn:
-            raise SystemExit(sync(conn, client, now=taipei_now).exit_code)
+            result = sync(conn, client, now=taipei_now, files=fetcher(http))
+            raise SystemExit(result.exit_code)
     except psycopg.Error as e:
         log.error("裁判書同步中斷：資料庫")
         raise SystemExit(ExitCode.FAILED) from e
+    finally:
+        http.close()
