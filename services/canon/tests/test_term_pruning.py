@@ -7,7 +7,7 @@ import pytest
 from canon import projection
 from canon.db import Conn
 from canon.store.canon_store import CanonStore
-from envcite_segmenter import Segmenter
+from canon.vocabulary import serving
 from tests.test_import import _scalar
 from tests.test_incremental import _articles, _first, _law_v1
 
@@ -19,7 +19,7 @@ TEXTS = ("common alpha", "common beta", "common gamma", "common delta", "common 
 def _corpus(conn: Conn, tmp_path: Path) -> str:
     _first(conn, tmp_path, _law_v1(LawArticles=_articles(*TEXTS)))
     projection.rebuild(conn)
-    return str(_scalar(conn, "SELECT tokenizer FROM retrieval.passage LIMIT 1"))
+    return str(_scalar(conn, "SELECT tokenizer FROM retrieval.serving"))
 
 
 def _prune(conn: Conn, terms: str, tokenizer: str, max_df: float | None) -> str:
@@ -48,18 +48,31 @@ def test_projection_records_document_frequency(conn: Conn, tmp_path: Path) -> No
     assert _scalar(conn, "SELECT passages FROM retrieval.term_stat_total") == 5
 
 
-def test_a_new_tokenizer_replaces_the_statistics(conn: Conn, tmp_path: Path) -> None:
-    _corpus(conn, tmp_path)
-    conn.execute("UPDATE retrieval.passage SET tokenizer = 'old-dictionary'")
-    conn.execute("UPDATE retrieval.term_stat SET tokenizer = 'old-dictionary'")
-    conn.execute("UPDATE retrieval.term_stat_total SET tokenizer = 'old-dictionary'")
+def test_a_new_tokenizer_gets_its_own_statistics_and_the_old_ones_go_after_the_grace(
+    conn: Conn, tmp_path: Path
+) -> None:
+    old = _corpus(conn, tmp_path)
+    conn.execute(
+        "UPDATE corpus.legal_expression SET title = title || '施行細則' WHERE title IS NOT NULL"
+    )
     conn.commit()
 
     projection.rebuild(conn)
 
-    tokenizers = {t for (t,) in conn.execute("SELECT DISTINCT tokenizer FROM retrieval.term_stat")}
-    assert len(tokenizers) == 1
-    assert "old-dictionary" not in tokenizers
+    new = str(_scalar(conn, "SELECT tokenizer FROM retrieval.serving"))
+    assert new != old
+    # 寬限期內舊版本的詞頻還在：還沒換過來的副本照常修剪
+    assert _prune(conn, "common beta", old, 0.2) == "beta"
+    assert _prune(conn, "common beta", new, 0.2) == "beta"
+    conn.execute(
+        "UPDATE retrieval.tokenizer SET retired_at = now() - interval '1 hour' WHERE id = %s",
+        (old,),
+    )
+    conn.commit()
+
+    projection.rebuild(conn)
+
+    assert {t for (t,) in conn.execute("SELECT tokenizer FROM retrieval.term_stat")} == {new}
     assert _scalar(conn, "SELECT count(*) FROM retrieval.term_stat_total") == 1
 
 
@@ -115,7 +128,7 @@ def test_search_finds_the_same_article_with_and_without_pruning(
     _corpus(conn, tmp_path)
 
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         terms = segmenter.to_tsvector_input("common beta")
         plain = store.retrieval.search(terms, tokenizer=segmenter.tokenizer_id, as_of=ON, limit=5)
         pruned = store.retrieval.search(
@@ -133,7 +146,7 @@ def test_search_with_only_common_terms_still_returns_hits(
     _corpus(conn, tmp_path)
 
     with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
         hits = store.retrieval.search(
             segmenter.to_tsvector_input("common"),
             tokenizer=segmenter.tokenizer_id,

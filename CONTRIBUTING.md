@@ -127,7 +127,7 @@ docker exec envcite-pg createdb -U <帳號> platform
 |------|----------|
 | 1 | worktree 已建立，依賴已安裝 |
 | 2 | canon、consult、platform 皆已啟動。canon 須先啟動：它先執行 migration 再監聽連接埠 |
-| 3 | 法規已匯入，canon 已重啟 |
+| 3 | 法規已匯入、投影已建好（canon 約半分鐘內自動換上新詞典） |
 | 4 | `wt list` 的 URL 是本分支 platform 的位址，下一節以它登入 |
 
 1. `wt switch --create <type>/<簡述>`。`type` 同 Conventional Commits，如 `feat`、`fix`、`docs`、`refactor`、`chore`、`ci`、`test`。
@@ -139,7 +139,7 @@ docker exec envcite-pg createdb -U <帳號> platform
    wt platform
    ```
 
-3. 首次匯入法規（canon 的資料庫預設為空）。入口與環境變數見 [`services/canon/README.md`](services/canon/README.md)。詞典只在啟動時讀取，匯入後須重啟 `wt canon`：
+3. 首次匯入法規（canon 的資料庫預設為空）。入口與環境變數見 [`services/canon/README.md`](services/canon/README.md)。匯入後 canon 約半分鐘內自動換上新詞典，不必重啟：
 
    ```bash
    cd services/canon

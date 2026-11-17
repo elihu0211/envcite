@@ -10,11 +10,11 @@ from collections.abc import Iterator
 import grpc
 import pytest
 
+from canon import projection
 from canon.db import Conn
 from canon.server import build_server
 from canon.store.canon_store import CanonStore
 from envcite.canon.v1 import canon_pb2, canon_pb2_grpc
-from envcite_segmenter import Segmenter
 
 from .conftest import call_metadata
 
@@ -37,7 +37,6 @@ def search_stub(conn: Conn, store: CanonStore) -> Iterator[canon_pb2_grpc.CanonS
     assert expression is not None
     conn.commit()
 
-    segmenter = Segmenter(store.retrieval.lexicon())
     for number, content in (
         ("9", "工廠不得發出超過管制標準之噪音。"),
         ("10", "主管機關應定期檢查。"),
@@ -48,30 +47,23 @@ def search_stub(conn: Conn, store: CanonStore) -> Iterator[canon_pb2_grpc.CanonS
                 INSERT INTO corpus.provision (resource_id, provision_type, path)
                 VALUES (%(law)s, 'article', 'art_' || %(n)s)
                 RETURNING id
-            ), v AS (
-                INSERT INTO corpus.provision_version
-                        (provision_id, expression_id, resource_id, content,
-                         force_period, commencement_rule)
-                SELECT p.id, %(expr)s, %(law)s, %(content)s, daterange(DATE '2020-01-03', NULL),
-                       'promulgation'
-                  FROM p
-                RETURNING id
             )
-            INSERT INTO retrieval.passage (content_sha256, tokenizer, tsv)
-            SELECT sha256(convert_to(%(content)s, 'UTF8')), %(tokenizer)s,
-                   to_tsvector('simple', %(terms)s)
-              FROM v
+            INSERT INTO corpus.provision_version
+                    (provision_id, expression_id, resource_id, content,
+                     force_period, commencement_rule)
+            SELECT p.id, %(expr)s, %(law)s, %(content)s, daterange(DATE '2020-01-03', NULL),
+                   'promulgation'
+              FROM p
             """,
             {
                 "law": law[0],
                 "expr": expression[0],
                 "n": number,
                 "content": content,
-                "terms": segmenter.to_tsvector_input(content),
-                "tokenizer": segmenter.tokenizer_id,
             },
         )
     conn.commit()
+    projection.rebuild(conn)  # 字面索引走真正的投影，不手寫
 
     server, port = build_server(store, "127.0.0.1:0")
     server.start()

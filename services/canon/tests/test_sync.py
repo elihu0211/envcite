@@ -37,7 +37,7 @@ def test_a_cycle_acquires_imports_and_indexes(tmp_path: Path, conn: Conn) -> Non
     assert (
         _count(conn, "SELECT count(*) FROM corpus.legal_resource WHERE local_id = 'T0000001'") == 1
     )
-    assert _count(conn, "SELECT count(*) FROM retrieval.passage") > 1
+    assert _count(conn, "SELECT count(*) FROM retrieval.passage_lexical") > 1
 
 
 def test_a_cycle_with_nothing_to_do_changes_nothing(tmp_path: Path, conn: Conn) -> None:
@@ -47,11 +47,11 @@ def test_a_cycle_with_nothing_to_do_changes_nothing(tmp_path: Path, conn: Conn) 
     )
     http = _http(feed)
     sync.sync(conn, LocalMoj(), tmp_path / "snapshots", http=http)
-    indexed = _count(conn, "SELECT count(*) FROM retrieval.passage")
+    indexed = _count(conn, "SELECT count(*) FROM retrieval.passage_lexical")
 
     assert sync.sync(conn, LocalMoj(), tmp_path / "snapshots", http=http) == 0
     assert _count(conn, "SELECT count(*) FROM source.snapshot") == 1
-    assert _count(conn, "SELECT count(*) FROM retrieval.passage") == indexed
+    assert _count(conn, "SELECT count(*) FROM retrieval.passage_lexical") == indexed
 
 
 def test_a_download_that_is_not_a_zip_is_transient(tmp_path: Path, conn: Conn) -> None:

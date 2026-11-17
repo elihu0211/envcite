@@ -12,13 +12,12 @@ from canon.embedding import Embeds
 from canon.endpoints.graph import GraphApi
 from canon.endpoints.laws import LawApi
 from canon.endpoints.search import SearchApi
-from canon.law_names import LawNames
 from canon.reranking import Reranks
 from canon.search_tuning import SearchTuning
 from canon.store.ports import LawGraphReader, LawReader, Retrieval
+from canon.vocabulary import VocabularySource
 from envcite.canon.v1 import canon_pb2 as pb
 from envcite.canon.v1 import canon_pb2_grpc
-from envcite_segmenter import Segmenter
 
 
 class CanonServicer(canon_pb2_grpc.CanonServiceServicer):
@@ -81,8 +80,7 @@ def build_servicer(
     laws: LawReader,
     graph: LawGraphReader,
     retrieval: Retrieval,
-    segmenter: Segmenter,
-    law_names: LawNames,
+    vocabulary: VocabularySource,
     *,
     embedder: Embeds | None = None,
     reranker: Reranks | None = None,
@@ -96,8 +94,7 @@ def build_servicer(
         SearchApi(
             laws,
             retrieval,
-            segmenter,
-            law_names,
+            vocabulary,
             embedder=embedder,
             reranker=reranker,
             tuning=tuning,

@@ -37,6 +37,7 @@ from typing import Any
 import psycopg
 
 from canon.settings import ServerSettings, load
+from canon.vocabulary import serving
 
 #: 標準輸入餵給 `python -`（例如在 pod 裡跑）時沒有 `__file__`，種子改由 `--seeds` 給。
 _HERE = globals().get("__file__")
@@ -222,7 +223,6 @@ def renamed_items(
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """舊名題與被丟棄的（舊名出現在現行條文裡）：標準答案是改名後的法規。"""
     from canon.store.canon_store import CanonStore
-    from envcite_segmenter import Segmenter
 
     rows = conn.execute(
         """
@@ -261,7 +261,7 @@ def renamed_items(
     ]
     store = CanonStore.from_dsn(load(ServerSettings).dsn)
     try:
-        segmenter = Segmenter(store.retrieval.lexicon())
+        segmenter = serving(store.retrieval).segmenter
     finally:
         store.close()
     items: list[dict[str, Any]] = []
@@ -293,7 +293,7 @@ def terms_in_one_article(
         """
         SELECT EXISTS (
             SELECT 1
-              FROM retrieval.passage AS i
+              FROM retrieval.passage_lexical AS i
               JOIN corpus.provision_version AS v ON v.content_sha256 = i.content_sha256
              WHERE i.tokenizer = %(tokenizer)s
                AND i.tsv @@ plainto_tsquery('simple', %(terms)s)

@@ -71,6 +71,15 @@ class ServerSettings(DatabaseSettings, ModelsSettings):
         le=50,
         description="請求帶 rerank 時，兩臂取幾條候選交給精排模型",
     )
+    # 投影建好新版本的索引後，每個副本最晚在這個間隔內換過去（輪詢 `retrieval.serving` 一列，
+    # 很便宜）。
+    # 舊版本的索引在寬限期內還在（`projection.GRACE`），間隔要遠小於它。0 為不輪詢（啟動時讀一次）。
+    vocabulary_refresh_seconds: float = Field(
+        default=30.0,
+        ge=0,
+        le=600,
+        description="多久檢查一次服務中的分詞器版本有沒有換；0 為不檢查",
+    )
 
 
 def load[S: BaseSettings](cls: type[S]) -> S:
