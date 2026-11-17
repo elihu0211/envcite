@@ -279,11 +279,23 @@
     // ep-rise 動畫都接回原本的進度（已經跑完的直接收尾）。不分區塊與位置：內容裡的提示（ep-alert）、分頁面板是同一支動畫。
     const handoverMs = 600;
     let riseOrigin = performance.now();
+    // 起點要是 SSR 進場動畫真正開始的那一格，不是腳本執行的時刻：首次繪製常比 forms.js 執行早（前面還有要下載與執行的腳本），
+    // 拿執行時刻當起點，接手時動畫會被往回倒一段。只往前取：動畫還沒開始（startTime 為 null）就維持現在，
+    // 它們之後才開始，現在比它們早，接續只會稍微超前，不會倒退。
+    const syncRiseOrigin = () => {
+        for (const animation of document.getAnimations()) {
+            if (animation.animationName === "ep-rise" && animation.startTime !== null) {
+                riseOrigin = Math.min(riseOrigin, Number(animation.startTime));
+            }
+        }
+    };
     const continued = new WeakSet();
     const continueRise = () => {
         const elapsed = Math.max(0, performance.now() - riseOrigin);
         for (const animation of document.getAnimations()) {
-            if (animation.animationName !== "ep-rise" || continued.has(animation)) {
+            // 只接新長出來、還沒開始（startTime 為 null）的動畫。已經在跑的是預先渲染的舊節點，馬上就被換掉；
+            // 動它們會把畫面往前推（效能時間比時間軸的快取時間新），新節點隨後從正確進度開始，反而比它們慢、看起來倒退。
+            if (animation.animationName !== "ep-rise" || animation.startTime !== null || continued.has(animation)) {
                 continue;
             }
             continued.add(animation);
@@ -308,6 +320,7 @@
         setTimeout(() => handover.disconnect(), handoverMs);
     });
     const watchBlRoot = () => {
+        syncRiseOrigin();
         for (const target of [document.documentElement, document.head, document.body]) {
             if (target) {
                 rootWatcher.observe(target, { childList: true });
