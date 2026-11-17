@@ -21,9 +21,13 @@ public abstract class PortalLayoutBase : PlatformLayoutBase
 
     [Inject] protected IEnumerable<IPortalNavContributor> NavContributors { get; set; } = default!;
 
-    /// <summary>依目前租戶與登入者身分組裝入口側欄項目。</summary>
+    /// <summary>依目前租戶與登入者身分組裝入口側欄項目（只有業務模塊）。</summary>
     protected IReadOnlyList<PortalShell.NavItem> CollectNavItems(string tenantIdentifier, ClaimsPrincipal user) =>
-        PortalNavigation.Collect(NavContributors, new PortalNavContext(PortalPaths.Home(tenantIdentifier), user));
+        PortalNavigation.Collect(NavContributors, new PortalNavContext(PortalPaths.Home(tenantIdentifier), user), PortalNavSlot.Sidebar);
+
+    /// <summary>依目前租戶與登入者角色組裝帳號選單裡的系統設定項目（成員、目錄同步、帳號與組織）。</summary>
+    protected IReadOnlyList<PortalShell.NavItem> CollectSettingsItems(string tenantIdentifier, ClaimsPrincipal user) =>
+        PortalNavigation.Collect(NavContributors, new PortalNavContext(PortalPaths.Home(tenantIdentifier), user), PortalNavSlot.AccountMenu);
 
     /// <summary>左下角帳號卡片的主標題（名字，沒有則退回 email）。</summary>
     protected static string? DisplayNameOf(ClaimsPrincipal? user) =>

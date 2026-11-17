@@ -1924,6 +1924,19 @@ a.ep-brand {
     margin: 0;
 }
 
+/* 帳號選單裡的系統設定：接在個人項目之後，用細線隔開（沒有項目時整段不畫）。 */
+.ep-menu .ep-menu-settings {
+    margin-block-start: var(--ep-space-2);
+    padding-block-start: var(--ep-space-2);
+    border-block-start: 1px solid var(--ep-border-subtle);
+}
+
+/* 目前頁：選單項是連結而不是動作，標出現在在哪一頁。 */
+.ep-menu-item[aria-current="page"] {
+    background: var(--ep-surface-muted);
+    font-weight: var(--ep-label-l-weight);
+}
+
 /* 滿寬、觸控高度的文字控制：選單項與輸入框。外框各走各的。 */
 .ep-menu-item,
 .ep-input {

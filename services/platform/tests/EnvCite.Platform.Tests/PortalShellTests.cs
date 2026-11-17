@@ -39,7 +39,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
     [InlineData(CustomerRoles.Developer, false)]
     [InlineData(CustomerRoles.Billing, false)]
     [InlineData(CustomerRoles.Viewer, false)]
-    public async Task TheSideNavigationListsMembersOnlyForOwnersAndAdmins(string role, bool seesMembers)
+    public async Task TheSideNavigationHoldsOnlyBusinessModulesAndTheAccountMenuHoldsTheSettingsTheRoleMayOpen(string role, bool seesMembers)
     {
         var (tenant, email, initial) = await MemberAsync(factory, "sh-a", role);
         using var browser = new PortalBrowser(factory);
@@ -48,15 +48,26 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         var home = await browser.GetAsync(Home(tenant.Identifier));
 
         var prefix = Home(tenant.Identifier);
-        var links = SideNavHrefs(home.Html);
-        Assert.Equal(seesMembers, links.Contains($"{prefix}/members"));
+        // 側欄只有業務模塊：不論角色，成員、目錄同步、帳號與組織都不在側欄。
+        Assert.Equal([prefix, $"{prefix}/laws"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history"));
 
-        // 目錄同步（共用的測試主機開著）只列給擁有者：設定與 token 只有擁有者能管。
-        Assert.Equal(role == CustomerRoles.Owner, links.Contains($"{prefix}/directory"));
-        Assert.Equal([prefix, $"{prefix}/laws", $"{prefix}/account"], links.Where(l => l != $"{prefix}/members" && l != $"{prefix}/history" && l != $"{prefix}/directory"));
-        // 個人設定（外觀）與個人的安全設定在帳號選單；選單也顯示目前是誰。
-        Assert.Equal([$"{prefix}/settings", $"{prefix}/security", PasswordPage(tenant.Identifier)], MenuHrefs(home.Html));
-        Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal);
+        // 個人項目（外觀、兩步驟驗證、改密碼）在前；其後是系統設定，依角色出現：
+        // 成員給擁有者與管理員，目錄同步（共用的測試主機開著）只給擁有者（設定與 token 只有擁有者能管），帳號與組織每個角色都有。
+        List<string> expected = [$"{prefix}/settings", $"{prefix}/security", PasswordPage(tenant.Identifier)];
+        if (seesMembers)
+        {
+            expected.Add($"{prefix}/members");
+        }
+
+        if (role == CustomerRoles.Owner)
+        {
+            expected.Add($"{prefix}/directory");
+        }
+
+        expected.Add($"{prefix}/account");
+        Assert.Equal(expected, MenuHrefs(home.Html));
+        Assert.Contains("<nav class=\"ep-menu-settings\" aria-label=\"系統設定\">", Menu(home.Html), StringComparison.Ordinal);
+        Assert.Contains(email, Menu(home.Html), StringComparison.Ordinal); // 選單也顯示目前是誰
     }
 
     [Fact]
@@ -79,8 +90,10 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         }
 
         // 目前頁標示：首頁只在首頁算數，不因為其他頁都在它底下就一直亮著；舞台頂欄跟著呈現目前頁面脈絡。
-        Assert.Single(Regex.Matches(account.Html, "ep-side-link active"));
-        Assert.Matches($"href=\"{Regex.Escape($"{prefix}/account")}\"[^>]*class=\"ep-side-link active\"", account.Html);
+        // 帳號與組織在帳號選單，不在側欄：側欄沒有目前頁，選單裡的那一項標 aria-current。
+        Assert.DoesNotContain("ep-side-link active", account.Html, StringComparison.Ordinal);
+        Assert.Matches($"href=\"{Regex.Escape($"{prefix}/account")}\" aria-current=\"page\"", Menu(account.Html));
+        Assert.DoesNotContain("aria-current=\"page\"", Menu(home.Html), StringComparison.Ordinal);
         Assert.DoesNotContain("回總覽", account.Html, StringComparison.Ordinal);
 
         // AI 瀏覽器側欄順序：頂端快速新對話鈕在前、功能模塊居中、左下角帳號資料在後，且頂欄沒有頭像鈕、改為上下文脈絡。
@@ -156,6 +169,8 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
     private sealed class ExtraNav : IPortalNavContributor
     {
+        public PortalNavSlot Slot => PortalNavSlot.Sidebar;
+
         public int Order => 25;
 
         public IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) => [new($"{context.Home}/extra", "Extra", "服務")];
@@ -173,7 +188,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
 
         var home = await browser.GetAsync(prefix);
 
-        Assert.Equal([prefix, $"{prefix}/laws", $"{prefix}/extra", $"{prefix}/members", $"{prefix}/account"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history" && l != $"{prefix}/directory"));
+        Assert.Equal([prefix, $"{prefix}/laws", $"{prefix}/extra"], SideNavHrefs(home.Html).Where(l => l != $"{prefix}/history"));
     }
 
     // 還在改初始密碼、註冊驗證器時只開那一頁：其他連結點了也會被導回去，所以沒有選單，只留登出。

@@ -431,7 +431,7 @@ public sealed partial class AppearanceSettingTests(PlatformFactory factory)
         Assert.Contains("<title>個人設定 ·", page.Html, StringComparison.Ordinal);
         Assert.Contains($"<form method=\"post\" action=\"{home}/appearance\"", page.Html, StringComparison.Ordinal);
         Assert.Equal([("system", true, "系統"), ("light", false, "亮色"), ("dark", false, "暗色")], Radios(page.Html));
-        Assert.Contains($"<a class=\"ep-menu-item\" href=\"{home}/settings\">個人設定</a>", page.Html, StringComparison.Ordinal);
+        Assert.Contains($"<a class=\"ep-menu-item\" href=\"{home}/settings\" aria-current=\"page\">個人設定</a>", page.Html, StringComparison.Ordinal);
         // 同一個元件：兩邊的標記除了端點、返回位址與 antiforgery 權杖外逐字相同。
         Assert.Equal(Normalize(Section(operatorPage)), Normalize(Section(page.Html)));
         Assert.DoesNotContain("data-theme", PageMarkup.WithoutStyles(page.Html), StringComparison.Ordinal);

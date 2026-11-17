@@ -19,6 +19,7 @@ public sealed partial class WorkspaceLayout(ITenantDirectory directory, Workspac
     private bool _showMenu;
     private IReadOnlyList<PortalShell.MenuItem> _menuItems = [];
     private IReadOnlyList<PortalShell.NavItem> _navItems = [];
+    private IReadOnlyList<PortalShell.NavItem> _settingsItems = [];
     private IReadOnlyList<PortalShell.RecentConversation> _recent = [];
     private bool _subscribed;
     private int _recentRead;
@@ -39,7 +40,7 @@ public sealed partial class WorkspaceLayout(ITenantDirectory directory, Workspac
             : null;
         if (identifier is null)
         {
-            (_tenantIdentifier, _tenantName, _home, _showMenu, _menuItems, _navItems, _recent) = (null, null, null, false, [], [], []);
+            (_tenantIdentifier, _tenantName, _home, _showMenu, _menuItems, _navItems, _settingsItems, _recent) = (null, null, null, false, [], [], [], []);
             return;
         }
 
@@ -57,6 +58,7 @@ public sealed partial class WorkspaceLayout(ITenantDirectory directory, Workspac
 
         _showMenu = CanUseMenu(_user);
         _navItems = _showMenu ? CollectNavItems(identifier, _user!) : [];
+        _settingsItems = _showMenu ? CollectSettingsItems(identifier, _user!) : [];
 
         if (!_subscribed)
         {

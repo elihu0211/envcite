@@ -6,14 +6,16 @@ using MudBlazor;
 
 namespace EnvCite.Platform.Web.Components.Layout.Navigation;
 
-/// <summary>入口自帶的側欄來源的共同基底：本地化與兩個群組的標題。項目文字一律經 <c>L</c>，資源檔的測試才掃得到。</summary>
+/// <summary>入口自帶的導覽來源的共同基底：本地化與兩個群組的標題。項目文字一律經 <c>L</c>，資源檔的測試才掃得到。</summary>
 internal abstract class PortalNavContributorBase(IStringLocalizer<Ui> localizer) : IPortalNavContributor
 {
     protected IStringLocalizer<Ui> L { get; } = localizer;
 
     protected string ServicesGroup => L["服務"];
 
-    protected string OrganizationGroup => L["組織"];
+    protected string SettingsGroup => L["系統設定"];
+
+    public virtual PortalNavSlot Slot => PortalNavSlot.Sidebar;
 
     public abstract int Order { get; }
 
@@ -40,31 +42,39 @@ internal sealed class LawWorkbenchNav(IStringLocalizer<Ui> localizer, ITenantMod
             : [];
 }
 
+// 以下三個是租戶的系統設定：不是業務模塊，收在頭像的帳號選單，由角色決定誰看得到（服務層與頁面另有檢查）。
 internal sealed class MembersNav(IStringLocalizer<Ui> localizer) : PortalNavContributorBase(localizer)
 {
+    public override PortalNavSlot Slot => PortalNavSlot.AccountMenu;
+
     public override int Order => 30;
 
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
         context.User.IsInRole(CustomerRoles.Owner) || context.User.IsInRole(CustomerRoles.Admin)
-            ? [new($"{context.Home}/members", L["成員"], OrganizationGroup, Icon: Icons.Material.Outlined.Group)]
+            ? [new($"{context.Home}/members", L["成員"], SettingsGroup)]
             : [];
 }
 
 internal sealed class DirectoryNav(IStringLocalizer<Ui> localizer, IDirectoryAvailability availability) : PortalNavContributorBase(localizer)
 {
+    public override PortalNavSlot Slot => PortalNavSlot.AccountMenu;
+
     public override int Order => 40;
 
     // 設定與 token 只有擁有者能管（服務層也擋）；功能面沒開就不列。
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
         availability.Available && context.User.IsInRole(CustomerRoles.Owner)
-            ? [new($"{context.Home}/directory", L["目錄同步"], OrganizationGroup, Icon: Icons.Material.Outlined.SyncAlt)]
+            ? [new($"{context.Home}/directory", L["目錄同步"], SettingsGroup)]
             : [];
 }
 
 internal sealed class AccountNav(IStringLocalizer<Ui> localizer) : PortalNavContributorBase(localizer)
 {
+    public override PortalNavSlot Slot => PortalNavSlot.AccountMenu;
+
     public override int Order => 50;
 
+    // 每個角色都看得到自己的帳號與組織概覽；改名與金鑰等區塊由頁面依角色決定。
     public override IEnumerable<PortalShell.NavItem> Items(PortalNavContext context) =>
-        [new($"{context.Home}/account", L["帳號與組織"], OrganizationGroup, Icon: Icons.Material.Outlined.ManageAccounts)];
+        [new($"{context.Home}/account", L["帳號與組織"], SettingsGroup)];
 }
