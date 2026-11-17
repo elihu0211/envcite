@@ -118,8 +118,8 @@ const scenarios = {
             await circuitConnected();
             await until("應還原兩個回合", async () => (await turns().count()) === 2);
         });
-        await step("側欄的「查詢」開新對話、最近對話回到舊的那一串", async () => {
-            await page.click(`a.ep-side-link[href='/portal/${tenant}']`);
+        await step("側欄的「新對話」開新對話、最近對話回到舊的那一串", async () => {
+            await page.click(`a.ep-side-new-chat[href='/portal/${tenant}']`);
             await until("應是空畫面", async () => (await page.locator(".ep-ask[data-state='empty']").count()) === 1);
             await page.click(".ep-recent-link");
             await until("應回到兩個回合", async () => (await turns().count()) === 2);
@@ -210,7 +210,7 @@ const scenarios = {
             await until("側欄應只剩原本那串", async () => (await page.locator(".ep-recent-link").count()) === 1);
         });
 
-        await step("搜尋：側欄沒有篩選框；點「全部」旁的圖示到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
+        await step("搜尋：側欄沒有篩選框；點對話清單標題旁的圖示到紀錄頁，/ 鍵聚焦標題搜尋框", async () => {
             if ((await page.locator("input[data-recent-filter]").count()) !== 0) throw new Error("側欄不該有篩選框");
             await page.locator(".ep-history-filter").click();
             await until("應到對話紀錄頁", async () => page.url().endsWith("/history"));
@@ -221,7 +221,7 @@ const scenarios = {
         });
 
         await step("離開再從側欄點回來：還原回合，接著問會帶著前文", async () => {
-            await page.click(`a.ep-side-link[href='/portal/${tenant}']`);
+            await page.click(`a.ep-side-new-chat[href='/portal/${tenant}']`);
             await until("應是空畫面", async () => (await page.locator(".ep-ask[data-state='empty']").count()) === 1);
             await page.click(".ep-recent-link");
             await until("應還原一個回合", async () => (await turns().count()) === 1);
@@ -363,7 +363,7 @@ const scenarios = {
         // 換到 path 後等頁面穩定（動畫收尾、串流結束），再比對外殼，並檢查沒有缺屬性的畫面與外殼元素的版面位移。
         // 業務模塊與對話紀錄在側欄；成員、帳號這類系統設定收在帳號選單（popover），要先打開才點得到。
         const visit = async (name, path, expected) => {
-            const sideLink = page.locator(`a[href='${path}']:is(.ep-side-link, .ep-history-filter)`);
+            const sideLink = page.locator(`a[href='${path}']:is(.ep-side-link, .ep-side-new-chat, .ep-history-filter)`);
             if ((await sideLink.count()) > 0) {
                 await sideLink.click();
             } else {
@@ -599,6 +599,224 @@ const scenarios = {
             await page.goto(`${base}/portal/${tenant}`);
             await circuitConnected();
             await assertSmoothFrames("冷載入首頁", false);
+        });
+    },
+
+    // 授權知識圖譜進頁面時，第一個看得到的畫面就是最後的視角：圖一建好是縮放 1 的實際大小，若直接露出來，
+    // 使用者會先看到放大的卡片、隨後才縮到適合視窗。每個 frame 記下畫布的可見度與縮放，可見之後縮放不得再變。
+    async "law-graph-viewport"() {
+        await step("登入後前往法規體系與合規：圖譜可見之後縮放不再變", async () => {
+            await signIn();
+            await page.addInitScript(() => {
+                window.__graphFrames = [];
+                const tick = () => {
+                    const canvas = document.querySelector(".ep-graph-canvas");
+                    const graph = canvas?._g6Instance;
+                    if (canvas && graph) {
+                        window.__graphFrames.push({
+                            opacity: Number(getComputedStyle(canvas).opacity),
+                            zoom: Number(graph.getZoom().toFixed(3)),
+                            state: canvas.dataset.graphState ?? "",
+                        });
+                    }
+                    requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+            });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await until("圖譜應建好", async () => (await page.evaluate(() => window.__graphFrames.length)) > 0);
+            await page.waitForTimeout(2000); // 建圖、定視角、淡入都要時間；等它們都做完再比對
+
+            const frames = await page.evaluate(() => window.__graphFrames);
+            const visible = frames.filter((frame) => frame.opacity > 0);
+            if (visible.length === 0) throw new Error(`圖譜一直沒有顯示：${JSON.stringify(frames.slice(-3))}`);
+            const changed = visible.filter((frame) => Math.abs(frame.zoom - visible[0].zoom) > 0.001);
+            if (changed.length > 0) {
+                throw new Error(`圖譜顯示之後縮放又變了（${visible[0].zoom} → ${changed[0].zoom}），使用者會看到先放大再縮小：${JSON.stringify(visible.slice(0, 4))}`);
+            }
+            if (!frames.some((frame) => frame.state === "ready" && frame.opacity > 0)) throw new Error("圖譜沒有走到 ready 並顯示");
+        });
+    },
+
+    // 授權知識圖譜的檢視面板：浮在畫布上、不占版面（開關不改變畫布寬度，圖才不會重新適應而跳動）；
+    // 預設收起，點節點打開並把被選的節點讓到面板左邊；Esc、✕、「法學檢視」都能收起，焦點不掉到 body。
+    async "law-graph-inspector"() {
+        const state = () => page.evaluate(() => {
+            const canvas = document.querySelector(".ep-graph-canvas");
+            const host = document.querySelector(".ep-graph-host");
+            const sheet = document.querySelector(".ep-graph-inspector");
+            const rect = sheet.getBoundingClientRect();
+            return {
+                canvasW: canvas.clientWidth,
+                open: host.dataset.inspectorOpen,
+                visibility: getComputedStyle(sheet).visibility,
+                position: getComputedStyle(sheet).position,
+                left: Math.round(rect.left),
+                right: Math.round(rect.right),
+                expanded: document.querySelector("[data-inspector-open-btn]").getAttribute("aria-expanded"),
+                title: document.querySelector(".ep-inspector-title")?.textContent ?? "",
+                focus: document.activeElement?.id || document.activeElement?.className?.toString() || document.activeElement?.tagName,
+            };
+        });
+        // 以標題找節點，回傳它在畫面上的中心與右緣（卡片寬 284、乘上縮放）。
+        const nodeScreen = (title) => page.evaluate((wanted) => {
+            const canvas = document.querySelector(".ep-graph-canvas");
+            const graph = canvas._g6Instance;
+            const found = graph.getNodeData().find((n) => n.data?.raw?.title === wanted);
+            if (!found) return null;
+            const box = canvas.getBoundingClientRect();
+            const [x, y] = graph.getViewportByCanvas(graph.getElementPosition(found.id));
+            return { x: box.left + x, y: box.top + y, right: box.left + x + 142 * graph.getZoom() };
+        }, title);
+
+        await step("登入後前往法規體系與合規：面板預設收起，不占畫布寬度", async () => {
+            await signIn();
+            // 側面板要容器寬度達 68rem（扣掉側欄約需 1600px 的視窗）；更窄是從底部升起的面板，在最後一步驗。
+            await page.setViewportSize({ width: 1700, height: 900 });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await until("圖譜應建好", async () => (await page.evaluate(() => Boolean(document.querySelector(".ep-graph-canvas")?._g6Instance))) === true);
+            await page.waitForTimeout(1500);
+            const s = await state();
+            if (s.open !== "false" || s.visibility !== "hidden" || s.expanded !== "false") throw new Error(`面板應預設收起：${JSON.stringify(s)}`);
+        });
+
+        let closed;
+        await step("點節點：面板打開、畫布寬度不變、節點讓到面板左邊", async () => {
+            await page.evaluate(() => document.querySelector(".ep-graph-canvas-wrap").scrollIntoView({ block: "center" }));
+            await page.waitForTimeout(300);
+            closed = await state();
+            const target = await nodeScreen("空氣污染防制法施行細則");
+            if (!target) throw new Error("圖上找不到「空氣污染防制法施行細則」");
+            await page.mouse.click(target.x, target.y);
+            await until("面板應打開", async () => (await state()).open === "true");
+            await page.waitForTimeout(500);
+            const opened = await state();
+            if (opened.visibility !== "visible" || opened.expanded !== "true") throw new Error(`面板沒有顯示：${JSON.stringify(opened)}`);
+            if (opened.canvasW !== closed.canvasW) throw new Error(`面板不該改變畫布寬度：${closed.canvasW} → ${opened.canvasW}`);
+            if (opened.title !== "空氣污染防制法施行細則") throw new Error(`面板應顯示被選的法規：${opened.title}`);
+            const after = await nodeScreen("空氣污染防制法施行細則");
+            if (after.right > opened.left) throw new Error(`被選的節點被面板蓋住：節點右緣 ${Math.round(after.right)} > 面板左緣 ${opened.left}`);
+            if (shots) await page.locator(".ep-graph-canvas-wrap").screenshot({ path: `${shots}/law-inspector-open.png` });
+        });
+
+        await step("關係清單：點母法在圖上選取它，面板換成它的資料", async () => {
+            const link = page.locator(".ep-inspector-rel-link").first();
+            const wanted = (await link.textContent())?.trim();
+            if (!wanted) throw new Error("面板沒有關係清單");
+            await link.click();
+            await until(`面板應換成「${wanted}」`, async () => (await state()).title === wanted);
+            if ((await state()).canvasW !== closed.canvasW) throw new Error("換選節點不該改變畫布寬度");
+        });
+
+        await step("Esc 收起；「法學檢視」開關；✕ 收起並把焦點還給「法學檢視」", async () => {
+            await page.keyboard.press("Escape");
+            await until("Esc 應收起面板", async () => (await state()).open === "false");
+            await page.waitForTimeout(400);
+            const afterEsc = await state();
+            if (afterEsc.visibility !== "hidden" || afterEsc.canvasW !== closed.canvasW) throw new Error(`Esc 之後：${JSON.stringify(afterEsc)}`);
+
+            await page.click("[data-inspector-open-btn]");
+            await until("按鈕應打開面板", async () => (await state()).open === "true");
+            if ((await state()).focus !== "ep-graph-inspector") throw new Error(`打開後焦點應在面板：${(await state()).focus}`);
+
+            await page.click("[data-inspector-close]");
+            await until("✕ 應收起面板", async () => (await state()).open === "false");
+            const afterClose = await state();
+            if (!String(afterClose.focus).includes("ep-inspector-reopen")) throw new Error(`收起後焦點應回到「法學檢視」：${afterClose.focus}`);
+            if (afterClose.canvasW !== closed.canvasW) throw new Error("✕ 不該改變畫布寬度");
+        });
+
+        await step("窄視窗：面板改為從底部升起", async () => {
+            await page.setViewportSize({ width: 800, height: 900 });
+            await page.waitForTimeout(500);
+            await page.click("[data-inspector-open-btn]");
+            await until("窄視窗按鈕應打開面板", async () => (await state()).open === "true");
+            await page.waitForTimeout(400);
+            const narrow = await state();
+            if (narrow.position !== "fixed" || narrow.visibility !== "visible") throw new Error(`窄視窗應為底部面板：${JSON.stringify(narrow)}`);
+            if (shots) await page.screenshot({ path: `${shots}/law-inspector-narrow.png` });
+        });
+    },
+
+    // 授權知識圖譜的圖例與層級切換：層級是可複選的顯示／隱藏開關（不是單選的打亮）、至少留一層、鍵盤切換焦點不掉、
+    // 連線樣式有文字說明；「違憲失效」是另一種標記，只打亮相關節點、不改畫的內容。
+    async "law-graph-legend"() {
+        const legend = () => page.evaluate(() => {
+            const canvas = document.querySelector(".ep-graph-canvas");
+            const graph = canvas._g6Instance;
+            const bar = document.querySelector(".ep-graph-swimlanes");
+            const tiers = [...bar.querySelectorAll(".ep-swimlane-pill[data-tier]")].map((b) => ({ tier: b.dataset.graphFilterTier, shown: b.getAttribute("aria-pressed") === "true" }));
+            const invalid = bar.querySelector("[data-graph-filter-tier='invalid']");
+            return {
+                state: canvas.dataset.graphState,
+                nodes: graph.getNodeData().filter((n) => n.data?.raw).length, // 法規節點；不含「+N 部」的展開膠囊
+                tiers,
+                reset: Boolean(bar.querySelector("[data-graph-legend-reset]")),
+                invalidText: invalid?.textContent ?? "",
+                invalidOn: invalid?.getAttribute("aria-pressed") === "true",
+                edges: [...bar.querySelectorAll(".ep-legend-edge")].map((li) => `${li.dataset.kind}:${li.textContent.trim()}:${li.querySelector("line")?.getAttribute("stroke-dasharray") ? "dashed" : "solid"}`),
+                status: bar.querySelector("[data-legend-status]")?.textContent ?? "",
+                focus: document.activeElement?.dataset?.graphFilterTier ?? (document.activeElement?.hasAttribute?.("data-graph-legend-reset") ? "reset" : null),
+                dimmed: graph.getNodeData().filter((n) => (graph.getElementState(n.id) || []).includes("inactive")).length,
+            };
+        });
+        const tierChip = (tier) => page.locator(`.ep-swimlane-pill[data-graph-filter-tier='${tier}']`);
+        const settled = (what, probe) => until(what, async () => {
+            const s = await legend();
+            return s.state === "ready" && probe(s);
+        });
+
+        await step("登入後前往法規體系與合規：三個層級都顯示、連線樣式有文字說明", async () => {
+            await signIn();
+            await page.setViewportSize({ width: 1700, height: 900 });
+            await page.goto(`${base}/portal/${tenant}/laws`);
+            await settled("圖譜應建好並顯示", (s) => s.nodes >= 3);
+            const s = await legend();
+            if (JSON.stringify(s.tiers.map((t) => t.shown)) !== "[true,true,true]") throw new Error(`三個層級應都顯示：${JSON.stringify(s.tiers)}`);
+            if (s.reset) throw new Error("沒有隱藏任何層級時不該有「全部顯示」");
+            if (!s.invalidText.includes("違憲失效")) throw new Error(`違憲失效的標記要有文字，不能只有符號：${JSON.stringify(s.invalidText)}`);
+            if (s.edges.length !== 2 || !s.edges.some((e) => e.startsWith("direct:") && e.endsWith(":solid")) || !s.edges.some((e) => e.startsWith("sub:") && e.endsWith(":dashed"))) {
+                throw new Error(`連線圖例應有實線的直接授權與虛線的再授權：${JSON.stringify(s.edges)}`);
+            }
+            if (shots) await page.locator(".ep-graph-canvas-wrap").screenshot({ path: `${shots}/law-legend-all.png` });
+        });
+
+        await step("隱藏 Tier 3：該層從圖上消失、其餘照舊，焦點留在原來的開關", async () => {
+            await tierChip(3).focus();
+            await page.keyboard.press("Enter");
+            await settled("Tier 3 應被隱藏", (s) => s.nodes === 2 && s.tiers.find((t) => t.tier === "3")?.shown === false);
+            const s = await legend();
+            if (!s.reset) throw new Error("隱藏層級後應出現「全部顯示」");
+            if (s.focus !== "3") throw new Error(`切換後焦點應留在 Tier 3 的開關：${s.focus}`);
+            if (shots) await page.locator(".ep-graph-canvas-wrap").screenshot({ path: `${shots}/law-legend-hidden.png` });
+        });
+
+        await step("至少留一個層級：最後一層關不掉，並說明原因", async () => {
+            await tierChip(2).click();
+            await settled("Tier 2 也被隱藏", (s) => s.nodes === 1);
+            await tierChip(1).click();
+            await until("應說明至少要留一層", async () => (await legend()).status.includes("至少"));
+            const s = await legend();
+            if (s.nodes !== 1 || s.tiers.find((t) => t.tier === "1")?.shown !== true) throw new Error(`最後一層不該被關掉：${JSON.stringify(s)}`);
+        });
+
+        await step("全部顯示：回到三層，「全部顯示」消失", async () => {
+            await page.locator("[data-graph-legend-reset]").click();
+            await settled("應回到三層", (s) => s.nodes === 3 && !s.reset && s.tiers.every((t) => t.shown));
+        });
+
+        await step("違憲失效是標記：只打亮相關節點，不改變畫的內容", async () => {
+            await tierChip("invalid").click();
+            await until("應打亮違憲失效的節點", async () => {
+                const s = await legend();
+                return s.invalidOn && s.dimmed > 0;
+            });
+            if ((await legend()).nodes !== 3) throw new Error("打亮不該增減節點");
+            await tierChip("invalid").click();
+            await until("再按一次應取消", async () => {
+                const s = await legend();
+                return !s.invalidOn && s.dimmed === 0;
+            });
         });
     },
 

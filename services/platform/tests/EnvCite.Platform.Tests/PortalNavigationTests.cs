@@ -22,7 +22,15 @@ public sealed class PortalNavigationTests
         public TimeSpan StaleAfter => TimeSpan.FromDays(1);
     }
 
-    private static ClaimsPrincipal In(string role) => new(new ClaimsIdentity([new Claim(ClaimTypes.Role, role)], "test"));
+    private sealed class FakeModules : ITenantModules
+    {
+        public bool IsEnabled(string tenantIdentifier, string moduleKey) => true;
+
+        public IReadOnlySet<string> EnabledModules(string tenantIdentifier) => new HashSet<string>();
+    }
+
+    private static ClaimsPrincipal In(string role) =>
+        new(new ClaimsIdentity([new Claim(ClaimTypes.Role, role), new Claim(PlatformClaimTypes.TenantIdentifier, "acme")], "test"));
 
     private static IReadOnlyList<PortalShell.NavItem> Collect(string role, PortalNavSlot slot, bool directory = true)
     {
@@ -33,7 +41,7 @@ public sealed class PortalNavigationTests
             new AccountNav(localizer),
             new DirectoryNav(localizer, new FakeDirectory(directory)),
             new MembersNav(localizer),
-            new QueryNav(localizer),
+            new LawWorkbenchNav(localizer, new FakeModules()),
         ];
         return PortalNavigation.Collect(contributors, new PortalNavContext(Home, In(role)), slot);
     }
@@ -52,7 +60,7 @@ public sealed class PortalNavigationTests
     {
         var items = Sidebar(role);
 
-        Assert.Equal([Home], items.Select(i => i.Href));
+        Assert.Equal([$"{Home}/laws"], items.Select(i => i.Href));
         Assert.Equal(["服務"], items.Select(i => i.Group).Distinct());
     }
 
@@ -96,12 +104,15 @@ public sealed class PortalNavigationTests
         Assert.Equal([$"{Home}/members", $"{Home}/account"], items.Select(i => i.Href));
     }
 
-    [Fact]
-    public void OnlyTheHomeEntryMatchesExactly()
+    // 首頁是法規諮詢的新對話，外殼把它畫成頂端的「新對話」主要動作：導覽（側欄與帳號選單）不再列一個指向首頁的項目。
+    // 目前頁以路徑前綴比對，每一頁都在首頁底下，列了它就會一直亮著。
+    [Theory]
+    [InlineData(CustomerRoles.Owner)]
+    [InlineData(CustomerRoles.Viewer)]
+    public void NoNavigationItemPointsAtTheHome(string role)
     {
-        var items = Sidebar(CustomerRoles.Owner);
-
-        Assert.Equal([Home], items.Where(i => i.Exact).Select(i => i.Href));
+        Assert.DoesNotContain(Sidebar(role), i => i.Href == Home);
+        Assert.DoesNotContain(Settings(role), i => i.Href == Home);
     }
 
     // 新增功能 = 實作介面並註冊：外殼與其他來源都不必改；放側欄還是帳號選單由它自己宣告。
@@ -110,10 +121,10 @@ public sealed class PortalNavigationTests
     {
         var localizer = new KeyLocalizer();
         IPortalNavContributor[] contributors =
-            [new QueryNav(localizer), new Extra(PortalNavSlot.Sidebar, 25), new Extra(PortalNavSlot.AccountMenu, 45), new AccountNav(localizer)];
+            [new LawWorkbenchNav(localizer, new FakeModules()), new Extra(PortalNavSlot.Sidebar, 25), new Extra(PortalNavSlot.AccountMenu, 45), new AccountNav(localizer)];
         var context = new PortalNavContext(Home, In(CustomerRoles.Viewer));
 
-        Assert.Equal([Home, $"{Home}/extra"], PortalNavigation.Collect(contributors, context, PortalNavSlot.Sidebar).Select(i => i.Href));
+        Assert.Equal([$"{Home}/laws", $"{Home}/extra"], PortalNavigation.Collect(contributors, context, PortalNavSlot.Sidebar).Select(i => i.Href));
         Assert.Equal([$"{Home}/extra", $"{Home}/account"], PortalNavigation.Collect(contributors, context, PortalNavSlot.AccountMenu).Select(i => i.Href));
     }
 

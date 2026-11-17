@@ -341,6 +341,10 @@ public sealed partial class LawCorpus(
             guideStep2 = L["② 檢視法規範位階：由左至右依「憲法 → 法律 → 法規命令 → 再授權」分層呈現。"].Value,
             guideStep3 = L["③ 點擊節點查細節：單擊顯示授權母法與子法清單，雙擊以其為中心展開。"].Value,
             quickJumpHeading = L["重點母法快速定位"].Value,
+            legendTiers = L["層級（點選顯示或隱藏）"].Value,
+            legendEdges = L["連線"].Value,
+            legendShowAll = L["全部顯示"].Value,
+            legendLastTier = L["至少要保留一個層級"].Value,
         };
 
         return JsonSerializer.Serialize(new { nodes, edges, labels });

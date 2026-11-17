@@ -42,7 +42,6 @@ from canon.reasoning.facts.case_inputs import (
     amounts,
     case_facts,
     limitation,
-    normalize_case_units,
     per_occasion_facts,
 )
 from canon.reasoning.facts.chains import Chain
@@ -201,7 +200,6 @@ def evaluate(
     measurements: Measurements | None = None,
     permits: Permits | None = None,
     actor_bases: Collection[str] | None = None,
-    fact_units: Mapping[str, str] | None = None,
     act_groups: Mapping[str, Sequence[int]] | None = None,
     timeline: PerOccasionTimeline | None = None,
     scoring_inputs: Sequence[ScoringInput] = (),
@@ -212,16 +210,14 @@ def evaluate(
     `include_unsettled` 僅供驗證閘門在接受前評估陳述，推論呼叫端不可用。
     """
     statements = statement_facts(conn, as_of, language, include_unsettled=include_unsettled)
-    norm_case, unit_problems = normalize_case_units(conn, case, measurements, fact_units)
-    given = amounts(norm_case)
+    given = amounts(case)
     program = "\n".join(
         [
             statements.program,
-            case_facts(norm_case, measurements, permits, actor_bases),
+            case_facts(case, measurements, permits, actor_bases),
             act_group_facts(act_groups),
             per_occasion_facts(timeline),
-            "\n".join(unit_problems),
-            limitation(decided_on or as_of, norm_case),
+            limitation(decided_on or as_of, case),
             amount_facts(given, statements.fine_caps),
         ]
     )
