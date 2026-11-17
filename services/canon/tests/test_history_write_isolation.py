@@ -4,6 +4,7 @@
 作業入庫的版本規劃看不到，所以擋下的方式是在寫入前植入同版本日的官方版本，對真實的綱要。
 """
 
+import re
 from datetime import date
 from pathlib import Path
 from typing import Any, cast
@@ -138,8 +139,9 @@ def test_a_law_the_database_refuses_is_recorded_and_the_rest_are_written(
     assert _versions(conn, FIRST[0]) == {V3}
     ((severity, code, detail),) = _problems(conn, FIRST[0])
     assert (severity, code) == ("error", "history_write_rejected")
-    # 資料庫回報的約束名稱與衝突的鍵留在報告裡，沒有被吞掉
-    assert "legal_expression_resource_id_language_version_date_key" in detail
+    # 資料庫回報的約束名稱與衝突的鍵留在報告裡，沒有被吞掉；同一筆衝突違反版本日唯一鍵與時間軸
+    # 排除約束兩者，先檢查哪一個由約束建立的次序決定，不是這裡要守的
+    assert re.search(r'constraint "legal_expression_resource_id_language_\w+_key"', detail)
     assert str(V1) in detail
     assert _problems(conn, SECOND[0]) == []
 

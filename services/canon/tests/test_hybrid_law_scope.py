@@ -1,8 +1,4 @@
-"""0047：混合檢索可限定在指定的法規。
-
-不限定時與 0045 逐位元相同（0045 的定義以另一個名字建出來當對照）；限定時兩臂的候選都只在
-範圍內，語意臂不因為 HNSW 先取近鄰再過濾而落空。
-"""
+"""混合檢索可限定在指定的法規：兩臂的候選都只在範圍內，語意臂不因為 HNSW 先取近鄰再過濾而落空。"""
 
 from pathlib import Path
 
@@ -16,7 +12,6 @@ from envcite_segmenter import Segmenter
 from tests.sample import _law, stored_snapshot
 from tests.test_hybrid import FakeEmbedder
 
-MIGRATIONS = Path(__file__).resolve().parents[1] / "migrations"
 ON = "2019-06-01"
 HISTORY = "1.中華民國一百零七年六月十三日總統令制定公布全文 9 條；並自公布日施行"
 #: 三部法規，主題各異；每部都有「檢查」，只有一部有各自的主題詞
@@ -25,11 +20,6 @@ LAWS = (
     ("T0000002", "噪音管制法", "管制區內不得製造噪音", "主管機關得派員檢查"),
     ("T0000003", "地震防救法", "地震後應檢查建物", "主管機關得派員檢查"),
 )
-
-
-def _previous(conn: Conn) -> None:
-    sql = (MIGRATIONS / "0045_hybrid_query_once.sql").read_text(encoding="utf-8")
-    conn.execute(sql.replace("retrieval.search_hybrid(", "retrieval.search_hybrid_prev("))
 
 
 def _corpus(conn: Conn, tmp_path: Path) -> FakeEmbedder:
@@ -51,39 +41,6 @@ def _resource(conn: Conn, pcode: str) -> int:
     ).fetchone()
     assert row is not None
     return int(str(row[0]))
-
-
-def test_without_a_scope_nothing_changes(conn: Conn, tmp_path: Path, dsn: str) -> None:
-    embedder = _corpus(conn, tmp_path)
-    _previous(conn)
-    with CanonStore.from_dsn(dsn) as store:
-        segmenter = Segmenter(store.retrieval.lexicon())
-        for query in ("廢水 檢查", "噪音", "地震 建物", "檢查"):
-            terms = segmenter.to_tsvector_input(query)
-            for vector, model in ((None, ""), (embedder.embed([query])[0], embedder.model)):
-                params = {
-                    "terms": terms,
-                    "tokenizer": segmenter.tokenizer_id,
-                    "embedding": None if vector is None else str(list(vector)),
-                    "model": model,
-                    "on": ON,
-                    "limit": 50,
-                    "pool": SEARCH_POOL,
-                }
-                now = conn.execute(
-                    "SELECT * FROM retrieval.search_hybrid(%(terms)s, %(tokenizer)s,"
-                    " %(embedding)s::vector, %(model)s, %(on)s::date, 'zho', %(limit)s,"
-                    " %(pool)s, NULL)",
-                    params,
-                ).fetchall()
-                before = conn.execute(
-                    "SELECT * FROM retrieval.search_hybrid_prev(%(terms)s, %(tokenizer)s,"
-                    " %(embedding)s::vector, %(model)s, %(on)s::date, 'zho', %(limit)s,"
-                    " %(pool)s)",
-                    params,
-                ).fetchall()
-                assert now, query
-                assert now == before, query
 
 
 def test_both_arms_stay_inside_the_scope(conn: Conn, tmp_path: Path, dsn: str) -> None:

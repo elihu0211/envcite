@@ -1,4 +1,4 @@
-"""Penalties are written only once the duty they punish is confirmed (migration 0055): held until
+"""Penalties are written only once the duty they punish is confirmed: held until
 then, linked to every confirmed duty of the provisions they cite, or left with a queryable state."""
 
 import json

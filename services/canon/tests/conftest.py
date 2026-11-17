@@ -37,7 +37,7 @@ def _worker_database(server_dsn: str) -> str:
     return make_conninfo(server_dsn, dbname=name)
 
 
-# 0027 checks then creates cluster-wide roles. Applied migration files are
+# The baseline checks then creates cluster-wide roles. Applied migration files are
 # checksummed, so the race cannot be fixed there. xdist workers migrate one
 # shared server at the same moment; the lock makes that creation one at a time.
 _MIGRATE_LOCK = "canon_test_migrate"

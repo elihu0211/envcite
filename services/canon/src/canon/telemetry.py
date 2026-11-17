@@ -3,7 +3,8 @@
 兩類：
 - **推論的服務面**：每次 `Evaluate` 的耗時與結果（ok、invalid、busy、deadline、error）、同時進行數。
   `busy` 的比率是擴容的訊號。
-- **標註管線的資料面**：各狀態的陳述數、各驗證方法最近一次的結果分布，讀自 0020 的健康檢視。
+- **標註管線的資料面**：各狀態的陳述數、各驗證方法最近一次的結果分布，讀自健康檢視
+  `annotation.statement_health`、`annotation.gate_health`。
   閘門通過率是這個系統最核心的健康指標：確認的陳述為零，推論就什麼也推不出。
 
 - **檢索的精排**：帶 `rerank` 的 `SearchArticles` 的結果與精排端點的耗時。降級（`busy`、`error`）的

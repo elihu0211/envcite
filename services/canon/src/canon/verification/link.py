@@ -1,6 +1,6 @@
 """罰則的連結：把待連結罰則（`annotation.held_penalty`）寫成處罰已確認義務的罰則陳述。
 
-綱要只讓罰則處罰已確認的陳述（遷移檔 0055），載入時還連不上的罰則存成待連結罰則，
+綱要只讓罰則處罰已確認的陳述，載入時還連不上的罰則存成待連結罰則，
 等義務確認再寫；
 狀態（可連、等義務、被引條文沒有義務、沒有引用）由 `annotation.held_penalty_state` 推得。
 被引條文取自處罰依賴圖（`annotation.violation`，由 `canon sync` 寫入，見 `violation.py`）。
