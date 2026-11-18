@@ -69,6 +69,31 @@ def _enough(pages: list[str]) -> str | None:
     return text if len(text) >= MIN_CHARS else None
 
 
+_LINE_NO = re.compile(r"^(\d{2})(?:\s+|(?=\D)|$)")
+
+
+def strip_line_numbers(page: str) -> str:
+    """裁判書每頁左側印有逐行編號（01、02…）；OCR 會把它讀成正文的開頭。
+
+    行首的兩位數依序遞增（01、02、03…）且至少連續 5 行，才視為行號去掉；正文裡偶然以數字開頭的
+    行（日期、金額）不會連成這樣的序列。
+    """
+    lines = page.split("\n")
+    found = [(i, int(m.group(1))) for i, line in enumerate(lines) if (m := _LINE_NO.match(line))]
+    run: list[int] = []
+    expected = 1
+    for index, number in found:
+        if number == expected:
+            run.append(index)
+            expected += 1
+    if len(run) < 5:
+        return page
+    drop = set(run)
+    return "\n".join(
+        _LINE_NO.sub("", line, count=1) if i in drop else line for i, line in enumerate(lines)
+    )
+
+
 def ocr_text(path: Path, ocr: Reads) -> str | None:
     """沒有文字層的 PDF：逐頁轉成 JPEG 交 OCR。頁數超限丟 `PdfRejected`，OCR 失敗丟 `OcrError`。"""
     try:
@@ -83,7 +108,7 @@ def ocr_text(path: Path, ocr: Reads) -> str | None:
             image = pdf[index].render(scale=OCR_SCALE).to_pil().convert("RGB")
             buffer = io.BytesIO()
             image.save(buffer, "JPEG", quality=85)
-            pages.append(ocr.read(buffer.getvalue()))
+            pages.append(strip_line_numbers(ocr.read(buffer.getvalue())))
     finally:
         pdf.close()
     return _enough(pages)
