@@ -10,6 +10,7 @@ from canon.law.judgment_pdf import (
     OCR_MAX_PAGES,
     PdfRejected,
     ocr_text,
+    strip_line_numbers,
     text_of,
     trusted,
 )
@@ -129,3 +130,23 @@ def test_too_many_pages_are_not_sent_to_the_ocr(tmp_path: Path) -> None:
         ocr_text(path, ocr)
 
     assert ocr.images == []
+
+
+def test_the_printed_line_numbers_are_dropped_from_an_ocr_page() -> None:
+    page = "\n".join(f"{n:02d} 第{n}行的正文" for n in range(1, 9))
+
+    text = strip_line_numbers(page)
+
+    assert text.split("\n")[0] == "第1行的正文" and "01" not in text and len(text.split("\n")) == 8
+
+
+def test_numbers_that_are_not_a_running_sequence_are_kept() -> None:
+    page = "12 月 3 日\n50 萬元\n原告主張如上\n08 年度"
+
+    assert strip_line_numbers(page) == page
+
+
+def test_a_line_that_is_only_its_number_is_dropped_too() -> None:
+    page = "01 標題\n02\n03 原告\n04 被告\n05 主文\n06 駁回"
+
+    assert strip_line_numbers(page).split("\n") == ["標題", "", "原告", "被告", "主文", "駁回"]
