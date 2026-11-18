@@ -2844,4 +2844,88 @@
   <data name="待補充要件事實（{0}）" xml:space="preserve">
     <value>Missing Element Facts ({0})</value>
   </data>
+  <data name="候選結論（依已確認的規範陳述與問句明說的事實推得）" xml:space="preserve">
+    <value>Candidate conclusions (from confirmed normative statements and the facts the question states)</value>
+  </data>
+  <data name="結論 {0}" xml:space="preserve">
+    <value>Conclusion {0}</value>
+  </data>
+  <data name="該當" xml:space="preserve">
+    <value>Elements satisfied</value>
+  </data>
+  <data name="不該當" xml:space="preserve">
+    <value>Elements not satisfied</value>
+  </data>
+  <data name="附條件該當" xml:space="preserve">
+    <value>Conditionally satisfied</value>
+  </data>
+  <data name="附條件不該當" xml:space="preserve">
+    <value>Conditionally not satisfied</value>
+  </data>
+  <data name="事實不明" xml:space="preserve">
+    <value>Facts unclear</value>
+  </data>
+  <data name="但書排除" xml:space="preserve">
+    <value>Excluded by a proviso</value>
+  </data>
+  <data name="欠缺的事實" xml:space="preserve">
+    <value>Missing facts</value>
+  </data>
+  <data name="有待主管機關判斷的要件" xml:space="preserve">
+    <value>Elements for the authority to assess</value>
+  </data>
+  <data name="候選罰則（額度是法定範圍，不是建議值）" xml:space="preserve">
+    <value>Candidate penalties (amounts are the statutory range, not a recommendation)</value>
+  </data>
+  <data name="罰鍰" xml:space="preserve">
+    <value>Fine</value>
+  </data>
+  <data name="沒入" xml:space="preserve">
+    <value>Confiscation</value>
+  </data>
+  <data name="限制或禁止行為" xml:space="preserve">
+    <value>Restriction or prohibition of conduct</value>
+  </data>
+  <data name="剝奪或消滅資格、權利" xml:space="preserve">
+    <value>Deprivation of qualifications or rights</value>
+  </data>
+  <data name="影響名譽" xml:space="preserve">
+    <value>Reputational sanction</value>
+  </data>
+  <data name="警告" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="命令（非裁罰性）" xml:space="preserve">
+    <value>Order (not a penalty)</value>
+  </data>
+  <data name="追繳不法利得" xml:space="preserve">
+    <value>Disgorgement of unlawful gains</value>
+  </data>
+  <data name="新臺幣 {0:N0} 元至 {1:N0} 元" xml:space="preserve">
+    <value>NT$ {0:N0} to NT$ {1:N0}</value>
+  </data>
+  <data name="新臺幣 {0:N0} 元以上" xml:space="preserve">
+    <value>At least NT$ {0:N0}</value>
+  </data>
+  <data name="新臺幣 {0:N0} 元以下" xml:space="preserve">
+    <value>Up to NT$ {0:N0}</value>
+  </data>
+  <data name="得裁量" xml:space="preserve">
+    <value>Discretionary</value>
+  </data>
+  <data name="所採用的事實（{0} 項）" xml:space="preserve">
+    <value>Facts used ({0})</value>
+  </data>
+  <data name="推論日期 {0}" xml:space="preserve">
+    <value>Evaluated as of {0}</value>
+  </data>
+  <data name="（問句沒有明說日期，以今日為準）" xml:space="preserve">
+    <value> (the question gives no date, so today is assumed)</value>
+  </data>
+  <data name="另有 {0} 則結論所依的條文不在本次引用內，未列出。" xml:space="preserve">
+    <value>{0} more conclusions rest on provisions outside this answer's citations and are not listed.</value>
+  </data>
+  <data name="以上為候選結論，不是行政處分；違法性與有責性不在判斷範圍。" xml:space="preserve">
+    <value>These are candidate conclusions, not an administrative disposition; unlawfulness and fault are outside what is assessed.</value>
+  </data>
 </root>

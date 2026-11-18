@@ -7098,6 +7098,90 @@ html[data-sheet-dragging] .ep-drawer-backdrop {
     margin: 0;
 }
 
+/* 候選結論：系統填的固定格式，與模型寫的說明分開。左側一條細線標出「這一段不是模型寫的」；
+ * 顏色只在狀態徽章，其餘是文字與留白。 */
+.ep-ans-conclusion {
+    display: grid;
+    gap: var(--ep-space-3);
+    padding-inline-start: var(--ep-space-4);
+    border-inline-start: 2px solid var(--ep-border-subtle);
+}
+
+.ep-ans-conclusion .ep-ans-callout-head {
+    color: var(--ep-text-secondary);
+}
+
+.ep-ans-conclusions {
+    display: grid;
+    gap: var(--ep-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ep-ans-conclusion-item {
+    display: grid;
+    gap: var(--ep-space-1);
+    min-inline-size: 0;
+}
+
+.ep-ans-conclusion-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ep-space-2);
+}
+
+.ep-ans-conclusion-no {
+    font-weight: var(--ep-label-l-weight);
+}
+
+.ep-ans-conclusion-detail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--ep-space-1) var(--ep-space-2);
+    margin: 0;
+    line-height: var(--ep-body-m-leading);
+}
+
+.ep-ans-concept {
+    padding-inline: var(--ep-space-1);
+    border-radius: var(--ep-radius-control);
+    background: var(--ep-surface-muted);
+    font-size: var(--ep-label-m-size);
+}
+
+.ep-ans-penalties {
+    display: grid;
+    gap: var(--ep-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ep-ans-conclusion-facts > summary {
+    cursor: pointer;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-m-size);
+    font-weight: var(--ep-label-m-weight);
+}
+
+.ep-ans-conclusion-facts .ep-ans-list {
+    margin-block-start: var(--ep-space-2);
+}
+
+.ep-ans-quote {
+    color: var(--ep-text-secondary);
+}
+
+.ep-ans-conclusion-note {
+    margin: 0;
+    color: var(--ep-text-secondary);
+    font-size: var(--ep-label-s-size);
+    line-height: var(--ep-label-s-leading);
+}
+
 .ep-ans-checklist-wrap,
 .ep-ans-table-section,
 .ep-ans-workflow-section,
