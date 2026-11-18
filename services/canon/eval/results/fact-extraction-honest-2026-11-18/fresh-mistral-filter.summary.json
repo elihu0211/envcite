@@ -1,35 +1,40 @@
 {
  "candidate_concepts": 54,
- "items": 75,
+ "items": 72,
+ "gold_in_offered_candidates": {
+  "offered": 104,
+  "gold": 111
+ },
  "fact_level": {
-  "tp": 58,
-  "fp": 16,
-  "fn": 60,
-  "precision": 0.7837837837837838,
-  "recall": 0.4915254237288136,
-  "wrong_value": 1,
-  "extra_concept_vs_gold": 15,
-  "raw_facts": 77,
-  "ungrounded_quote_rejected": 0,
-  "unsupported_by_audit": 15
+  "tp": 75,
+  "fp": 24,
+  "fn": 36,
+  "precision": 0.7575757575757576,
+  "recall": 0.6756756756756757,
+  "wrong_value": 0,
+  "extra_concept_vs_gold": 24,
+  "raw_facts": 117,
+  "ungrounded_quote_rejected": 3,
+  "unsupported_by_audit": 8
  },
  "downstream_same_verdicts": {
   "reasoner_ran": true,
-  "scored": 64,
-  "same": 37,
-  "decisive_gold": 29,
-  "decisive_same": 12,
-  "wrong_decisive": 2
+  "scored": 61,
+  "same": 32,
+  "gold_decisive_statements": 30,
+  "recovered": 19,
+  "contradicted": 0,
+  "beyond_gold": 5
  },
  "by_variant": {
   "combined": {
-   "unsupported_facts": 2,
-   "items_with_unsupported": 2,
-   "items": 17,
-   "verbatim_facts": 9,
-   "gold_facts": 51,
-   "with_any_fact": 7,
-   "exact": 4
+   "unsupported_facts": 1,
+   "items_with_unsupported": 1,
+   "items": 14,
+   "verbatim_facts": 5,
+   "gold_facts": 44,
+   "with_any_fact": 14,
+   "exact": 3
   },
   "full": {
    "unsupported_facts": 3,
@@ -38,15 +43,15 @@
    "verbatim_facts": 4,
    "gold_facts": 29,
    "with_any_fact": 14,
-   "exact": 10
+   "exact": 6
   },
   "negated": {
-   "unsupported_facts": 5,
-   "items_with_unsupported": 4,
+   "unsupported_facts": 4,
+   "items_with_unsupported": 3,
    "items": 17,
    "verbatim_facts": 5,
    "gold_facts": 27,
-   "with_any_fact": 14,
+   "with_any_fact": 16,
    "exact": 7
   },
   "none": {
@@ -60,19 +65,20 @@
    "verdict_entries_if_run_anyway": 0
   },
   "partial": {
-   "unsupported_facts": 5,
-   "items_with_unsupported": 5,
+   "unsupported_facts": 0,
+   "items_with_unsupported": 0,
    "items": 11,
    "verbatim_facts": 5,
    "gold_facts": 11,
-   "with_any_fact": 10,
-   "exact": 7
+   "with_any_fact": 5,
+   "exact": 5
   }
  },
  "config": {
-  "variant": "v1",
-  "narrow": false,
-  "filter_verify": false,
+  "method": "exhaustive",
+  "candidates": 12,
+  "filter_verify": true,
+  "verify": "v2",
   "split": "test",
   "extractor": "mistral:mistral-small-4",
   "filterer": "nvidia:nemotron-3.5-super-vl",
