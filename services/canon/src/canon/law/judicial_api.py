@@ -21,7 +21,10 @@ _REMOVED = "查無資料"
 
 
 class EndpointError(Retryable):
-    """逾時、HTTP 錯誤或回應不是 JSON。訊息只有路徑末段，沒有回應本文。"""
+    """逾時、HTTP 錯誤或回應不是 JSON。
+
+    訊息是路徑末段加失敗種類（`HTTP 503`、`ConnectTimeout`），沒有回應本文。
+    """
 
 
 class AuthRejected(Unretryable):
@@ -40,8 +43,10 @@ def http_post(url: str, body: Mapping[str, str]) -> object:
     """真正的 POST，經 `canon.net.post_json`（自報身分）。失敗時不把例外原文往外傳。"""
     try:
         return post_json(url, dict(body), api_key=None, timeout=_TIMEOUT_SECONDS)
-    except HttpStatus, TransportError:
-        raise EndpointError(url.rsplit("/", 1)[-1]) from None
+    except HttpStatus as e:
+        raise EndpointError(f"{url.rsplit('/', 1)[-1]} {e}") from None
+    except TransportError as e:
+        raise EndpointError(f"{url.rsplit('/', 1)[-1]} {str(e).partition(':')[0]}") from None
 
 
 class Client:
@@ -82,7 +87,7 @@ class Client:
         if not isinstance(token, str) or not token:
             if _rejected(payload):
                 raise AuthRejected("驗證失敗")
-            raise EndpointError("Auth")
+            raise EndpointError(f"Auth 回應沒有 token（{_describe(payload)}）")
         self._token = token
 
 
@@ -90,6 +95,14 @@ def removed(payload: object) -> bool:
     """JDoc 要取用者刪除先前取得的內容。其他錯誤不是撤下。"""
     error = payload.get("error") if isinstance(payload, dict) else None
     return isinstance(error, str) and error.startswith(_REMOVED)
+
+
+def _describe(payload: object) -> str:
+    """回應的形狀；服務自己的 `error` 短訊息（如時段外）保留，其餘只記型別。"""
+    error = payload.get("error") if isinstance(payload, dict) else None
+    if isinstance(error, str):
+        return f"error={error[:60]}"
+    return type(payload).__name__
 
 
 def _rejected(payload: object) -> bool:
