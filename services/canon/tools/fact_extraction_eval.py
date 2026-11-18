@@ -43,7 +43,7 @@ type Kind = Literal["flag", "number"]
 type Value = bool | float
 
 #: 預設的抽取模型。抽取要夠強：小模型逐概念判斷會過度解讀，要靠另一個模型逐項過濾才擋得住；
-#: 較強的模型不過濾也勝過小模型加過濾（量測結果見 eval/results/fact-extraction-2026-11-18）。
+#: 較強的模型不過濾也勝過小模型加過濾（量測結果見 eval/results/fact-extraction-honest-2026-11-18）。
 EXTRACTOR_ID = "ornith-35b"
 #: 出題者與稽核者；家族都必須不同於抽取者（出題者不得與抽取者同家族，稽核者不得驗自己）。
 #: 稽核者有兩位、屬不同家族：單一稽核者誤判多（逐條看約一半），兩位都判沒明說才接近真的過度解讀。
