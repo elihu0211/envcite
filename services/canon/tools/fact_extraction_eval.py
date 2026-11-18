@@ -46,8 +46,9 @@ type Value = bool | float
 #: 較強的模型不過濾也勝過小模型加過濾（量測結果見 eval/results/fact-extraction-2026-11-18）。
 EXTRACTOR_ID = "ornith-35b"
 #: 出題者與稽核者；家族都必須不同於抽取者（出題者不得與抽取者同家族，稽核者不得驗自己）。
+#: 稽核者有兩位、屬不同家族：單一稽核者誤判多（逐條看約一半），兩位都判沒明說才接近真的過度解讀。
 ASKER_ID = "muse-spark-open"
-AUDITOR_ID = ASKER_ID
+AUDITOR_IDS = (ASKER_ID, "nemotron-3.5-super-vl")
 
 _CONTROL_TOPICS = (
     "立法目的",
@@ -90,7 +91,9 @@ WITH conf AS (
    CROSS JOIN LATERAL (
          SELECT * FROM annotation.statement_versions_at(lr.id, 'zho', %s) OFFSET 0) AS r
     JOIN annotation.statement AS s ON s.id = r.statement_id)
-SELECT c.statement_id, k.code, k.name, c.comparator::text, c.threshold::float8, c.measure_unit,
+SELECT c.statement_id,
+       first_value(k.code) OVER (PARTITION BY k.scheme_id, k.name ORDER BY k.id), k.name,
+       c.comparator::text, c.threshold::float8, c.measure_unit,
        pv.content
   FROM annotation.statement_condition AS c
   JOIN conf ON conf.id = c.statement_id
@@ -471,9 +474,12 @@ def main() -> None:
         for m in load_declared(args.models).values()
         if isinstance(m, ChatCompletionsModel)
     }
-    extractor, asker, auditor = pick[args.extractor], pick[ASKER_ID], pick[AUDITOR_ID]
-    if extractor.family in (asker.family, auditor.family):
+    extractor, asker = pick[args.extractor], pick[ASKER_ID]
+    auditors = [pick[a] for a in AUDITOR_IDS]
+    if extractor.family in {asker.family, *(a.family for a in auditors)}:
         raise SystemExit("抽取者必須與出題者、稽核者各屬不同家族")
+    if len({a.family for a in auditors}) != len(auditors):
+        raise SystemExit("兩位稽核者必須屬不同家族")
     embedder = load_embedder(args.models, timeout=60.0)
     if embedder is None:
         raise SystemExit("models.toml 沒有 [embedding]，無法檢索候選概念")
@@ -513,18 +519,21 @@ def main() -> None:
         cands = [shown for _, shown in extracted]
         checked = [check(q, f, c) for q, f, c in zip(questions, parsed, cands, strict=True)]
 
-        def audited(pair: tuple[int, Fact]) -> bool:
+        def audited(pair: tuple[int, Fact]) -> list[bool]:
             prompt = audit_prompt(questions[pair[0]], pair[1], vocab)
-            return is_yes(cache.get(auditor, prompt))
+            return [is_yes(cache.get(a, prompt)) for a in auditors]
 
         kept_by_item = [list(kept) for kept, _ in checked]
         pairs = [(i, f) for i, kept in enumerate(kept_by_item) for f in kept]
         with ThreadPoolExecutor(args.workers) as pool:
-            oks = list(pool.map(audited, pairs))
+            votes = list(pool.map(audited, pairs))
         unsupported: dict[int, list[str]] = {}
-        for (i, f), ok in zip(pairs, oks, strict=True):
-            if not ok:
+        unsupported_by_all: dict[int, list[str]] = {}
+        for (i, f), vote in zip(pairs, votes, strict=True):
+            if not all(vote):
                 unsupported.setdefault(i, []).append(f.concept)
+            if not any(vote):
+                unsupported_by_all.setdefault(i, []).append(f.concept)
         cache.save()
 
         reasoner = True
@@ -555,6 +564,7 @@ def main() -> None:
                     "kept_facts": [f._asdict() for f in kept],
                     "rejected": dict(rejected),
                     "unsupported": unsupported.get(idx, []),
+                    "unsupported_by_all": unsupported_by_all.get(idx, []),
                     "gold_verdicts": {str(k): v for k, v in gold_v.items()},
                     "got_verdicts": {str(k): v for k, v in got_v.items()},
                     "seconds": {"gold": round(gold_t, 4), "got": round(got_t, 4)},
@@ -565,7 +575,7 @@ def main() -> None:
         "candidates": args.candidates,
         "split": args.split,
         "extractor": extractor.name,
-        "auditor": auditor.name,
+        "auditors": [a.name for a in auditors],
     }
     (args.out / "rows.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1))
     (args.out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1))
@@ -581,7 +591,7 @@ def _decisive(verdicts: object) -> dict[str, str]:
 def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) -> dict[str, object]:
     """逐題結果彙總：精確率、召回、憑空填值、推論結果一致率、對照組的行為。"""
     tp = fp = fn = ungrounded = raw_total = 0
-    wrong_value = extra = unsupported_total = 0
+    wrong_value = extra = unsupported_total = unsupported_all_total = 0
     by_variant: dict[str, Counter[str]] = {}
     same_verdicts = scored = 0
     recovered = contradicted = beyond_gold = gold_decisive = 0
@@ -598,8 +608,10 @@ def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) ->
         got = {f["concept"]: f["value"] for f in kept}
         raw_total += len(raw)
         unsup = r["unsupported"]
-        assert isinstance(unsup, list)
+        unsup_all = r["unsupported_by_all"]
+        assert isinstance(unsup, list) and isinstance(unsup_all, list)
         unsupported_total += len(unsup)
+        unsupported_all_total += len(unsup_all)
         c["unsupported_facts"] += len(unsup)
         c["items_with_unsupported"] += int(bool(unsup))
         ungrounded += int(rejected.get("原文片段不在問句", 0))
@@ -650,7 +662,8 @@ def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) ->
             "extra_concept_vs_gold": extra,
             "raw_facts": raw_total,
             "ungrounded_quote_rejected": ungrounded,
-            "unsupported_by_audit": unsupported_total,
+            "unsupported_by_any_audit": unsupported_total,
+            "unsupported_by_all_audits": unsupported_all_total,
         },
         "downstream_same_verdicts": {
             "reasoner_ran": reasoner,
