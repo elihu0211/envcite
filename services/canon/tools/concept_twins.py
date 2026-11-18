@@ -188,9 +188,8 @@ def main() -> None:
     (args.out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1))
     print(json.dumps(summary, ensure_ascii=False, indent=1))
     for t in twins[:40]:
-        print(
-            f"{t['a']['name']}（{t['a']['statements']}）≈ {t['b']['name']}（{t['b']['statements']}）"
-        )
+        a, b = t["a"], t["b"]
+        print(f"{a['name']}（{a['statements']}）≈ {b['name']}（{b['statements']}）")
 
 
 if __name__ == "__main__":
