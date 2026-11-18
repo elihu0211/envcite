@@ -1,0 +1,89 @@
+@* 推論的候選結論：由系統用固定格式填寫，不經模型，所以與模型寫的說明分開畫（左側細線）。
+   顏色只用在狀態徽章，而且不用紅色：「該當」只指構成要件該當，不是違法性或有責性的判斷。 *@
+<section class="ep-ans-conclusion" aria-label="@L["候選結論（依已確認的規範陳述與問句明說的事實推得）"]">
+    <div class="ep-ans-callout-head">
+        <span class="ep-ans-callout-icon" aria-hidden="true"><NavIcon Path="@Icons.Material.Outlined.Balance" /></span>
+        <span class="ep-ans-callout-badge">@L["候選結論（依已確認的規範陳述與問句明說的事實推得）"]</span>
+    </div>
+    <ul class="ep-ans-conclusions">
+        @foreach (var item in Block.Items)
+        {
+            <li class="ep-ans-conclusion-item">
+                <div class="ep-ans-conclusion-line">
+                    <span class="ep-ans-conclusion-no">@L["結論 {0}", item.No]</span>
+                    <StatusBadge Tone="@ConclusionLabels.Tone(item.Verdict)">@ConclusionLabels.Verdict(item.Verdict, L)</StatusBadge>
+                    @if (item.CitationCodes.Count > 0)
+                    {
+                        <span class="ep-ans-sources">
+                            <span class="ep-ans-sources-label">@L["依據"]</span>
+                            <CitationChips Codes="item.CitationCodes" />
+                        </span>
+                    }
+                </div>
+                @if (item.MissingFacts.Count > 0)
+                {
+                    <p class="ep-ans-conclusion-detail">
+                        <span class="ep-ans-sources-label">@L["欠缺的事實"]</span>
+                        @foreach (var concept in item.MissingFacts)
+                        {
+                            <code class="ep-ans-concept">@concept</code>
+                        }
+                    </p>
+                }
+                @if (item.NeedsAssessment.Count > 0)
+                {
+                    <p class="ep-ans-conclusion-detail">
+                        <span class="ep-ans-sources-label">@L["有待主管機關判斷的要件"]</span>
+                        @foreach (var concept in item.NeedsAssessment)
+                        {
+                            <code class="ep-ans-concept">@concept</code>
+                        }
+                    </p>
+                }
+                @if (item.Penalties.Count > 0)
+                {
+                    <div class="ep-ans-conclusion-detail">
+                        <span class="ep-ans-sources-label">@L["候選罰則（額度是法定範圍，不是建議值）"]</span>
+                        <ul class="ep-ans-penalties">
+                            @foreach (var penalty in item.Penalties)
+                            {
+                                <li>@ConclusionLabels.Penalty(penalty, L)</li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+    @if (Block.Facts.Count > 0)
+    {
+        <details class="ep-ans-conclusion-facts">
+            <summary>@L["所採用的事實（{0} 項）", Block.Facts.Count]</summary>
+            <ul class="ep-ans-list">
+                @foreach (var fact in Block.Facts)
+                {
+                    <li>
+                        <strong>@fact.Name</strong>：@ConclusionLabels.Value(fact, L)
+                        <span class="ep-ans-quote">「@fact.Quote」</span>
+                    </li>
+                }
+            </ul>
+        </details>
+    }
+    <p class="ep-ans-conclusion-note">
+        @L["推論日期 {0}", Block.AsOf]@if (Block.AsOfAssumed)
+        {
+            <text>@L["（問句沒有明說日期，以今日為準）"]</text>
+        }
+    </p>
+    @if (Block.OmittedCount > 0)
+    {
+        <p class="ep-ans-conclusion-note">@L["另有 {0} 則結論所依的條文不在本次引用內，未列出。", Block.OmittedCount]</p>
+    }
+    <p class="ep-ans-conclusion-note">@L["以上為候選結論，不是行政處分；違法性與有責性不在判斷範圍。"]</p>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public ConclusionBlock Block { get; set; } = null!;
+}
