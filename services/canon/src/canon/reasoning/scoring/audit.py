@@ -2,9 +2,32 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Final, Literal, get_args
 
 from canon.reasoning.scoring.models import ScoringResult
+
+type CitationRole = Literal[
+    "duty_basis",
+    "delegated_command",
+    "sanction_basis",
+    "discretion_criteria",
+    "general_part",
+]
+type ReviewTier = Literal["tier1_elements", "tier2_unlawfulness", "tier3_culpability"]
+type EvidenceKind = Literal[
+    "sampling_report",
+    "cems_record",
+    "inspection_record",
+    "permit_document",
+    "declaration_record",
+    "admission_or_statement",
+    "none",
+]
+
+#: 各型別的全部成員，由型別自己推得（不另抄一份）：請求裡的字串要先對上它們才進得了檢核。
+CITATION_ROLES: Final[tuple[CitationRole, ...]] = get_args(CitationRole.__value__)
+REVIEW_TIERS: Final[tuple[ReviewTier, ...]] = get_args(ReviewTier.__value__)
+EVIDENCE_KINDS: Final[tuple[EvidenceKind, ...]] = get_args(EvidenceKind.__value__)
 
 
 @dataclass(frozen=True)
@@ -12,13 +35,7 @@ class DispositionCitation:
     """處分書所引法條及其功能（專論 01-08 CQ D1）。"""
 
     citation_text: str
-    role: Literal[
-        "duty_basis",
-        "delegated_command",
-        "sanction_basis",
-        "discretion_criteria",
-        "general_part",
-    ]
+    role: CitationRole
     in_force: bool = True
 
 
@@ -27,17 +44,9 @@ class DispositionElement:
     """處分書之構成要件／三階審查與證據對應（專論 01-08 CQ D2）。"""
 
     element_name: str
-    tier: Literal["tier1_elements", "tier2_unlawfulness", "tier3_culpability"]
+    tier: ReviewTier
     fact_summary: str
-    evidence_kind: Literal[
-        "sampling_report",
-        "cems_record",
-        "inspection_record",
-        "permit_document",
-        "declaration_record",
-        "admission_or_statement",
-        "none",
-    ]
+    evidence_kind: EvidenceKind
     contradicted: bool = False
 
 

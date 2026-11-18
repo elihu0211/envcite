@@ -5,6 +5,9 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+from canon import errors
 from canon.annotate import load
 from canon.db import Conn
 from canon.reasoning.engine import evaluate
@@ -22,6 +25,7 @@ from canon.reasoning.scoring.models import FactorSpec, PenaltyMatrixSpec, Scorin
 from canon.reasoning_codec import disposition as disposition_codec
 from canon.reasoning_codec import outcome as outcome_codec
 from canon.reasoning_codec import request as request_codec
+from envcite.canon.v1 import reasoning_pb2 as pb
 from tests.reasoning_support import _scope
 from tests.test_annotation import BEFORE, LAW, _doc, _duty, _limit
 from tests.test_incremental import _first, _law_v1
@@ -493,9 +497,6 @@ def test_disposition_audit_d1_d2_d3_and_db_matrix_roundtrip(conn: Conn, tmp_path
 
 
 def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path) -> None:
-    from canon import errors
-    from envcite.canon.v1 import reasoning_pb2 as pb
-
     _first(conn, tmp_path, _law_v1())
     prov = conn.execute(
         "SELECT p.id, v.content_sha256 FROM corpus.provision AS p"
@@ -560,6 +561,7 @@ def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path)
     case = request_codec.case_facts(req, v, None, None, None)
     tl = request_codec.timeline(req, v)
     sc = disposition_codec.scoring_inputs(req, v)
+    parsed = disposition_codec.disposition_input(req, v)
     v.check()
     assert case["ap_fact_mistake"] == 1.0
     assert tl is not None and tl.reinspection_on == date(2019, 1, 5)
@@ -570,9 +572,75 @@ def test_reasoning_codec_roundtrips_new_proto_fields(conn: Conn, tmp_path: Path)
         timeline=tl,
         scoring_inputs=sc,
     )
-    audit = disposition_codec.disposition_audit(req, res.scoring_results)
+    audit = disposition_codec.disposition_audit(parsed, res.scoring_results)
     out = outcome_codec.outcome(res, {}, audit_result=audit)
     assert len(out.scoring_results) == 1
     assert out.HasField("disposition_audit")
     assert out.disposition_audit.d1_citations_complete is True
     assert out.disposition_audit.d2_evidence_grounded is True
+
+
+def _audit_request(
+    role: str = "duty_basis", tier: str = "tier1_elements", evidence: str = "sampling_report"
+) -> pb.EvaluateRequest:
+    return pb.EvaluateRequest(
+        disposition_audit=pb.DispositionAuditInput(
+            citations=[pb.DispositionCitation(citation_text="水污法第7條", role=role)],
+            elements=[
+                pb.DispositionElement(
+                    element_name="COD超標",
+                    tier=tier,
+                    fact_summary="150 mg/L",
+                    evidence_kind=evidence,
+                )
+            ],
+        )
+    )
+
+
+def test_disposition_input_takes_only_the_members_of_each_enumeration() -> None:
+    v = errors.Validator()
+
+    parsed = disposition_codec.disposition_input(_audit_request(), v)
+
+    v.check()
+    assert parsed is not None
+    assert [c.role for c in parsed.citations] == ["duty_basis"]
+    assert [(e.tier, e.evidence_kind) for e in parsed.elements] == [
+        ("tier1_elements", "sampling_report")
+    ]
+
+
+def test_an_unknown_evidence_kind_is_refused_not_counted_as_evidence() -> None:
+    """只有 `none` 算沒有證據：任何別的字串若被當成「有證據」，D2 就能被亂填的值繞過。"""
+    v = errors.Validator()
+
+    disposition_codec.disposition_input(_audit_request(evidence="隨便寫的"), v)
+
+    with pytest.raises(errors.ServiceError) as raised:
+        v.check()
+    assert "disposition_audit.elements[0].evidence_kind" in str(raised.value)
+    assert "sampling_report" in str(raised.value)  # 說清楚可以填什麼
+
+
+def test_each_free_string_field_of_the_audit_is_checked() -> None:
+    for kwargs, field in (
+        ({"role": "duty_basis "}, "citations[0].role"),
+        ({"tier": ""}, "elements[0].tier"),
+        ({"evidence": "None"}, "elements[0].evidence_kind"),
+    ):
+        v = errors.Validator()
+
+        disposition_codec.disposition_input(_audit_request(**kwargs), v)
+
+        with pytest.raises(errors.ServiceError) as raised:
+            v.check()
+        assert field in str(raised.value)
+
+
+def test_a_request_without_an_audit_has_nothing_to_check() -> None:
+    v = errors.Validator()
+
+    assert disposition_codec.disposition_input(pb.EvaluateRequest(), v) is None
+    assert disposition_codec.disposition_audit(None, ()) is None
+    v.check()

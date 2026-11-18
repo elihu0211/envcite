@@ -371,6 +371,23 @@ def test_a_permit_limit_without_a_value_is_an_invalid_argument(reasoning_stub: S
     assert _details(caught.value)[1] == ["permit_limits[0].value.value"]
 
 
+def test_an_unknown_audit_value_is_an_invalid_argument_not_evidence(reasoning_stub: Stub) -> None:
+    """稽核輸入的角色、層級與證據種類是自由字串：亂填的值要被拒，不能被當成「有證據」放行。"""
+    request = _case()
+    request.disposition_audit.citations.add(citation_text="水污法第7條", role="隨便寫的")
+    request.disposition_audit.elements.add(
+        element_name="COD超標", tier="tier1_elements", fact_summary="150 mg/L", evidence_kind="隨便"
+    )
+    with pytest.raises(grpc.RpcError) as caught:
+        reasoning_stub.Evaluate(request, metadata=call_metadata())
+
+    assert caught.value.code() == grpc.StatusCode.INVALID_ARGUMENT
+    assert _details(caught.value)[1] == [
+        "disposition_audit.citations[0].role",
+        "disposition_audit.elements[0].evidence_kind",
+    ]
+
+
 def test_an_unspecified_actor_basis_is_an_invalid_argument(reasoning_stub: Stub) -> None:
     request = _case()
     request.actor_bases.extend(
