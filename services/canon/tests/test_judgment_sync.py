@@ -12,7 +12,7 @@ import pytest
 
 from canon.db import Conn
 from canon.law.judgment_pdf import PdfRejected
-from canon.law.judgment_sync import SyncResult, sync
+from canon.law.judgment_sync import TRANSIENT_STREAK_LIMIT, SyncResult, sync
 from canon.law.judicial_api import (
     AUTH_URL,
     JLIST_URL,
@@ -153,6 +153,43 @@ def test_a_transport_failure_stays_pending_and_the_next_night_finishes_it_before
 
     assert second.stored == 1
     assert api.calls.index("JDoc") < api.calls.index("JList")
+
+
+def test_consecutive_transient_failures_stop_the_run_and_keep_everything_queued(
+    conn: Conn, caplog: pytest.LogCaptureFixture
+) -> None:
+    jids = [f"TPAA,110,上,{n},20210101,1" for n in range(1, 9)]
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": jids}]
+    api.fail.update(jids)
+
+    result = _sync(conn, api, 1)
+
+    assert result.exit_code == 1
+    assert api.calls.count("JDoc") == TRANSIENT_STREAK_LIMIT
+    assert (result.stored, result.pending) == (0, 8)
+    assert "停止本次" in caplog.text
+
+
+def test_a_success_resets_the_transient_streak(conn: Conn) -> None:
+    jids = [f"TPAA,110,上,{n},20210101,1" for n in range(1, 10)]
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": jids}]
+    api.fail.update(jids[:4] + jids[5:8])
+    api.docs[jids[4]] = _text(jids[4])
+    api.docs[jids[8]] = _text(jids[8])
+
+    result = _sync(conn, api, 1)
+
+    assert (result.exit_code, result.stored, result.pending) == (0, 2, 7)
+
+
+def test_an_auth_reply_without_a_token_names_what_the_service_said() -> None:
+    api = _Api()
+    api.auth = {"error": "服務時段外"}
+
+    with pytest.raises(EndpointError, match="Auth 回應沒有 token（error=服務時段外）"):
+        Client("user", "secret", api).changes()
 
 
 def test_the_window_closing_leaves_the_rest_queued(conn: Conn) -> None:

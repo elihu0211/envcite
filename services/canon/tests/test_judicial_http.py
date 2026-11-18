@@ -58,14 +58,18 @@ def test_post_sends_json_with_the_shared_user_agent(endpoint: Endpoint) -> None:
     assert sent["body"] == {"user": "u", "password": "p"}
 
 
-@pytest.mark.parametrize(("status", "reply"), [(500, b"{}"), (200, b"not json")])
-def test_failures_become_endpoint_errors_without_the_request(
-    endpoint: Endpoint, status: int, reply: bytes
+@pytest.mark.parametrize(
+    ("status", "reply", "expected"),
+    [(500, b"{}", "Auth HTTP 500"), (200, b"not json", "Auth JSONDecodeError")],
+)
+def test_failures_become_endpoint_errors_that_name_the_kind_but_not_the_request(
+    endpoint: Endpoint, status: int, reply: bytes, expected: str
 ) -> None:
     endpoint.status, endpoint.reply = status, reply
 
     with pytest.raises(EndpointError) as error:
         http_post(endpoint.url, {"user": "u", "password": "secret-password"})
 
-    assert str(error.value) == "Auth"
+    assert str(error.value) == expected
+    assert "secret-password" not in str(error.value)
     assert error.value.__cause__ is None and error.value.__suppress_context__

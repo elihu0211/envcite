@@ -23,7 +23,7 @@ import psycopg
 from canon.acquire.web import Http
 from canon.clock import taipei_now
 from canon.db import Conn, fetch, scalar
-from canon.exit_codes import JobStopped, fail
+from canon.exit_codes import JobStopped, Retryable, fail
 from canon.law import judgment, judgment_anchor
 from canon.law.judgment_pdf import FileText, PdfRejected, fetcher
 from canon.law.judicial_api import Client, EndpointError, removed
@@ -37,6 +37,9 @@ from envcite_jobkit import ExitCode
 log = logging.getLogger(__name__)
 
 PAUSE_SECONDS = 1.0
+#: 連續這麼多筆暫時性失敗就停止本次：端點整夜不通時，逐筆等逾時會耗掉整個時段（每筆 60 秒），
+#: 且 Job 的重試也各燒一遍；停下來由下一次重試或排程再試，待取列保持 `pending`。
+TRANSIENT_STREAK_LIMIT = 5
 #: 一頁 OCR 的逾時；視覺語言模型讀一頁約數秒到十數秒。
 OCR_TIMEOUT_SECONDS = 180.0
 _TAIPEI = ZoneInfo("Asia/Taipei")
@@ -61,6 +64,14 @@ type Sleep = Callable[[float], None]
 
 class _JidRow(NamedTuple):
     jid: str
+
+
+class Stalled(Retryable):
+    """連續暫時性失敗到上限。`counts` 是停下前累計的（入庫、撤下、僅檔案）。"""
+
+    def __init__(self, counts: tuple[int, int, int]) -> None:
+        super().__init__(f"連續 {TRANSIENT_STREAK_LIMIT} 筆暫時性失敗，停止本次（原因見上列警告）")
+        self.counts = counts
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +123,8 @@ def sync(
             conn, client, now, sleep, pause, files, (stored, taken, filed)
         )
     except JobStopped as e:
+        if isinstance(e, Stalled):
+            stored, taken, filed = e.counts
         code = fail(conn, e, "judgment sync")
         return _result(conn, stored, taken, filed, code)
     return _result(conn, stored, taken, filed, listed=listed)
@@ -154,6 +167,7 @@ def _drain(
         )
     ]
     stored, taken, filed = counts
+    streak = 0
     for index, jid in enumerate(pending):
         if not in_window(now()):
             break
@@ -163,6 +177,9 @@ def _drain(
         stored += outcome == "stored"
         taken += outcome == "taken_down"
         filed += outcome == "file_only"
+        streak = streak + 1 if outcome == "transient" else 0
+        if streak >= TRANSIENT_STREAK_LIMIT:
+            raise Stalled((stored, taken, filed))
     return stored, taken, filed
 
 
@@ -173,9 +190,10 @@ def _one(conn: Conn, client: Client, jid: str, now: Clock, files: FileText | Non
         return "unmapped"
     try:
         payload = client.document(jid)
-    except EndpointError:
+    except EndpointError as e:
+        log.warning("裁判 %s 暫時性失敗：%s", jid, e)
         _mark(conn, jid, "pending", "transient")
-        return "pending"
+        return "transient"
     if removed(payload):
         judgment.take_down(conn, [jid], now().astimezone(_TAIPEI).date())
         _mark(conn, jid, "taken_down", None)
@@ -188,7 +206,7 @@ def _one(conn: Conn, client: Client, jid: str, now: Clock, files: FileText | Non
     if isinstance(built, str):
         status, error = _unfinished(built)
         _mark(conn, jid, status, error)
-        return status
+        return "transient" if error == "transient" else status
     decided_on, document = built
     body = document["body"]
     assert isinstance(body, str)
@@ -247,7 +265,8 @@ def _from_file(
         text = files(url)
     except PdfRejected as e:
         return str(e)
-    except EndpointError:
+    except EndpointError as e:
+        log.warning("裁判 %s 的 PDF 暫時性失敗：%s", jid, e)
         return "transient"
     if text is None:
         return "no_text_layer"
