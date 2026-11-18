@@ -1,0 +1,1320 @@
+{
+ "without": [
+  {
+   "law": "O0040001",
+   "path": "art_39-1/para_4",
+   "declared": [
+    {
+     "code": "wastewater_treatment_specialist",
+     "name": "廢（污）水處理專責人員",
+     "kind": "duplicate of wastewater_treatment_specialist"
+    },
+    {
+     "code": "employee",
+     "name": "受僱人",
+     "kind": "reused"
+    },
+    {
+     "code": "criminal_responsibility",
+     "name": "刑事責任",
+     "kind": "new"
+    },
+    {
+     "code": "disclosure_to_authority",
+     "name": "向主管機關揭露",
+     "kind": "new"
+    },
+    {
+     "code": "confession_to_judicial",
+     "name": "司法機關自白或自首",
+     "kind": "new"
+    },
+    {
+     "code": "accessory_or_accomplice",
+     "name": "其他正犯或共犯",
+     "kind": "new"
+    },
+    {
+     "code": "penalty_reduction",
+     "name": "減輕其刑",
+     "kind": "new"
+    },
+    {
+     "code": "penalty_waiver",
+     "name": "免除其刑",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_34/para_2",
+   "declared": []
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_7",
+   "declared": [
+    {
+     "code": "事業",
+     "name": "事業",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_23/para_1",
+   "declared": [
+    {
+     "code": "supply_public_water_facility",
+     "name": "公私場所設置供公眾飲用之連續供水固定設備",
+     "kind": "reused"
+    },
+    {
+     "code": "limit_period_improvement",
+     "name": "限期改善",
+     "kind": "new"
+    },
+    {
+     "code": "repeated_violation",
+     "name": "按次處罰",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_16/para_2",
+   "declared": []
+  },
+  {
+   "law": "O0040001",
+   "path": "art_66-2/para_3",
+   "declared": []
+  },
+  {
+   "law": "O0040001",
+   "path": "art_57-1",
+   "declared": [
+    {
+     "code": "排放污染物",
+     "name": "排放污染物",
+     "kind": "new"
+    },
+    {
+     "code": "排放濃度",
+     "name": "排放濃度",
+     "kind": "duplicate of discharge_concentration"
+    },
+    {
+     "code": "氫離子濃度指數",
+     "name": "氫離子濃度指數",
+     "kind": "new"
+    },
+    {
+     "code": "改善期間",
+     "name": "改善期間",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_52",
+   "declared": [
+    {
+     "code": "water_pollution_prevention_duty",
+     "name": "水污染防治義務",
+     "kind": "new"
+    },
+    {
+     "code": "water_pollution_prevention_permit",
+     "name": "水污染防治許可",
+     "kind": "new"
+    },
+    {
+     "code": "water_pollution_prevention_standard",
+     "name": "水污染防治標準",
+     "kind": "new"
+    },
+    {
+     "code": "water_body_carrying_capacity",
+     "name": "水體涵容能力",
+     "kind": "duplicate of water_body_capacity"
+    },
+    {
+     "code": "pollutant",
+     "name": "污染物",
+     "kind": "reused"
+    },
+    {
+     "code": "pollution_prevention_measure",
+     "name": "污染防治措施",
+     "kind": "new"
+    },
+    {
+     "code": "improvement_order",
+     "name": "改善命令",
+     "kind": "duplicate of order_improvement"
+    },
+    {
+     "code": "continuous_improvement_penalty",
+     "name": "按日連續處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "suspension_order",
+     "name": "停止作為或停工停業命令",
+     "kind": "new"
+    },
+    {
+     "code": "permit_revocation",
+     "name": "廢止許可證",
+     "kind": "reused"
+    },
+    {
+     "code": "business_closure",
+     "name": "勒令歇業",
+     "kind": "reused"
+    },
+    {
+     "code": "serious_circumstances",
+     "name": "情節重大",
+     "kind": "reused"
+    },
+    {
+     "code": "necessary_circumstances",
+     "name": "必要時",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_36/para_3",
+   "declared": []
+  },
+  {
+   "law": "O0040001",
+   "path": "art_66-2/para_2",
+   "declared": [
+    {
+     "code": "behavior_for_others_benefit",
+     "name": "為他人利益而實施行為",
+     "kind": "new"
+    },
+    {
+     "code": "violation_of_legal_duty",
+     "name": "違反本法上義務應受處罰",
+     "kind": "new"
+    },
+    {
+     "code": "actor",
+     "name": "行為人",
+     "kind": "reused"
+    },
+    {
+     "code": "property_benefit",
+     "name": "財產上利益",
+     "kind": "new"
+    },
+    {
+     "code": "disgorgement",
+     "name": "追繳",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_24-1",
+   "declared": [
+    {
+     "code": "violation_art12_1_method",
+     "name": "違反第十二條之一第二項所定辦法",
+     "kind": "new"
+    },
+    {
+     "code": "fine",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "order_improve",
+     "name": "限期改善",
+     "kind": "new"
+    },
+    {
+     "code": "fine_repeating",
+     "name": "按日連續處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "restriction_operation",
+     "name": "停業",
+     "kind": "reused"
+    },
+    {
+     "code": "revocation_permit",
+     "name": "廢止許可證",
+     "kind": "reused"
+    },
+    {
+     "code": "serious_violation",
+     "name": "情節重大",
+     "kind": "reused"
+    },
+    {
+     "code": "necessary",
+     "name": "必要時",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_66-2/para_1",
+   "declared": [
+    {
+     "code": "illegal_gain",
+     "name": "所得利益",
+     "kind": "reused"
+    },
+    {
+     "code": "fine",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "disgorgement",
+     "name": "追繳",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_12",
+   "declared": [
+    {
+     "code": "wastewater_sewer_system",
+     "name": "污水下水道系統",
+     "kind": "reused"
+    },
+    {
+     "code": "public_sewer",
+     "name": "公共下水道",
+     "kind": "new"
+    },
+    {
+     "code": "private_sewer",
+     "name": "專用下水道",
+     "kind": "new"
+    },
+    {
+     "code": "wastewater_collection",
+     "name": "廢（污）水收集",
+     "kind": "new"
+    },
+    {
+     "code": "wastewater_pumping",
+     "name": "抽送",
+     "kind": "new"
+    },
+    {
+     "code": "wastewater_transmission",
+     "name": "傳運",
+     "kind": "new"
+    },
+    {
+     "code": "wastewater_treatment",
+     "name": "處理",
+     "kind": "new"
+    },
+    {
+     "code": "wastewater_final_disposal",
+     "name": "最後處置",
+     "kind": "new"
+    },
+    {
+     "code": "facilities",
+     "name": "設施",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_18",
+   "declared": []
+  },
+  {
+   "law": "O0040001",
+   "path": "art_45/para_3",
+   "declared": [
+    {
+     "code": "violation_14_2",
+     "name": "違反第十四條第二項",
+     "kind": "new"
+    },
+    {
+     "code": "fine_1_60",
+     "name": "新臺幣一萬元以上六十萬元以下罰鍰",
+     "kind": "new"
+    },
+    {
+     "code": "order_correct",
+     "name": "通知限期補正",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_repeating",
+     "name": "按次處罰",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_48/para_4",
+   "declared": [
+    {
+     "code": "wastewater_treatment_specialist",
+     "name": "廢（污）水處理專責人員",
+     "kind": "duplicate of wastewater_treatment_specialist"
+    },
+    {
+     "code": "wastewater_treatment_certificate",
+     "name": "廢水處理專責人員合格證書",
+     "kind": "new"
+    },
+    {
+     "code": "fine_amount",
+     "name": "罰鍰金額",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_56",
+   "declared": [
+    {
+     "code": "applicant_duty",
+     "name": "申報義務",
+     "kind": "reused"
+    },
+    {
+     "code": "reporting_subject",
+     "name": "申報義務人",
+     "kind": "new"
+    },
+    {
+     "code": "fine_amount",
+     "name": "罰鍰金額",
+     "kind": "new"
+    },
+    {
+     "code": "order_improve",
+     "name": "限期申報命令",
+     "kind": "new"
+    },
+    {
+     "code": "repeated_fine",
+     "name": "按次處罰",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_21",
+   "declared": [
+    {
+     "code": "violation_art6_1",
+     "name": "違反第六條第一項",
+     "kind": "new"
+    },
+    {
+     "code": "drinking_water_source",
+     "name": "飲用水水源",
+     "kind": "duplicate of drinking_water_source"
+    },
+    {
+     "code": "fine_art21",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "order_prohibition",
+     "name": "禁止作為",
+     "kind": "duplicate of prohibited_action"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_47",
+   "declared": [
+    {
+     "code": "sewage_system",
+     "name": "污水下水道系統",
+     "kind": "reused"
+    },
+    {
+     "code": "violation_of_art_19",
+     "name": "違反第十九條規定",
+     "kind": "new"
+    },
+    {
+     "code": "fine_amount_1",
+     "name": "罰鍰金額下限",
+     "kind": "new"
+    },
+    {
+     "code": "fine_amount_2",
+     "name": "罰鍰金額上限",
+     "kind": "new"
+    },
+    {
+     "code": "order_correct",
+     "name": "限期補正或改善",
+     "kind": "duplicate of order"
+    },
+    {
+     "code": "fine_repeating",
+     "name": "按次處罰",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_36/para_2",
+   "declared": []
+  },
+  {
+   "law": "O0040001",
+   "path": "art_11/para_3",
+   "declared": []
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_10",
+   "declared": [
+    {
+     "code": "wastewater_treatment_facility",
+     "name": "廢（污）水處理設施",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_11",
+   "declared": [
+    {
+     "code": "water_pollution_prevention_measure",
+     "name": "水污染防治措施",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "declared": [
+    {
+     "code": "畜牧業",
+     "name": "畜牧業",
+     "kind": "new"
+    },
+    {
+     "code": "違反第七條第一項或第八條",
+     "name": "違反第七條第一項或第八條之規定",
+     "kind": "duplicate of violation_seventh_eighth_article"
+    },
+    {
+     "code": "罰鍰",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "限期改善",
+     "name": "限期改善",
+     "kind": "new"
+    },
+    {
+     "code": "按次處罰",
+     "name": "按次處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "情節重大",
+     "name": "情節重大",
+     "kind": "reused"
+    },
+    {
+     "code": "停工或停業",
+     "name": "停工或停業",
+     "kind": "reused"
+    },
+    {
+     "code": "必要時",
+     "name": "必要時",
+     "kind": "reused"
+    },
+    {
+     "code": "廢止水污染防治許可證",
+     "name": "廢止其水污染防治許可證（文件）",
+     "kind": "reused"
+    },
+    {
+     "code": "勒令歇業",
+     "name": "勒令歇業",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_36/para_1",
+   "declared": [
+    {
+     "code": "有害健康物質",
+     "name": "有害健康物質",
+     "kind": "reused"
+    },
+    {
+     "code": "管制標準",
+     "name": "管制標準",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_16/para_1",
+   "declared": []
+  }
+ ],
+ "with": [
+  {
+   "law": "O0040001",
+   "path": "art_39-1/para_4",
+   "declared": [
+    {
+     "code": "water_pollution_criminal_violation_reporter",
+     "name": "曾參與依本法應負刑事責任之行為而向主管機關揭露或司法機關自白或自首因而查獲其他正犯或共犯者",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_34/para_2",
+   "declared": [
+    {
+     "code": "不遵行",
+     "name": "不遵行",
+     "kind": "reused"
+    },
+    {
+     "code": "有期徒刑",
+     "name": "有期徒刑",
+     "kind": "reused"
+    },
+    {
+     "code": "拘役",
+     "name": "拘役",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_100000_500000",
+     "name": "新臺幣十萬元以上五十萬元以下罰金",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_7",
+   "declared": [
+    {
+     "code": "enterprise",
+     "name": "事業",
+     "kind": "reused"
+    },
+    {
+     "code": "central_competent_authority",
+     "name": "中央主管機關",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_23/para_1",
+   "declared": [
+    {
+     "code": "公私場所",
+     "name": "公私場所",
+     "kind": "reused"
+    },
+    {
+     "code": "公私場所設置供公眾飲用之連續供水固定設備",
+     "name": "供公眾飲用之連續供水固定設備",
+     "kind": "reused"
+    },
+    {
+     "code": "water_supply",
+     "name": "供水",
+     "kind": "reused"
+    },
+    {
+     "code": "public_water_supply_facility",
+     "name": "供公眾飲用之連續供水固定設備",
+     "kind": "reused"
+    },
+    {
+     "code": "未完成改善",
+     "name": "未完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "fine",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_10000_100000",
+     "name": "新臺幣一萬元以上十萬元以下罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "repeated_penalty",
+     "name": "按次處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_completion",
+     "name": "完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "compulsory_improvement_order",
+     "name": "命限期改善",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_period_lapsed",
+     "name": "屆期未完成改善",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_16/para_2",
+   "declared": [
+    {
+     "code": "罰金",
+     "name": "罰金",
+     "kind": "reused"
+    },
+    {
+     "code": "有期徒刑",
+     "name": "有期徒刑",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_66-2/para_3",
+   "declared": [
+    {
+     "code": "violation_act",
+     "name": "違反行為",
+     "kind": "reused"
+    },
+    {
+     "code": "benefit",
+     "name": "利益",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_57-1",
+   "declared": [
+    {
+     "code": "pollutant_discharge_concentration",
+     "name": "污染物排放濃度",
+     "kind": "reused"
+    },
+    {
+     "code": "hydrogen_ion_concentration_index",
+     "name": "氫離子濃度指數",
+     "kind": "new"
+    },
+    {
+     "code": "repeated_penalty",
+     "name": "按次處罰",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_52",
+   "declared": [
+    {
+     "code": "water_pollution_prevention_license",
+     "name": "水污染防治許可證",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_30000_3000000",
+     "name": "新臺幣三萬元以上三百萬元以下罰鍰",
+     "kind": "new"
+    },
+    {
+     "code": "compulsory_improvement_order",
+     "name": "限期改善命令",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_completion",
+     "name": "完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "repeated_penalty",
+     "name": "按次處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "serious_circumstances",
+     "name": "情節重大",
+     "kind": "reused"
+    },
+    {
+     "code": "work_stoppage",
+     "name": "停工",
+     "kind": "reused"
+    },
+    {
+     "code": "business_stoppage",
+     "name": "停業",
+     "kind": "reused"
+    },
+    {
+     "code": "revocation",
+     "name": "廢止其水污染防治許可證",
+     "kind": "reused"
+    },
+    {
+     "code": "sanction_operation",
+     "name": "勒令歇業",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_36/para_3",
+   "declared": [
+    {
+     "code": "罰金",
+     "name": "罰金",
+     "kind": "reused"
+    },
+    {
+     "code": "有期徒刑",
+     "name": "有期徒刑",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_66-2/para_2",
+   "declared": [
+    {
+     "code": "benefit",
+     "name": "利益",
+     "kind": "reused"
+    },
+    {
+     "code": "violation",
+     "name": "違反本法之行為",
+     "kind": "reused"
+    },
+    {
+     "code": "violation_of_law",
+     "name": "違反本法規定",
+     "kind": "reused"
+    },
+    {
+     "code": "behavior",
+     "name": "行為",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_24-1",
+   "declared": [
+    {
+     "code": "未完成改善",
+     "name": "未完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "serious_circumstances",
+     "name": "情節重大",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_completion",
+     "name": "完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "按日連續處罰",
+     "name": "按日連續處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "fine",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "business_stoppage",
+     "name": "停業",
+     "kind": "reused"
+    },
+    {
+     "code": "necessary_circumstances",
+     "name": "必要時",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_period_lapsed",
+     "name": "屆期未完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "限期改善通知",
+     "name": "限期改善通知",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_50000_500000",
+     "name": "新臺幣五萬元以上五十萬元以下罰鍰",
+     "kind": "new"
+    },
+    {
+     "code": "compulsory_improvement_order",
+     "name": "命限期改善",
+     "kind": "reused"
+    },
+    {
+     "code": "disgorgement",
+     "name": "廢止許可證",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_completed",
+     "name": "改善完成",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_66-2/para_1",
+   "declared": [
+    {
+     "code": "income_benefit",
+     "name": "所得利益",
+     "kind": "reused"
+    },
+    {
+     "code": "violation_of_law",
+     "name": "違反本法規定",
+     "kind": "reused"
+    },
+    {
+     "code": "violation_act",
+     "name": "違反行為",
+     "kind": "reused"
+    },
+    {
+     "code": "fine",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "benefit",
+     "name": "利益",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_12",
+   "declared": [
+    {
+     "code": "sewage_sewer_system",
+     "name": "污水下水道系統",
+     "kind": "reused"
+    },
+    {
+     "code": "wastewater",
+     "name": "廢（污）水",
+     "kind": "reused"
+    },
+    {
+     "code": "wastewater_treatment",
+     "name": "廢（污）水處理",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_18",
+   "declared": [
+    {
+     "code": "違反第八條規定",
+     "name": "違反第八條規定",
+     "kind": "reused"
+    },
+    {
+     "code": "有期徒刑",
+     "name": "有期徒刑",
+     "kind": "reused"
+    },
+    {
+     "code": "拘役",
+     "name": "拘役",
+     "kind": "reused"
+    },
+    {
+     "code": "罰金",
+     "name": "罰金",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_45/para_3",
+   "declared": [
+    {
+     "code": "supplementation_and_correction",
+     "name": "補正",
+     "kind": "reused"
+    },
+    {
+     "code": "fine",
+     "name": "罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "order_correct",
+     "name": "通知限期補正",
+     "kind": "reused"
+    },
+    {
+     "code": "repeated_penalty",
+     "name": "按次處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "failure_to_correct_within_deadline",
+     "name": "屆期未補正",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_10000_600000",
+     "name": "新臺幣一萬元以上六十萬元以下罰鍰",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_48/para_4",
+   "declared": [
+    {
+     "code": "fine_10000_100000",
+     "name": "新臺幣一萬元以上十萬元以下罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "wastewater_treatment_specialist",
+     "name": "廢水處理專責人員",
+     "kind": "reused"
+    },
+    {
+     "code": "necessary_circumstances",
+     "name": "必要時",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_56",
+   "declared": [
+    {
+     "code": "fine_6k_3m",
+     "name": "新臺幣六千元以上三百萬元以下罰鍰",
+     "kind": "new"
+    },
+    {
+     "code": "reporting_requirement",
+     "name": "申報義務",
+     "kind": "reused"
+    },
+    {
+     "code": "reporting",
+     "name": "申報",
+     "kind": "reused"
+    },
+    {
+     "code": "false_reporting",
+     "name": "申報不實",
+     "kind": "reused"
+    },
+    {
+     "code": "order_report",
+     "name": "通知限期申報",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_21",
+   "declared": [
+    {
+     "code": "water_source_usage",
+     "name": "作為飲用水水源或供飲用",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_60000_600000",
+     "name": "新臺幣六萬元以上六十萬元以下罰鍰",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_47",
+   "declared": [
+    {
+     "code": "business_or_sewage_sewer_system_violation",
+     "name": "事業或污水下水道系統違法",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_10000_100000",
+     "name": "新臺幣一萬元以上十萬元以下罰鍰",
+     "kind": "reused"
+    },
+    {
+     "code": "compensation_order",
+     "name": "限期補正命令",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_completion",
+     "name": "完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "failure_to_correct_within_deadline",
+     "name": "屆期未補正",
+     "kind": "reused"
+    },
+    {
+     "code": "improvement_period_lapsed",
+     "name": "屆期未完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "repeated_penalty",
+     "name": "按次處罰",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_36/para_2",
+   "declared": [
+    {
+     "code": "discharge_ground_water_body",
+     "name": "將廢（污）水注入地下水體",
+     "kind": "reused"
+    },
+    {
+     "code": "harmful_to_health_substances",
+     "name": "有害健康物質",
+     "kind": "reused"
+    },
+    {
+     "code": "有期徒刑",
+     "name": "有期徒刑",
+     "kind": "reused"
+    },
+    {
+     "code": "拘役",
+     "name": "拘役",
+     "kind": "reused"
+    },
+    {
+     "code": "fine_10000_100000",
+     "name": "新臺幣一萬元以上十萬元以下罰鍰",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_11/para_3",
+   "declared": [
+    {
+     "code": "water_pollution_fee",
+     "name": "水污染防治費",
+     "kind": "reused"
+    },
+    {
+     "code": "water_pollution_prevention",
+     "name": "水污染防治",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_10",
+   "declared": [
+    {
+     "code": "wastewater_treatment_facility",
+     "name": "廢（污）水處理設施",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_2/para_1/pt_11",
+   "declared": [
+    {
+     "code": "water_pollution_prevention_measures",
+     "name": "水污染防治措施",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_40/para_2",
+   "declared": [
+    {
+     "code": "fine_6k_600k",
+     "name": "新臺幣六千元以上六十萬元以下罰鍰",
+     "kind": "new"
+    },
+    {
+     "code": "compulsory_improvement_order",
+     "name": "通知限期改善",
+     "kind": "duplicate of 限期改善通知"
+    },
+    {
+     "code": "improvement_period_lapsed",
+     "name": "屆期未完成改善",
+     "kind": "reused"
+    },
+    {
+     "code": "repeated_penalty",
+     "name": "按次處罰",
+     "kind": "reused"
+    },
+    {
+     "code": "serious_circumstances",
+     "name": "情節重大",
+     "kind": "reused"
+    },
+    {
+     "code": "suspension",
+     "name": "停工或停業",
+     "kind": "reused"
+    },
+    {
+     "code": "revocation",
+     "name": "廢止其水污染防治許可證（文件）",
+     "kind": "reused"
+    },
+    {
+     "code": "sanction_operation",
+     "name": "勒令歇業",
+     "kind": "reused"
+    },
+    {
+     "code": "necessary_circumstances",
+     "name": "必要時",
+     "kind": "reused"
+    }
+   ]
+  },
+  {
+   "law": "O0040001",
+   "path": "art_36/para_1",
+   "declared": [
+    {
+     "code": "discharge_wastewater_to_soil_or_surface_water_body_contains_harmful_substance",
+     "name": "事業排放於土壤或地面水體之廢（污）水所含之有害健康物質超過管制標準",
+     "kind": "new"
+    }
+   ]
+  },
+  {
+   "law": "O0040010",
+   "path": "art_16/para_1",
+   "declared": [
+    {
+     "code": "罰金",
+     "name": "罰金",
+     "kind": "reused"
+    },
+    {
+     "code": "有期徒刑",
+     "name": "有期徒刑",
+     "kind": "reused"
+    },
+    {
+     "code": "拘役",
+     "name": "拘役",
+     "kind": "reused"
+    },
+    {
+     "code": "符合下列情形之一",
+     "name": "符合下列情形之一",
+     "kind": "reused"
+    }
+   ]
+  }
+ ]
+}

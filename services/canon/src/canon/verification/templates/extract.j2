@@ -1,5 +1,5 @@
 {% extends "with_conventions.j2" %}
-{% from "macros.j2" import ancestors, punished, review, terms %}
+{% from "macros.j2" import ancestors, known, punished, review, terms %}
 
 {% block instruction %}
 你是法規標註器。下面是一個條文單元的原文。
@@ -67,6 +67,6 @@
 
 {% block material %}
 
-{{ terms(defined) }}{{ ancestors(context) }}{{ punished(punished_by) }}{{ review(notes) }}原文（{{ law }} {{ path }}）：
+{{ terms(defined) }}{{ known(known_concepts) }}{{ ancestors(context) }}{{ punished(punished_by) }}{{ review(notes) }}原文（{{ law }} {{ path }}）：
 {{ text }}
 {% endblock %}

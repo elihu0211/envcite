@@ -6,6 +6,7 @@ import pytest
 
 from canon.claims.enums import LEGAL_EFFECTS, TRIGGER_KINDS
 from canon.verification import prompts
+from canon.verification.context import KnownConcept
 
 TEXT = "原文 {braces} 與 {{double}} {% raw %}"
 
@@ -16,6 +17,7 @@ def _extract(
     defined: Mapping[str, str] | None = None,
     punished_by: Sequence[str] = (),
     review: Sequence[str] = (),
+    known: Sequence[KnownConcept] = (),
 ) -> str:
     return prompts.extract(
         law="L0001",
@@ -25,6 +27,7 @@ def _extract(
         defined=defined,
         punished_by=punished_by,
         review=review,
+        known=known,
     )
 
 
@@ -45,6 +48,7 @@ def test_optional_blocks_appear_only_when_there_is_something_to_say() -> None:
         "本法已定義的用語（代碼：名稱）",
         "以「違反」引用",
         "審查意見如下",
+        "本方案已有的概念",
     ):
         assert marker not in bare
     full = _extract(
@@ -52,8 +56,10 @@ def test_optional_blocks_appear_only_when_there_is_something_to_say() -> None:
         defined={"water": "水體"},
         punished_by=("art_1", "art_2"),
         review=("缺期限",),
+        known=(KnownConcept("effluent", "放流水"),),
     )
     assert "上層條文（只供理解" in full and "- water：水體" in full
+    assert "本方案已有的概念" in full and "- effluent｜放流水" in full
     assert "（art_1、art_2）以「違反」引用" in full and "- 缺期限" in full
 
 
