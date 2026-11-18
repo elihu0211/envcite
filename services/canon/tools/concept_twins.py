@@ -22,12 +22,13 @@ from typing import Any, NamedTuple
 
 import psycopg
 
+from canon.case_facts import cosine
 from canon.db import Conn, fetch
 from canon.settings import DatabaseSettings, load
 from canon.verification.config import load_declared, load_embedder
 from canon.verification.jsonutil import object_from
 from canon.verification.models import ChatCompletionsModel
-from fact_extraction_eval import Cache, cosine
+from fact_extraction_eval import Cache
 
 #: 判斷者：兩位、不同家族。
 JUDGE_IDS = ("ornith-35b", "nemotron-3.5-super-vl")

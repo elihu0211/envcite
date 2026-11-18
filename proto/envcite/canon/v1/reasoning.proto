@@ -24,6 +24,17 @@ service ReasoningService {
   // 依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
   // 期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
   rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
+
+  // 把問句裡明說的事實對到概念代碼，輸出可直接放進 EvaluateRequest.facts。唯讀，可安全重試。
+  //
+  // 抽取要呼叫語言模型，比一般查詢慢（數秒）。期限是預算，並行名額滿則回
+  // RESOURCE_EXHAUSTED（BUSY）。沒有設定抽取模型回 FAILED_PRECONDITION
+  // （EXTRACTOR_NOT_CONFIGURED）；模型或嵌入端點失敗、逾時回 UNAVAILABLE
+  // （EXTRACTION_UNAVAILABLE）：呼叫端退回沒有案件事實的做法。
+  //
+  // 問句是客戶的案件內容：日誌與指標都不記它。模型的輸出不被信任：只有通過程式檢查的事實出去，
+  // 即概念在候選集、型別相符，原文片段與數字確實在問句裡；沒通過的丟掉，不補值。
+  rpc ExtractFacts(ExtractFactsRequest) returns (ExtractFactsResponse);
 }
 
 // 十進位數，以文字表示（"100"、"0.5"），不用浮點數：語料的門檻是
@@ -313,6 +324,35 @@ message Override {
   int64 prevailing = 1;
   int64 subordinate = 2;
   OverrideBasis basis = 3;
+}
+
+// ---- ExtractFacts --------------------------------------------------------------
+
+message ExtractFactsRequest {
+  // 問句全文。必填，不超過 2,000 字。
+  string question = 1;
+}
+
+message ExtractFactsResponse {
+  // 通過檢查的事實；問句沒有明說的事實時是空的。
+  repeated ExtractedFact facts = 1;
+
+  // 給模型看的候選概念數。0 是沒有已確認的陳述可對，沒有呼叫模型。
+  int32 candidates = 2;
+}
+
+message ExtractedFact {
+  // 概念代碼，可直接放進 Fact.concept。
+  string concept = 1;
+
+  // 概念名稱，給人看。
+  string name = 2;
+
+  // 旗標概念是 flag：問句說成立為 true，明說沒有發生為 false；數值概念是 number。
+  FactValue value = 3;
+
+  // 問句裡支持這項事實的原文片段，逐字取自問句。
+  string quote = 4;
 }
 
 // ---- Evaluate ------------------------------------------------------------------

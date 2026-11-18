@@ -18,9 +18,7 @@
 import argparse
 import hashlib
 import json
-import math
 import random
-import re
 import time
 from collections import Counter
 from collections.abc import Sequence
@@ -28,19 +26,27 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Literal, NamedTuple
 
 import psycopg
 
-from canon.db import Conn, fetch
+from canon.case_facts import (
+    Concept,
+    Cond,
+    Fact,
+    Value,
+    check,
+    conditions,
+    extract_prompt,
+    nearest,
+    parse_facts,
+    vocabulary,
+)
+from canon.db import Conn
 from canon.embedding import Embeds
 from canon.reasoning.engine import evaluate
 from canon.settings import DatabaseSettings, load
 from canon.verification.config import load_declared, load_embedder
 from canon.verification.models import ChatCompletionsModel, ModelError
-
-type Kind = Literal["flag", "number"]
-type Value = bool | float
 
 #: 預設的抽取模型。抽取要夠強：小模型逐概念判斷會過度解讀，要靠另一個模型逐項過濾才擋得住；
 #: 較強的模型不過濾也勝過小模型加過濾（量測結果見 eval/results/fact-extraction-honest-2026-11-18）。
@@ -64,64 +70,7 @@ _CONTROL_TOPICS = (
 )
 
 
-@dataclass(frozen=True)
-class Concept:
-    """候選概念：抽取者唯一能選的詞彙。"""
-
-    code: str
-    name: str
-    kind: Kind
-    unit: str | None
-
-
-class _Cond(NamedTuple):
-    statement_id: int
-    code: str
-    name: str
-    comparator: str
-    threshold: float | None
-    unit: str | None
-    text: str
-
-
-_CONDITIONS = """
-WITH conf AS (
-  SELECT s.id FROM (SELECT DISTINCT p.resource_id AS id FROM annotation.statement AS x
-                      JOIN corpus.provision AS p ON p.id = x.provision_id) AS lr
-   CROSS JOIN LATERAL (
-         SELECT * FROM annotation.statement_versions_at(lr.id, 'zho', %s) OFFSET 0) AS r
-    JOIN annotation.statement AS s ON s.id = r.statement_id)
-SELECT c.statement_id,
-       first_value(k.code) OVER (PARTITION BY k.scheme_id, k.name ORDER BY k.id), k.name,
-       c.comparator::text, c.threshold::float8, c.measure_unit,
-       pv.content
-  FROM annotation.statement_condition AS c
-  JOIN conf ON conf.id = c.statement_id
-  JOIN annotation.statement AS st ON st.id = c.statement_id
-  JOIN corpus.provision_version AS pv
-    ON pv.provision_id = st.provision_id AND pv.superseded_at IS NULL
-   AND pv.language = 'zho' AND pv.force_period @> %s::date
-  JOIN vocab.concept AS k ON k.id = c.concept_id
- WHERE NOT c.needs_assessment AND NOT c.carried AND c.threshold IS NOT NULL
- ORDER BY c.statement_id, c.id
-"""
-
-
-def conditions(conn: Conn, as_of: date) -> list[_Cond]:
-    """某日有效且已確認的陳述的可陳述要件（不含需判斷、承自上位、委由他處的）。"""
-    return fetch(conn, _CONDITIONS, (as_of, as_of), _Cond)
-
-
-def vocabulary(conds: list[_Cond]) -> dict[str, Concept]:
-    """候選概念；比較值為 1 的相等比較視為旗標，其餘為數值。"""
-    out: dict[str, Concept] = {}
-    for c in conds:
-        flag = c.comparator == "eq" and c.threshold == 1.0 and c.unit is None
-        out.setdefault(c.code, Concept(c.code, c.name, "flag" if flag else "number", c.unit))
-    return out
-
-
-def satisfying(c: _Cond) -> Value:
+def satisfying(c: Cond) -> Value:
     """滿足該要件的值：旗標為真，數值取越過門檻的值。"""
     assert c.threshold is not None
     if c.comparator in ("ge", "gt"):
@@ -142,7 +91,7 @@ class Item:
 
 
 def build_items(
-    conds: list[_Cond], vocab: dict[str, Concept], seed: int, controls: int
+    conds: list[Cond], vocab: dict[str, Concept], seed: int, controls: int
 ) -> list[Item]:
     """由陳述的要件結構產生題目：完整、少說一項、明說沒有、兩個陳述合併、無案件事實的對照組。"""
     by_stmt: dict[int, dict[str, Value]] = {}
@@ -206,155 +155,6 @@ def ask_prompt(item: Item, vocab: dict[str, Concept], index: int) -> str:
     )
 
 
-def _candidate_lines(cands: dict[str, Concept]) -> str:
-    lines = []
-    for c in cands.values():
-        shape = "旗標" if c.kind == "flag" else f"數值，單位 {c.unit or '無'}"
-        lines.append(f"- {c.code}｜{c.name}｜{shape}")
-    return "\n".join(lines)
-
-
-_EXAMPLES = (
-    "示範（概念與本題無關，只示範判斷方式）：\n"
-    "示範候選：- night_work｜夜間施工｜旗標；- noise_over｜噪音超標｜旗標\n"
-    "問句「我們工地昨晚有施工，噪音也量到超標，會怎樣？」→ night_work=true、noise_over=true\n"
-    "問句「夜間施工是不是都要先申請？」→ 空（這是在問規定，沒有陳述事實）\n"
-    "問句「我們沒有夜間施工，但鄰居說很吵，這樣違規嗎？」→ night_work=false；"
-    "noise_over 沒提，不填\n"
-)
-
-
-def extract_prompt(question: str, cands: dict[str, Concept]) -> str:
-    """逐概念判斷：對每個候選概念，問句是有、沒有、還是沒說。"""
-    lines = _candidate_lines(cands)
-    return (
-        "你是法規諮詢的事實抽取器。逐一檢查下列每個候選概念，判斷問句對它的陳述屬於哪一種：\n"
-        "- 有：問句明確說這件事已經發生或存在（數值概念要填問句裡的數字）\n"
-        "- 沒有：問句明確說這件事沒有發生或不存在\n"
-        "- 沒說：問句沒有明確說，包含只是詢問規定、要求、假設、可能性，或要靠推測才能得出\n"
-        "規則：1. 預設是「沒說」，只有問句字面明確陳述才選有或沒有；"
-        "2. 問句在問「是不是要…」「需不需要…」「能不能…」「如果…」時，被問的內容是「沒說」；"
-        "3. 選有或沒有時附 quote：問句中的原文片段，必須逐字取自問句。\n"
-        f"{_EXAMPLES}候選概念：\n{lines}\n問句：{question}\n"
-        '只輸出 JSON，每個候選概念一項：{"concepts":[{"concept":"代碼","status":"有",'
-        '"value":null,"quote":"原文片段"}]}（沒說的 quote 留空字串，value 只有數值概念要填）'
-    )
-
-
-class Fact(NamedTuple):
-    concept: str
-    value: Value
-    quote: str
-
-
-def _parse_exhaustive(rows: list[object]) -> list[Fact]:
-    """v3 的逐概念判斷：「有」與「沒有」才成為事實，「沒說」略過。"""
-    out: list[Fact] = []
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        code, status, quote, value = (
-            row.get("concept"),
-            row.get("status"),
-            row.get("quote"),
-            row.get("value"),
-        )
-        if not (isinstance(code, str) and isinstance(quote, str)):
-            continue
-        if status == "沒有":
-            out.append(Fact(code, False, quote))
-        elif status == "有":
-            number = isinstance(value, int | float) and not isinstance(value, bool)
-            out.append(Fact(code, float(value) if number else True, quote))  # type: ignore[arg-type]
-    return out
-
-
-def parse_facts(raw: str) -> list[Fact]:
-    """取模型回覆裡第一個 JSON 物件的 facts；形狀不合的項目略過。"""
-    start, end = raw.find("{"), raw.rfind("}")
-    if start < 0 or end < start:
-        return []
-    try:
-        doc = json.loads(raw[start : end + 1])
-    except json.JSONDecodeError:
-        return []
-    if isinstance(doc, dict) and isinstance(doc.get("concepts"), list):
-        return _parse_exhaustive(doc["concepts"])
-    rows = doc.get("facts") if isinstance(doc, dict) else None
-    out: list[Fact] = []
-    for row in rows if isinstance(rows, list) else []:
-        if not isinstance(row, dict):
-            continue
-        code, value, quote = row.get("concept"), row.get("value"), row.get("quote")
-        if (
-            isinstance(code, str)
-            and isinstance(quote, str)
-            and isinstance(value, bool | int | float)
-        ):
-            out.append(Fact(code, value if isinstance(value, bool) else float(value), quote))
-    return out
-
-
-_DIGITS = {
-    "零": 0,
-    "〇": 0,
-    "一": 1,
-    "二": 2,
-    "兩": 2,
-    "三": 3,
-    "四": 4,
-    "五": 5,
-    "六": 6,
-    "七": 7,
-    "八": 8,
-    "九": 9,
-}
-_UNITS = {"十": 10, "百": 100, "千": 1000}
-_NUMERAL = re.compile("[" + "".join(_DIGITS) + "".join(_UNITS) + "]+")
-
-
-def _numeral_value(run: str) -> int:
-    """一段中文數字的值：有位值字（十百千）按位值算，只有數字的逐位串接。"""
-    if not any(ch in _UNITS for ch in run):
-        return int("".join(str(_DIGITS[ch]) for ch in run))
-    total = current = 0
-    for ch in run:
-        if ch in _DIGITS:
-            current = _DIGITS[ch]
-        else:
-            total += (current or 1) * _UNITS[ch]
-            current = 0
-    return total + current
-
-
-def arabic(text: str) -> str:
-    """把問句裡的中文數字換成阿拉伯數字（「四個」「兩年」），讓數字檢查不因寫法而擋掉。"""
-    return _NUMERAL.sub(lambda m: str(_numeral_value(m.group())), text)
-
-
-def check(
-    question: str, facts: list[Fact], vocab: dict[str, Concept]
-) -> tuple[list[Fact], Counter[str]]:
-    """程式檢查：概念在候選集、型別相符、原文片段在問句裡、數字在問句裡。回傳通過者與各項被擋的次數。"""
-    flat = re.sub(r"\s+", "", question.replace(",", ""))
-    digits = arabic(flat)
-    kept: list[Fact] = []
-    rejected: Counter[str] = Counter()
-    for f in facts:
-        concept = vocab.get(f.concept)
-        if concept is None:
-            rejected["概念不在候選集"] += 1
-        elif (concept.kind == "flag") != isinstance(f.value, bool):
-            rejected["值的型別不符"] += 1
-        elif re.sub(r"\s+", "", f.quote) not in flat or not f.quote.strip():
-            rejected["原文片段不在問句"] += 1
-        elif not isinstance(f.value, bool) and f"{f.value:g}" not in digits:
-            rejected["數字不在問句"] += 1
-        else:
-            kept.append(f)
-    return kept, rejected
-
-
 def audit_prompt(question: str, fact: Fact, vocab: dict[str, Concept]) -> str:
     """稽核提示：問句有沒有明確陳述這個事實（只看字面，不是「能不能推測」）。"""
     c = vocab[fact.concept]
@@ -401,21 +201,6 @@ class Cache:
     def save(self) -> None:
         self.path.write_text(json.dumps(self.data, ensure_ascii=False))
         self.vector_path.write_text(json.dumps(self.vectors))
-
-
-def cosine(a: Sequence[float], b: Sequence[float]) -> float:
-    """兩個向量的餘弦相似度。"""
-    dot = sum(x * y for x, y in zip(a, b, strict=True))
-    norm = math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(y * y for y in b))
-    return dot / norm if norm else 0.0
-
-
-def nearest(
-    vocab: dict[str, Concept], vectors: dict[str, list[float]], query: Sequence[float], k: int
-) -> list[Concept]:
-    """與查詢最相近的前 k 個概念（比的是概念名稱的向量）；k 為 0 是全部。"""
-    ranked = sorted(vocab.values(), key=lambda c: -cosine(vectors[c.code], query))
-    return ranked[:k] if k else ranked
 
 
 def case_of(facts: dict[str, Value]) -> dict[str, float]:

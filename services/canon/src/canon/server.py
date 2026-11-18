@@ -9,6 +9,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 from opentelemetry.metrics import Meter
 
+from canon.case_facts import CaseFactExtractor, Completes
 from canon.embedding import Embeds
 from canon.reasoning_service import ReasoningServicer
 from canon.reranking import Reranks
@@ -18,6 +19,7 @@ from canon.settings import ServerSettings, load
 from canon.store.canon_store import CanonStore
 from canon.telemetry import register_annotation_health
 from canon.verification import config
+from canon.verification.serving_models import fact_extractor_from_settings
 from canon.vocabulary import Fixed, Live, VocabularySource, serving
 from envcite.canon.v1 import canon_pb2_grpc, reasoning_pb2_grpc
 from envcite_grpc import SERVER_OPTIONS, configure_telemetry, stop_on_sigterm
@@ -52,6 +54,7 @@ def build_server(
     reranker: Reranks | None = None,
     rerank_candidates: int = DEFAULT_RERANK_CANDIDATES,
     meter: Meter | None = None,
+    fact_model: Completes | None = None,
 ) -> tuple[grpc.Server, int]:
     """建立但不啟動；回傳伺服器與實際綁定的埠號。`health_servicer` 讓呼叫端在關閉時切換狀態。
 
@@ -60,6 +63,7 @@ def build_server(
     `guidance_max_df` 是函釋入口容許的命中函釋占比上限；0 為不限制。
     `reranker` 是請求帶 `rerank` 時用的精排模型（None 為不精排）；`rerank_candidates` 是它看多深。
     `meter` 是指標的 Meter（None 為全域的；測試注入記憶體內的讀取器）。
+    `fact_model` 是 `ExtractFacts` 用的抽取模型（None 為沒設定，該呼叫回 FAILED_PRECONDITION）。
     """
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=WORKERS),
@@ -83,7 +87,11 @@ def build_server(
         ),
         meter=meter,
     )
-    reasoning_servicer = ReasoningServicer(store.connections, store.laws)
+    reasoning_servicer = ReasoningServicer(
+        store.connections,
+        store.laws,
+        extractor=CaseFactExtractor(fact_model, embedder) if fact_model is not None else None,
+    )
     canon_pb2_grpc.add_CanonServiceServicer_to_server(servicer, server)
     reasoning_pb2_grpc.add_ReasoningServiceServicer_to_server(reasoning_servicer, server)
     reflection.enable_server_reflection(
@@ -138,6 +146,7 @@ def main() -> None:
         # 精排同樣不重試；逾時以呼叫端剩下的期限為準，這裡只是上限
         reranker=config.reranker_from_settings(settings, timeout=RERANK_TIMEOUT),
         rerank_candidates=settings.rerank_candidates,
+        fact_model=fact_extractor_from_settings(settings),
     )
     stop_on_sigterm(server, health_servicer)
     server.start()

@@ -160,6 +160,15 @@ sequenceDiagram
 
 回傳 `(identifier, as_of)` 當日有效且已確認的陳述：`Requirement.any_of` 為「或」、`Disjunct.all_of` 為「且」；委由授權命令之門檻以 `Delegation` 表示，不在此解析。
 
+### `ExtractFacts`
+
+輸入問句全文（不超過 2,000 字），回傳問句裡**明說**的事實對到的概念代碼，輸出可直接放進 `EvaluateRequest.facts`。抽取要呼叫語言模型（數秒），所以呼叫端要設期限，並準備好退回「沒有案件事實」的做法。
+
+1. **只出通過檢查的事實**：模型的輸出不被信任。概念要在候選集、型別相符，`quote` 與數字要確實在問句裡；沒通過的丟掉，不補值。問句沒有明說任何事實、或沒有已確認的陳述可對（`candidates` 為 0，沒有呼叫模型）時 `facts` 為空。
+2. **候選由問句檢索**：給模型看的候選概念依問句由嵌入檢索挑出，不依任何標準答案挑；詞彙不大時全給，詞彙大而沒有嵌入端點時回 `UNAVAILABLE`。
+3. **失敗分流**（`ErrorInfo.reason`）：`EXTRACTOR_NOT_CONFIGURED`（`FAILED_PRECONDITION`，沒設抽取模型）；`EXTRACTION_UNAVAILABLE`（`UNAVAILABLE`，模型或嵌入端點失敗、逾時）；`BUSY`（`RESOURCE_EXHAUSTED`，並行名額滿）。三者都不重試，呼叫端退回沒有案件事實的做法。
+4. **問句不進日誌與指標**：服務只記字數與事實個數。
+
 ### `Evaluate`
 
 輸入 `conduct_on`（行為日）、`decided_on`（裁處日）與案件事實，回傳 `at_decision`（裁處時法，行政罰法 §5 原則）與 `earlier`（行為日至裁處日間陳述組不同之時點，不代選「最有利」）。期限同時為資料庫查詢上限，等不到名額回 `BUSY`。

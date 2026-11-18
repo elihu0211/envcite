@@ -29,7 +29,7 @@ METER_NAME = "canon"
 
 
 class ReasoningMetrics:
-    """`Evaluate` 的服務面指標。"""
+    """`Evaluate` 與 `ExtractFacts` 的服務面指標。"""
 
     def __init__(self, meter: Meter | None = None) -> None:
         meter = meter or metrics.get_meter(METER_NAME)
@@ -44,6 +44,18 @@ class ReasoningMetrics:
         self.in_flight = meter.create_up_down_counter(
             "envcite.reasoning.evaluate.in_flight",
             description="正在執行（已取得名額）的 Evaluate 數。",
+        )
+        self.extract_duration = meter.create_histogram(
+            "envcite.reasoning.extract_facts.duration",
+            unit="s",
+            description=(
+                "ExtractFacts 從收到到回應的耗時，含等名額與模型呼叫；"
+                "outcome 為 ok、invalid、busy、deadline、unconfigured、unavailable、error。"
+            ),
+        )
+        self.extracted_facts = meter.create_histogram(
+            "envcite.reasoning.extract_facts.facts",
+            description="一次 ExtractFacts 回傳的事實數（只記個數，問句與事實的內容不進指標）。",
         )
 
 

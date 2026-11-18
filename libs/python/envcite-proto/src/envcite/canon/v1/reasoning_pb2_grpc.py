@@ -53,6 +53,11 @@ class ReasoningServiceStub:
                 request_serializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.EvaluateRequest.SerializeToString,
                 response_deserializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.EvaluateResponse.FromString,
                 _registered_method=True)
+        self.ExtractFacts = channel.unary_unary(
+                '/envcite.canon.v1.ReasoningService/ExtractFacts',
+                request_serializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.ExtractFactsRequest.SerializeToString,
+                response_deserializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.ExtractFactsResponse.FromString,
+                _registered_method=True)
 
 
 class ReasoningServiceServicer:
@@ -84,6 +89,21 @@ class ReasoningServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ExtractFacts(self, request, context):
+        """把問句裡明說的事實對到概念代碼，輸出可直接放進 EvaluateRequest.facts。唯讀，可安全重試。
+
+        抽取要呼叫語言模型，比一般查詢慢（數秒）。期限是預算，並行名額滿則回
+        RESOURCE_EXHAUSTED（BUSY）。沒有設定抽取模型回 FAILED_PRECONDITION
+        （EXTRACTOR_NOT_CONFIGURED）；模型或嵌入端點失敗、逾時回 UNAVAILABLE
+        （EXTRACTION_UNAVAILABLE）：呼叫端退回沒有案件事實的做法。
+
+        問句是客戶的案件內容：日誌與指標都不記它。模型的輸出不被信任：只有通過程式檢查的事實出去，
+        即概念在候選集、型別相符，原文片段與數字確實在問句裡；沒通過的丟掉，不補值。
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ReasoningServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -96,6 +116,11 @@ def add_ReasoningServiceServicer_to_server(servicer, server):
                     servicer.Evaluate,
                     request_deserializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.EvaluateRequest.FromString,
                     response_serializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.EvaluateResponse.SerializeToString,
+            ),
+            'ExtractFacts': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExtractFacts,
+                    request_deserializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.ExtractFactsRequest.FromString,
+                    response_serializer=envcite_dot_canon_dot_v1_dot_reasoning__pb2.ExtractFactsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -161,6 +186,33 @@ class ReasoningService:
             '/envcite.canon.v1.ReasoningService/Evaluate',
             envcite_dot_canon_dot_v1_dot_reasoning__pb2.EvaluateRequest.SerializeToString,
             envcite_dot_canon_dot_v1_dot_reasoning__pb2.EvaluateResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExtractFacts(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/envcite.canon.v1.ReasoningService/ExtractFacts',
+            envcite_dot_canon_dot_v1_dot_reasoning__pb2.ExtractFactsRequest.SerializeToString,
+            envcite_dot_canon_dot_v1_dot_reasoning__pb2.ExtractFactsResponse.FromString,
             options,
             channel_credentials,
             insecure,

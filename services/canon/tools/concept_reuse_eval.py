@@ -26,6 +26,7 @@ from typing import Any, NamedTuple
 
 import psycopg
 
+from canon.case_facts import cosine
 from canon.db import Conn, fetch
 from canon.settings import DatabaseSettings, load
 from canon.verification import prompts
@@ -35,7 +36,7 @@ from canon.verification.context import KnownConcept, ancestors_text, known_conce
 from canon.verification.extract import _unit_text
 from canon.verification.jsonutil import object_from
 from canon.verification.models import ChatCompletionsModel
-from fact_extraction_eval import Cache, cosine
+from fact_extraction_eval import Cache
 
 #: 抽取者用標註管線裡的抽取模型；判斷者必須是另一個家族。
 EXTRACTOR_ID = "mistral-small-4"

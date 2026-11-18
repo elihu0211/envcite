@@ -1075,6 +1075,88 @@ class Override(_message.Message):
 Global___Override: _TypeAlias = Override  # noqa: Y015
 
 @_typing.final
+class ExtractFactsRequest(_message.Message):
+    """---- ExtractFacts --------------------------------------------------------------"""
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    QUESTION_FIELD_NUMBER: _builtins.int
+    question: _builtins.str
+    """問句全文。必填，不超過 2,000 字。"""
+    def __init__(
+        self,
+        *,
+        question: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["question", b"question"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ExtractFactsRequest: _TypeAlias = ExtractFactsRequest  # noqa: Y015
+
+@_typing.final
+class ExtractFactsResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    FACTS_FIELD_NUMBER: _builtins.int
+    CANDIDATES_FIELD_NUMBER: _builtins.int
+    candidates: _builtins.int
+    """給模型看的候選概念數。0 是沒有已確認的陳述可對，沒有呼叫模型。"""
+    @_builtins.property
+    def facts(self) -> _containers.RepeatedCompositeFieldContainer[Global___ExtractedFact]:
+        """通過檢查的事實；問句沒有明說的事實時是空的。"""
+
+    def __init__(
+        self,
+        *,
+        facts: _abc.Iterable[Global___ExtractedFact] | None = ...,
+        candidates: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["candidates", b"candidates", "facts", b"facts"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ExtractFactsResponse: _TypeAlias = ExtractFactsResponse  # noqa: Y015
+
+@_typing.final
+class ExtractedFact(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    CONCEPT_FIELD_NUMBER: _builtins.int
+    NAME_FIELD_NUMBER: _builtins.int
+    VALUE_FIELD_NUMBER: _builtins.int
+    QUOTE_FIELD_NUMBER: _builtins.int
+    concept: _builtins.str
+    """概念代碼，可直接放進 Fact.concept。"""
+    name: _builtins.str
+    """概念名稱，給人看。"""
+    quote: _builtins.str
+    """問句裡支持這項事實的原文片段，逐字取自問句。"""
+    @_builtins.property
+    def value(self) -> Global___FactValue:
+        """旗標概念是 flag：問句說成立為 true，明說沒有發生為 false；數值概念是 number。"""
+
+    def __init__(
+        self,
+        *,
+        concept: _builtins.str = ...,
+        name: _builtins.str = ...,
+        value: Global___FactValue | None = ...,
+        quote: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["value", b"value"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["concept", b"concept", "name", b"name", "quote", b"quote", "value", b"value"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___ExtractedFact: _TypeAlias = ExtractedFact  # noqa: Y015
+
+@_typing.final
 class EvaluateRequest(_message.Message):
     """---- Evaluate ------------------------------------------------------------------"""
 
