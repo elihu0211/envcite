@@ -550,7 +550,7 @@ def test_a_permit_value_under_an_equal_concept_counts(conn: Conn, tmp_path: Path
     doc = _with(_doc(_permitted()), "operating_permit")
     doc["concepts"] += [
         {"code": "cod", "label": "化學需氧量", "matches": {"cas": "x-cod"}},
-        {"code": "chemical_oxygen_demand", "label": "化學需氧量", "matches": {"cas": "x-cod"}},
+        {"code": "chemical_oxygen_demand", "label": "COD", "matches": {"cas": "x-cod"}},
         {"code": "op_permit", "label": "操作許可", "matches": {"tw_permit": "op"}},
     ]
     doc["concepts"] = [
