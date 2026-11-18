@@ -1,0 +1,13 @@
+{
+ "used_concepts": 86,
+ "candidate_pairs": 320,
+ "judged_same_by_any": 0,
+ "judged_same_by_both": 0,
+ "mergeable": 0,
+ "concepts_involved": 0,
+ "statements_touched": 0,
+ "judges": [
+  "qwen:ornith-35b",
+  "nvidia:nemotron-3.5-super-vl"
+ ]
+}
