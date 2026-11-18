@@ -1,0 +1,3229 @@
+[
+ {
+  "id": "full-000",
+  "variant": "full",
+  "split": "test",
+  "question": "我們社區自己弄了一套共用的供水設備，水也是從這套設備供應的，這種情況在法規上怎麼認定？",
+  "verbatim": 0,
+  "gold": {
+   "community_public_water_supply": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "community_public_water_supply",
+    "value": true,
+    "quote": "我們社區自己弄了一套共用的供水設備，水也是從這套設備供應的"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "community_public_water_supply",
+    "value": true,
+    "quote": "我們社區自己弄了一套共用的供水設備，水也是從這套設備供應的"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5949,
+   "got": 0.5964
+  }
+ },
+ {
+  "id": "negated-001",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們社區並沒有自己裝設公共供水設備來供水，這樣還算符合相關規定嗎？",
+  "verbatim": 0,
+  "gold": {
+   "community_public_water_supply": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "community_public_water_supply",
+    "value": false,
+    "quote": "並沒有自己裝設公共供水設備來供水"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "community_public_water_supply",
+    "value": false,
+    "quote": "並沒有自己裝設公共供水設備來供水"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5993,
+   "got": 0.5944
+  }
+ },
+ {
+  "id": "full-002",
+  "variant": "full",
+  "split": "test",
+  "question": "在保護飲用水水源的區域，或離取水口一定距離內的地方，有人做了會弄髒水源的事，這樣會不會違法？",
+  "verbatim": 0,
+  "gold": {
+   "location_in_protection_zone_or_intake_area": true,
+   "pollution_behavior": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "pollution_behavior",
+    "value": true,
+    "quote": "有人做了會弄髒水源的事"
+   },
+   {
+    "concept": "location_in_protection_zone_or_intake_area",
+    "value": true,
+    "quote": "在保護飲用水水源的區域，或離取水口一定距離內的地方"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "pollution_behavior",
+    "value": true,
+    "quote": "有人做了會弄髒水源的事"
+   },
+   {
+    "concept": "location_in_protection_zone_or_intake_area",
+    "value": true,
+    "quote": "在保護飲用水水源的區域，或離取水口一定距離內的地方"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "pollution_behavior",
+   "location_in_protection_zone_or_intake_area"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "105": "compliant"
+  },
+  "got_verdicts": {
+   "105": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6032,
+   "got": 0.5891
+  }
+ },
+ {
+  "id": "negated-004",
+  "variant": "negated",
+  "split": "test",
+  "question": "我做了會弄髒水源的事，但地點不是飲用水水源水質保護區，也不在飲用水取水口附近的一定距離內，這樣還會違法嗎？",
+  "verbatim": 0,
+  "gold": {
+   "pollution_behavior": true,
+   "location_in_protection_zone_or_intake_area": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "pollution_behavior",
+    "value": true,
+    "quote": "我做了會弄髒水源的事"
+   },
+   {
+    "concept": "location_in_protection_zone_or_intake_area",
+    "value": false,
+    "quote": "地點不是飲用水水源水質保護區，也不在飲用水取水口附近的一定距離內"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "pollution_behavior",
+    "value": true,
+    "quote": "我做了會弄髒水源的事"
+   },
+   {
+    "concept": "location_in_protection_zone_or_intake_area",
+    "value": false,
+    "quote": "地點不是飲用水水源水質保護區，也不在飲用水取水口附近的一定距離內"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "pollution_behavior"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "105": "not_applicable"
+  },
+  "got_verdicts": {
+   "105": "not_applicable"
+  },
+  "seconds": {
+   "gold": 0.5992,
+   "got": 0.6027
+  }
+ },
+ {
+  "id": "full-008",
+  "variant": "full",
+  "split": "test",
+  "question": "我手上有一份證明飲用水水質沒問題的文件，而且是中央主管機關核發許可證的環境檢驗測定機構出的檢驗報告，主管機關是不是就可以不用再抽水檢驗？",
+  "verbatim": 0,
+  "gold": {
+   "drinking_water_quality_proof": true,
+   "test_report_by_permitted_lab": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "test_report_by_permitted_lab",
+    "value": true,
+    "quote": "中央主管機關核發許可證的環境檢驗測定機構出的檢驗報告"
+   },
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": true,
+    "quote": "證明飲用水水質沒問題的文件"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "中央主管機關核發許可證的環境檢驗測定機構出的檢驗報告"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "test_report_by_permitted_lab",
+    "value": true,
+    "quote": "中央主管機關核發許可證的環境檢驗測定機構出的檢驗報告"
+   },
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": true,
+    "quote": "證明飲用水水質沒問題的文件"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "中央主管機關核發許可證的環境檢驗測定機構出的檢驗報告"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "drinking_water_quality_proof"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6017,
+   "got": 0.5994
+  }
+ },
+ {
+  "id": "negated-010",
+  "variant": "negated",
+  "split": "test",
+  "question": "我手上沒有飲用水水質標準的證明文件，但有一份中央主管機關發給許可證的環境檢驗測定機構出具的檢驗報告，這樣主管機關是不是就不用再派人採樣檢驗了？",
+  "verbatim": 0,
+  "gold": {
+   "test_report_by_permitted_lab": true,
+   "drinking_water_quality_proof": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "test_report_by_permitted_lab",
+    "value": true,
+    "quote": "有一份中央主管機關發給許可證的環境檢驗測定機構出具的檢驗報告"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "有一份中央主管機關發給許可證的環境檢驗測定機構出具的檢驗報告"
+   },
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": false,
+    "quote": "我手上沒有飲用水水質標準的證明文件"
+   },
+   {
+    "concept": "inspection_determination_agency",
+    "value": true,
+    "quote": "中央主管機關發給許可證的環境檢驗測定機構出具的檢驗報告"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "test_report_by_permitted_lab",
+    "value": true,
+    "quote": "有一份中央主管機關發給許可證的環境檢驗測定機構出具的檢驗報告"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "有一份中央主管機關發給許可證的環境檢驗測定機構出具的檢驗報告"
+   },
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": false,
+    "quote": "我手上沒有飲用水水質標準的證明文件"
+   },
+   {
+    "concept": "inspection_determination_agency",
+    "value": true,
+    "quote": "中央主管機關發給許可證的環境檢驗測定機構出具的檢驗報告"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "inspection_determination_agency"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {
+   "224": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6054,
+   "got": 0.6096
+  }
+ },
+ {
+  "id": "full-011",
+  "variant": "full",
+  "split": "test",
+  "question": "我們改了河道，感覺會影響河水自己淨化的能力，而且事前沒有取得主管機關和目的事業主管機關的同意，這樣會不會有問題？",
+  "verbatim": 0,
+  "gold": {
+   "water_quality_affected": true,
+   "unauthorized_change": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "unauthorized_change",
+    "value": true,
+    "quote": "事前沒有取得主管機關和目的事業主管機關的同意"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "我們改了河道"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "unauthorized_change",
+    "value": true,
+    "quote": "事前沒有取得主管機關和目的事業主管機關的同意"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "我們改了河道"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {
+   "339": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6065,
+   "got": 0.6076
+  }
+ },
+ {
+  "id": "partial-012",
+  "variant": "partial",
+  "split": "test",
+  "question": "這件事沒有經過主管機關和目的事業主管機關同意，這樣會不會有問題？",
+  "verbatim": 0,
+  "gold": {
+   "unauthorized_change": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "unauthorized_change",
+    "value": true,
+    "quote": "沒有經過主管機關和目的事業主管機關同意"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "unauthorized_change",
+    "value": true,
+    "quote": "沒有經過主管機關和目的事業主管機關同意"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.601,
+   "got": 0.6011
+  }
+ },
+ {
+  "id": "negated-013",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們變更河道，會影響水自己淨化的能力，但並不是沒有經過主管機關和目的事業主管機關同意，這樣還會被認定違規嗎？",
+  "verbatim": 0,
+  "gold": {
+   "water_quality_affected": true,
+   "unauthorized_change": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "water_quality_affected",
+    "value": true,
+    "quote": "會影響水自己淨化的能力"
+   },
+   {
+    "concept": "unauthorized_change",
+    "value": false,
+    "quote": "並不是沒有經過主管機關和目的事業主管機關同意"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "water_quality_affected",
+    "value": true,
+    "quote": "會影響水自己淨化的能力"
+   },
+   {
+    "concept": "unauthorized_change",
+    "value": false,
+    "quote": "並不是沒有經過主管機關和目的事業主管機關同意"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "water_quality_affected",
+   "unauthorized_change"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.615,
+   "got": 0.6188
+  }
+ },
+ {
+  "id": "partial-015",
+  "variant": "partial",
+  "split": "test",
+  "question": "我們是檢驗測定機構，遇到這種情況，是不是一定要先拿到中央主管機關核發的許可證，才能做檢驗測定？",
+  "verbatim": 1,
+  "gold": {
+   "inspection_determination_agency": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "inspection_determination_agency",
+    "value": true,
+    "quote": "我們是檢驗測定機構"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "inspection_determination_agency",
+    "value": true,
+    "quote": "我們是檢驗測定機構"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "inspection_determination_agency"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "224": "undetermined"
+  },
+  "got_verdicts": {
+   "224": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6055,
+   "got": 0.6214
+  }
+ },
+ {
+  "id": "partial-018",
+  "variant": "partial",
+  "split": "test",
+  "question": "已經有公告禁止飲用了，那我現在該怎麼辦？",
+  "verbatim": 1,
+  "gold": {
+   "公告禁止飲用": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "公告禁止飲用",
+    "value": true,
+    "quote": "已經有公告禁止飲用了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "公告禁止飲用",
+    "value": true,
+    "quote": "已經有公告禁止飲用了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "232": "undetermined"
+  },
+  "got_verdicts": {
+   "232": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6055,
+   "got": 0.6123
+  }
+ },
+ {
+  "id": "partial-021",
+  "variant": "partial",
+  "split": "test",
+  "question": "聽說這次採樣地點、檢驗結果和採取的措施都已經報給中央主管機關了，這是不是法規要求一定要做的？",
+  "verbatim": 0,
+  "gold": {
+   "報告義務": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "報告義務",
+    "value": true,
+    "quote": "這次採樣地點、檢驗結果和採取的措施都已經報給中央主管機關了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "報告義務",
+    "value": true,
+    "quote": "這次採樣地點、檢驗結果和採取的措施都已經報給中央主管機關了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "報告義務"
+  ],
+  "unsupported_by_all": [
+   "報告義務"
+  ],
+  "gold_verdicts": {
+   "233": "undetermined"
+  },
+  "got_verdicts": {
+   "233": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.609,
+   "got": 0.605
+  }
+ },
+ {
+  "id": "full-023",
+  "variant": "full",
+  "split": "test",
+  "question": "主管機關來查飲用水的時候，我有不讓他們查、擋他們查或不配合，這樣會怎樣？",
+  "verbatim": 0,
+  "gold": {
+   "obstruction_action": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "obstruction_action",
+    "value": true,
+    "quote": "不讓他們查、擋他們查或不配合"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "obstruction_action",
+    "value": true,
+    "quote": "不讓他們查、擋他們查或不配合"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "obstruction_action"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "151": "undetermined"
+  },
+  "got_verdicts": {
+   "151": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6198,
+   "got": 0.6099
+  }
+ },
+ {
+  "id": "negated-024",
+  "variant": "negated",
+  "split": "test",
+  "question": "我沒有躲開、擋住或拒絕，這樣會不會有問題？",
+  "verbatim": 0,
+  "gold": {
+   "obstruction_action": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "obstruction_action",
+    "value": false,
+    "quote": "我沒有躲開、擋住或拒絕"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "obstruction_action",
+    "value": false,
+    "quote": "我沒有躲開、擋住或拒絕"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "151": "undetermined"
+  },
+  "got_verdicts": {
+   "151": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6062,
+   "got": 0.6115
+  }
+ },
+ {
+  "id": "full-027",
+  "variant": "full",
+  "split": "test",
+  "question": "我們有排放廢水，而且排出去的水質也都有達到規定標準，這樣還會不會違反規定？",
+  "verbatim": 0,
+  "gold": {
+   "discharge_action": true,
+   "discharge_standard_compliance": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "我們有排放廢水"
+   },
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "排出去的水質也都有達到規定標準"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "我們有排放廢水"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "我們有排放廢水"
+   },
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "排出去的水質也都有達到規定標準"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "我們有排放廢水"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "289": "compliant"
+  },
+  "got_verdicts": {
+   "289": "compliant",
+   "585": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.614,
+   "got": 0.6218
+  }
+ },
+ {
+  "id": "partial-028",
+  "variant": "partial",
+  "split": "test",
+  "question": "我們有排放的行為，這樣會不會有什麼規定要遵守？",
+  "verbatim": 0,
+  "gold": {
+   "discharge_action": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "我們有排放的行為"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "我們有排放的行為"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "289": "undetermined"
+  },
+  "got_verdicts": {
+   "289": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6176,
+   "got": 0.603
+  }
+ },
+ {
+  "id": "negated-029",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們並沒有排放廢水到地面水體，但水質是有符合放流水標準的，這樣還會有問題嗎？",
+  "verbatim": 1,
+  "gold": {
+   "discharge_standard_compliance": true,
+   "discharge_action": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "水質是有符合放流水標準的"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": false,
+    "quote": "並沒有排放廢水到地面水體"
+   },
+   {
+    "concept": "discharge_action",
+    "value": false,
+    "quote": "並沒有排放廢水到地面水體"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "水質是有符合放流水標準的"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": false,
+    "quote": "並沒有排放廢水到地面水體"
+   },
+   {
+    "concept": "discharge_action",
+    "value": false,
+    "quote": "並沒有排放廢水到地面水體"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "289": "not_applicable"
+  },
+  "got_verdicts": {
+   "289": "not_applicable",
+   "585": "not_applicable"
+  },
+  "seconds": {
+   "gold": 0.6034,
+   "got": 0.6057
+  }
+ },
+ {
+  "id": "full-030",
+  "variant": "full",
+  "split": "test",
+  "question": "我們事業最近有新設或調整，也已經提出審查核准的申請了，這樣還需要注意什麼嗎？",
+  "verbatim": 0,
+  "gold": {
+   "establishment_or_change": true,
+   "submit_for_review": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經提出審查核准的申請了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "最近有新設或調整"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經提出審查核准的申請了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "最近有新設或調整"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "establishment_or_change"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "339": "compliant"
+  },
+  "got_verdicts": {
+   "339": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6102,
+   "got": 0.6063
+  }
+ },
+ {
+  "id": "partial-031",
+  "variant": "partial",
+  "split": "test",
+  "question": "我們事業最近有設立或變更的情形，是不是得先把防治水污染的計畫和相關文件送去主管機關審核通過，才能開始或變更？",
+  "verbatim": 1,
+  "gold": {
+   "establishment_or_change": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "最近有設立或變更的情形"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "最近有設立或變更的情形"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "establishment_or_change"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "339": "undetermined"
+  },
+  "got_verdicts": {
+   "339": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6038,
+   "got": 0.6132
+  }
+ },
+ {
+  "id": "negated-032",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們還沒設立，也沒有變更，但已經先送件請相關單位審核同意了，這樣可以嗎？",
+  "verbatim": 0,
+  "gold": {
+   "submit_for_review": true,
+   "establishment_or_change": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經先送件請相關單位審核同意了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": false,
+    "quote": "還沒設立，也沒有變更"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經先送件請相關單位審核同意了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": false,
+    "quote": "還沒設立，也沒有變更"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "submit_for_review"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "339": "not_applicable"
+  },
+  "got_verdicts": {
+   "339": "not_applicable"
+  },
+  "seconds": {
+   "gold": 0.6075,
+   "got": 0.6098
+  }
+ },
+ {
+  "id": "partial-034",
+  "variant": "partial",
+  "split": "test",
+  "question": "我們在變更前有先申請，也拿到核准了，這樣就可以照變更後的內容做嗎？",
+  "verbatim": 0,
+  "gold": {
+   "change_approval": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "change_approval",
+    "value": true,
+    "quote": "在變更前有先申請，也拿到核准了"
+   },
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "在變更前有先申請，也拿到核准了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "變更後的內容"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "change_approval",
+    "value": true,
+    "quote": "在變更前有先申請，也拿到核准了"
+   },
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "在變更前有先申請，也拿到核准了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "變更後的內容"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "establishment_or_change"
+  ],
+  "unsupported_by_all": [
+   "establishment_or_change"
+  ],
+  "gold_verdicts": {
+   "344": "undetermined"
+  },
+  "got_verdicts": {
+   "339": "compliant",
+   "344": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6322,
+   "got": 0.6067
+  }
+ },
+ {
+  "id": "full-036",
+  "variant": "full",
+  "split": "test",
+  "question": "既然已經做過必要性評估，也真的新增了管制項目，我們接下來該怎麼辦？",
+  "verbatim": 0,
+  "gold": {
+   "necessity_assessment": true,
+   "add_pollutant_control": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "真的新增了管制項目"
+   },
+   {
+    "concept": "necessity_assessment",
+    "value": true,
+    "quote": "已經做過必要性評估"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "真的新增了管制項目"
+   },
+   {
+    "concept": "necessity_assessment",
+    "value": true,
+    "quote": "已經做過必要性評估"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "350": "compliant"
+  },
+  "got_verdicts": {
+   "350": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6139,
+   "got": 0.6075
+  }
+ },
+ {
+  "id": "partial-037",
+  "variant": "partial",
+  "split": "test",
+  "question": "我們事業遇到放流水標準新增管制項目，接下來該注意什麼？",
+  "verbatim": 1,
+  "gold": {
+   "add_pollutant_control": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "放流水標準新增管制項目"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "放流水標準新增管制項目"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "350": "undetermined"
+  },
+  "got_verdicts": {
+   "350": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6082,
+   "got": 0.6126
+  }
+ },
+ {
+  "id": "negated-038",
+  "variant": "negated",
+  "split": "test",
+  "question": "主管機關已經評估過有沒有必要，但最後還是沒有新增管制項目，這樣可以嗎？",
+  "verbatim": 1,
+  "gold": {
+   "necessity_assessment": true,
+   "add_pollutant_control": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": false,
+    "quote": "最後還是沒有新增管制項目"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": false,
+    "quote": "最後還是沒有新增管制項目"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "350": "violation"
+  },
+  "got_verdicts": {
+   "350": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.6055,
+   "got": 0.6113
+  }
+ },
+ {
+  "id": "full-039",
+  "variant": "full",
+  "split": "test",
+  "question": "如果我要申請排放許可證展延，展延期間寫兩年可以嗎？",
+  "verbatim": 1,
+  "gold": {
+   "permit_extension_period": 2.0
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6085,
+   "got": 0.614
+  }
+ },
+ {
+  "id": "full-045",
+  "variant": "full",
+  "split": "test",
+  "question": "我們廠裡送東西或存放東西的設備有可能會漏到水裡，我們也有做維護和防範，這樣還需要注意什麼嗎？",
+  "verbatim": 0,
+  "gold": {
+   "equipment_leakage_risk": true,
+   "maintenance_prevention_measures": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "我們也有做維護和防範"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "送東西或存放東西的設備有可能會漏到水裡"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "我們也有做維護和防範"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "送東西或存放東西的設備有可能會漏到水裡"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "equipment_leakage_risk"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "401": "compliant"
+  },
+  "got_verdicts": {
+   "401": "compliant"
+  },
+  "seconds": {
+   "gold": 0.5978,
+   "got": 0.5853
+  }
+ },
+ {
+  "id": "partial-046",
+  "variant": "partial",
+  "split": "test",
+  "question": "我們事業的輸送或貯存設備有疏漏風險，而且已經發生了，這種情況我該怎麼處理？",
+  "verbatim": 0,
+  "gold": {
+   "equipment_leakage_risk": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "輸送或貯存設備有疏漏風險，而且已經發生了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "輸送或貯存設備有疏漏風險，而且已經發生了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "401": "undetermined"
+  },
+  "got_verdicts": {
+   "401": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.5907,
+   "got": 0.5935
+  }
+ },
+ {
+  "id": "negated-047",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們這邊的設備目前沒有漏出污染物或廢水、污水到水體的風險，但平常有做維護和防範措施，這樣還需要特別注意什麼嗎？",
+  "verbatim": 0,
+  "gold": {
+   "maintenance_prevention_measures": true,
+   "equipment_leakage_risk": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "平常有做維護和防範措施"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": false,
+    "quote": "設備目前沒有漏出污染物或廢水、污水到水體的風險"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "平常有做維護和防範措施"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": false,
+    "quote": "設備目前沒有漏出污染物或廢水、污水到水體的風險"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "401": "not_applicable"
+  },
+  "got_verdicts": {
+   "401": "not_applicable"
+  },
+  "seconds": {
+   "gold": 0.5864,
+   "got": 0.5902
+  }
+ },
+ {
+  "id": "full-048",
+  "variant": "full",
+  "split": "test",
+  "question": "我們這個管制區牽涉到四個直轄市、縣市，這種情況該由誰來劃定、公告？",
+  "verbatim": 0,
+  "gold": {
+   "scope_涉及二直轄巿縣市以上": 4.0
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "scope_涉及二直轄巿縣市以上",
+    "value": 4.0,
+    "quote": "牽涉到四個直轄市、縣市"
+   },
+   {
+    "concept": "regulated_zone",
+    "value": 4.0,
+    "quote": "牽涉到四個直轄市、縣市"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "scope_涉及二直轄巿縣市以上",
+    "value": 4.0,
+    "quote": "牽涉到四個直轄市、縣市"
+   },
+   {
+    "concept": "regulated_zone",
+    "value": 4.0,
+    "quote": "牽涉到四個直轄市、縣市"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "scope_涉及二直轄巿縣市以上"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5892,
+   "got": 0.5987
+  }
+ },
+ {
+  "id": "full-049",
+  "variant": "full",
+  "split": "test",
+  "question": "我們這邊有用到對身體有害的物質，也有相關的限量規定，這樣要注意什麼？",
+  "verbatim": 0,
+  "gold": {
+   "harmful_to_health_substances": true,
+   "limit_value": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "harmful_to_health_substances",
+    "value": true,
+    "quote": "有用到對身體有害的物質"
+   },
+   {
+    "concept": "limit_value",
+    "value": true,
+    "quote": "也有相關的限量規定"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "harmful_to_health_substances",
+    "value": true,
+    "quote": "有用到對身體有害的物質"
+   },
+   {
+    "concept": "limit_value",
+    "value": true,
+    "quote": "也有相關的限量規定"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "limit_value"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5981,
+   "got": 0.6083
+  }
+ },
+ {
+  "id": "negated-051",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們這邊沒有出現對健康有害的物質，但有遇到限值的狀況，這樣該怎麼辦？",
+  "verbatim": 1,
+  "gold": {
+   "limit_value": true,
+   "harmful_to_health_substances": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "limit_value",
+    "value": true,
+    "quote": "有遇到限值的狀況"
+   },
+   {
+    "concept": "harmful_to_health_substances",
+    "value": false,
+    "quote": "沒有出現對健康有害的物質"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "limit_value",
+    "value": true,
+    "quote": "有遇到限值的狀況"
+   },
+   {
+    "concept": "harmful_to_health_substances",
+    "value": false,
+    "quote": "沒有出現對健康有害的物質"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.594,
+   "got": 0.5999
+  }
+ },
+ {
+  "id": "full-052",
+  "variant": "full",
+  "split": "test",
+  "question": "已經有水污染防治研究的話，政府可以提供相關資料給研究單位嗎？",
+  "verbatim": 1,
+  "gold": {
+   "water_pollution_prevention_research": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5899,
+   "got": 0.5918
+  }
+ },
+ {
+  "id": "negated-053",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們並沒有發生水污染防治研究，這樣主管機關還能提供相關資料嗎？",
+  "verbatim": 1,
+  "gold": {
+   "water_pollution_prevention_research": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "water_pollution_prevention_research",
+    "value": false,
+    "quote": "並沒有發生水污染防治研究"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "water_pollution_prevention_research",
+    "value": false,
+    "quote": "並沒有發生水污染防治研究"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5872,
+   "got": 0.5917
+  }
+ },
+ {
+  "id": "full-056",
+  "variant": "full",
+  "split": "test",
+  "question": "我是工業區裡的事業單位，這種情況會有什麼法律責任？",
+  "verbatim": 0,
+  "gold": {
+   "industrial_zone_enterprise": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "我是工業區裡的事業單位"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "我是工業區裡的事業單位"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5918,
+   "got": 0.5911
+  }
+ },
+ {
+  "id": "negated-057",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們不是工業區裡的事業單位，那如果被說成違反下水道規定、被通知停止使用後還繼續排廢水，這樣會成立嗎？",
+  "verbatim": 0,
+  "gold": {
+   "industrial_zone_enterprise": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": false,
+    "quote": "我們不是工業區裡的事業單位"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": false,
+    "quote": "我們不是工業區裡的事業單位"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6059,
+   "got": 0.5923
+  }
+ },
+ {
+  "id": "full-063",
+  "variant": "full",
+  "split": "test",
+  "question": "我們事業要設立或變更，也已經把防治水污染的計畫和相關文件送去審了，這樣可以嗎？",
+  "verbatim": 1,
+  "gold": {
+   "establishment_or_change": true,
+   "submit_plan": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "submit_plan",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和相關文件送去審了"
+   },
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和相關文件送去審了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "我們事業要設立或變更"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "submit_plan",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和相關文件送去審了"
+   },
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和相關文件送去審了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": true,
+    "quote": "我們事業要設立或變更"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "submit_for_review",
+   "establishment_or_change"
+  ],
+  "unsupported_by_all": [
+   "establishment_or_change"
+  ],
+  "gold_verdicts": {
+   "339": "undetermined",
+   "635": "undetermined"
+  },
+  "got_verdicts": {
+   "339": "compliant",
+   "635": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.5955,
+   "got": 0.5971
+  }
+ },
+ {
+  "id": "negated-064",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們沒有要設立或變更，但已經把防治水污染的計畫和文件送去審了，這樣會不會有問題？",
+  "verbatim": 1,
+  "gold": {
+   "submit_plan": true,
+   "establishment_or_change": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "submit_plan",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和文件送去審了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": false,
+    "quote": "沒有要設立或變更"
+   },
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和文件送去審了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "submit_plan",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和文件送去審了"
+   },
+   {
+    "concept": "establishment_or_change",
+    "value": false,
+    "quote": "沒有要設立或變更"
+   },
+   {
+    "concept": "submit_for_review",
+    "value": true,
+    "quote": "已經把防治水污染的計畫和文件送去審了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "establishment_or_change",
+   "submit_for_review"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "339": "not_applicable",
+   "635": "undetermined"
+  },
+  "got_verdicts": {
+   "339": "not_applicable",
+   "635": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.5958,
+   "got": 0.5987
+  }
+ },
+ {
+  "id": "partial-066",
+  "variant": "partial",
+  "split": "test",
+  "question": "我已經照規定申請把排放許可證展延了，這樣還需要做什麼嗎？",
+  "verbatim": 0,
+  "gold": {
+   "依第十五條規定申請展延排放許可證": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "依第十五條規定申請展延排放許可證",
+    "value": true,
+    "quote": "我已經照規定申請把排放許可證展延了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "依第十五條規定申請展延排放許可證",
+    "value": true,
+    "quote": "我已經照規定申請把排放許可證展延了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "依第十五條規定申請展延排放許可證"
+  ],
+  "unsupported_by_all": [
+   "依第十五條規定申請展延排放許可證"
+  ],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5967,
+   "got": 0.5966
+  }
+ },
+ {
+  "id": "full-068",
+  "variant": "full",
+  "split": "test",
+  "question": "我們這邊有發生繞流排放，這樣會不會違反規定？",
+  "verbatim": 1,
+  "gold": {
+   "bypass_discharge": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "bypass_discharge",
+    "value": true,
+    "quote": "有發生繞流排放"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "有發生繞流排放"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "bypass_discharge",
+    "value": true,
+    "quote": "有發生繞流排放"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "有發生繞流排放"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "665": "compliant"
+  },
+  "got_verdicts": {
+   "289": "undetermined",
+   "665": "compliant"
+  },
+  "seconds": {
+   "gold": 0.5945,
+   "got": 0.5972
+  }
+ },
+ {
+  "id": "negated-069",
+  "variant": "negated",
+  "split": "test",
+  "question": "我們沒有把廢水繞過處理設備直接排出去，這樣會不會有問題？",
+  "verbatim": 0,
+  "gold": {
+   "bypass_discharge": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "bypass_discharge",
+    "value": false,
+    "quote": "沒有把廢水繞過處理設備直接排出去"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "bypass_discharge",
+    "value": false,
+    "quote": "沒有把廢水繞過處理設備直接排出去"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "665": "violation"
+  },
+  "got_verdicts": {
+   "665": "violation"
+  },
+  "seconds": {
+   "gold": 0.6055,
+   "got": 0.5993
+  }
+ },
+ {
+  "id": "full-071",
+  "variant": "full",
+  "split": "test",
+  "question": "我之前用毒品、藥品或電流捕殺水生物，這樣會不會有法律問題？",
+  "verbatim": 0,
+  "gold": {
+   "use_toxic_chemicals_to_kill_aquatic_organisms": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "use_toxic_chemicals_to_kill_aquatic_organisms",
+    "value": true,
+    "quote": "我之前用毒品、藥品或電流捕殺水生物"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "use_toxic_chemicals_to_kill_aquatic_organisms",
+    "value": true,
+    "quote": "我之前用毒品、藥品或電流捕殺水生物"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "708": "violation"
+  },
+  "got_verdicts": {
+   "708": "violation"
+  },
+  "seconds": {
+   "gold": 0.6003,
+   "got": 0.6056
+  }
+ },
+ {
+  "id": "negated-072",
+  "variant": "negated",
+  "split": "test",
+  "question": "我沒有用毒品或藥物，也沒有用電流去毒死、電死水裡的生物，這樣會不會有法律責任？",
+  "verbatim": 0,
+  "gold": {
+   "use_toxic_chemicals_to_kill_aquatic_organisms": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "use_toxic_chemicals_to_kill_aquatic_organisms",
+    "value": false,
+    "quote": "我沒有用毒品或藥物，也沒有用電流去毒死、電死水裡的生物"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "use_toxic_chemicals_to_kill_aquatic_organisms",
+    "value": false,
+    "quote": "我沒有用毒品或藥物，也沒有用電流去毒死、電死水裡的生物"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "708": "compliant"
+  },
+  "got_verdicts": {
+   "708": "compliant"
+  },
+  "seconds": {
+   "gold": 0.5978,
+   "got": 0.6013
+  }
+ },
+ {
+  "id": "full-076",
+  "variant": "full",
+  "split": "test",
+  "question": "地面上的水被污染了，主管機關也已經限期要我們清除處理，接下來會怎麼處理？",
+  "verbatim": 0,
+  "gold": {
+   "ground_water_body_pollution_event": true,
+   "remediation_order_issued": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "ground_water_body_pollution_event",
+    "value": true,
+    "quote": "地面上的水被污染了"
+   },
+   {
+    "concept": "remediation_order_issued",
+    "value": true,
+    "quote": "主管機關也已經限期要我們清除處理"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "ground_water_body_pollution_event",
+    "value": true,
+    "quote": "地面上的水被污染了"
+   },
+   {
+    "concept": "remediation_order_issued",
+    "value": true,
+    "quote": "主管機關也已經限期要我們清除處理"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "806": "compliant"
+  },
+  "got_verdicts": {
+   "806": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6065,
+   "got": 0.6135
+  }
+ },
+ {
+  "id": "negated-078",
+  "variant": "negated",
+  "split": "test",
+  "question": "我這邊地面水體並沒有發生污染，卻被要求限期清掉、處理好，這樣可以嗎？",
+  "verbatim": 0,
+  "gold": {
+   "remediation_order_issued": true,
+   "ground_water_body_pollution_event": false
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "ground_water_body_pollution_event",
+    "value": false,
+    "quote": "地面水體並沒有發生污染"
+   },
+   {
+    "concept": "remediation_order_issued",
+    "value": true,
+    "quote": "被要求限期清掉、處理好"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "ground_water_body_pollution_event",
+    "value": false,
+    "quote": "地面水體並沒有發生污染"
+   },
+   {
+    "concept": "remediation_order_issued",
+    "value": true,
+    "quote": "被要求限期清掉、處理好"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "806": "not_applicable"
+  },
+  "got_verdicts": {
+   "806": "not_applicable"
+  },
+  "seconds": {
+   "gold": 0.6243,
+   "got": 0.607
+  }
+ },
+ {
+  "id": "full-079",
+  "variant": "full",
+  "split": "test",
+  "question": "地面水體出事後，限期清除處理的期限到了還沒清，主管機關是不是可以自己處理，再把費用要回來？",
+  "verbatim": 0,
+  "gold": {
+   "remediation_deadline_lapsed": true
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "remediation_deadline_lapsed",
+    "value": true,
+    "quote": "限期清除處理的期限到了還沒清"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "remediation_deadline_lapsed",
+    "value": true,
+    "quote": "限期清除處理的期限到了還沒清"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "807": "compliant"
+  },
+  "got_verdicts": {
+   "807": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6008,
+   "got": 0.6121
+  }
+ },
+ {
+  "id": "negated-080",
+  "variant": "negated",
+  "split": "test",
+  "question": "我並沒有屆期還沒清除處理，這樣主管機關還能代為清除、向我求償嗎？",
+  "verbatim": 0,
+  "gold": {
+   "remediation_deadline_lapsed": false
+  },
+  "candidates": 12,
+  "gold_offered": 1,
+  "raw_facts": [
+   {
+    "concept": "remediation_deadline_lapsed",
+    "value": false,
+    "quote": "我並沒有屆期還沒清除處理"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "remediation_deadline_lapsed",
+    "value": false,
+    "quote": "我並沒有屆期還沒清除處理"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "807": "not_applicable"
+  },
+  "got_verdicts": {
+   "807": "not_applicable"
+  },
+  "seconds": {
+   "gold": 0.6047,
+   "got": 0.6044
+  }
+ },
+ {
+  "id": "combined-085",
+  "variant": "combined",
+  "split": "test",
+  "question": "主管機關評估過覺得有必要，排放廢水的標準也真的多了要管的項目，法院還判了，我這種情況可以怎麼做？",
+  "verbatim": 0,
+  "gold": {
+   "necessity_assessment": true,
+   "add_pollutant_control": true,
+   "court_judgement": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "necessity_assessment",
+    "value": true,
+    "quote": "主管機關評估過覺得有必要"
+   },
+   {
+    "concept": "court_judgement",
+    "value": true,
+    "quote": "法院還判了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "necessity_assessment",
+    "value": true,
+    "quote": "主管機關評估過覺得有必要"
+   },
+   {
+    "concept": "court_judgement",
+    "value": true,
+    "quote": "法院還判了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "350": "compliant"
+  },
+  "got_verdicts": {
+   "350": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.5994,
+   "got": 0.607
+  }
+ },
+ {
+  "id": "combined-090",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們事業有把廢水排到外面的水體，也評估過確實有必要而新增了管制項目，排出去的水有符合放流水標準，這樣還會有什麼問題嗎？",
+  "verbatim": 1,
+  "gold": {
+   "discharge_action": true,
+   "discharge_standard_compliance": true,
+   "necessity_assessment": true,
+   "add_pollutant_control": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "排出去的水有符合放流水標準"
+   },
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "新增了管制項目"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "有把廢水排到外面的水體"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "排出去的水有符合放流水標準"
+   },
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "新增了管制項目"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "有把廢水排到外面的水體"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "289": "compliant",
+   "350": "compliant"
+  },
+  "got_verdicts": {
+   "289": "undetermined",
+   "350": "undetermined",
+   "585": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.606,
+   "got": 0.6115
+  }
+ },
+ {
+  "id": "combined-091",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們社區自己設的公共給水設備有在供水，如果要申請展延兩年，這樣可以嗎？",
+  "verbatim": 0,
+  "gold": {
+   "community_public_water_supply": true,
+   "permit_extension_period": 2.0
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "community_public_water_supply",
+    "value": true,
+    "quote": "我們社區自己設的公共給水設備有在供水"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "community_public_water_supply",
+    "value": true,
+    "quote": "我們社區自己設的公共給水設備有在供水"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6054,
+   "got": 0.6068
+  }
+ },
+ {
+  "id": "combined-094",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們的輸送或貯存設備有疏漏污染物或廢水到水體的風險，也已經做了維護和防範措施；主管機關評估有必要後新增了管制項目，這樣還需要注意什麼？",
+  "verbatim": 0,
+  "gold": {
+   "necessity_assessment": true,
+   "add_pollutant_control": true,
+   "equipment_leakage_risk": true,
+   "maintenance_prevention_measures": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "主管機關評估有必要後新增了管制項目"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "輸送或貯存設備有疏漏污染物或廢水到水體的風險"
+   },
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "也已經做了維護和防範措施"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "主管機關評估有必要後新增了管制項目"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "輸送或貯存設備有疏漏污染物或廢水到水體的風險"
+   },
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "也已經做了維護和防範措施"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "350": "compliant",
+   "401": "compliant"
+  },
+  "got_verdicts": {
+   "350": "undetermined",
+   "401": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6154,
+   "got": 0.6187
+  }
+ },
+ {
+  "id": "combined-095",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們是工業區裡的事業單位，現在已經證明可能危害人體健康，也公告大家不要喝了，這樣我們要怎麼處理？",
+  "verbatim": 0,
+  "gold": {
+   "industrial_zone_enterprise": true,
+   "危害人體健康之虞": true,
+   "公告禁止飲用": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [
+   {
+    "concept": "公告禁止飲用",
+    "value": true,
+    "quote": "也公告大家不要喝了"
+   },
+   {
+    "concept": "危害人體健康之虞",
+    "value": true,
+    "quote": "現在已經證明可能危害人體健康"
+   },
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "我們是工業區裡的事業單位"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "公告禁止飲用",
+    "value": true,
+    "quote": "也公告大家不要喝了"
+   },
+   {
+    "concept": "危害人體健康之虞",
+    "value": true,
+    "quote": "現在已經證明可能危害人體健康"
+   },
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "我們是工業區裡的事業單位"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "232": "compliant"
+  },
+  "got_verdicts": {
+   "232": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6164,
+   "got": 0.5853
+  }
+ },
+ {
+  "id": "combined-097",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們有排放廢水或污水，而且符合放流水標準，手上也有飲用水水質標準的證明文件，是有許可證的環境檢驗測定機構出具的檢驗報告，這樣主管機關是不是可以免水質採樣和檢驗？",
+  "verbatim": 1,
+  "gold": {
+   "discharge_wastewater": true,
+   "discharge_standard_compliance": true,
+   "drinking_water_quality_proof": true,
+   "proof_from_permitted_lab": true
+  },
+  "candidates": 12,
+  "gold_offered": 4,
+  "raw_facts": [
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": true,
+    "quote": "飲用水水質標準的證明文件"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "是有許可證的環境檢驗測定機構出具的檢驗報告"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "我們有排放廢水或污水"
+   },
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "符合放流水標準"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": true,
+    "quote": "飲用水水質標準的證明文件"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "是有許可證的環境檢驗測定機構出具的檢驗報告"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "我們有排放廢水或污水"
+   },
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "符合放流水標準"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "289": "undetermined",
+   "585": "undetermined"
+  },
+  "got_verdicts": {
+   "289": "undetermined",
+   "585": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.5917,
+   "got": 0.5899
+  }
+ },
+ {
+  "id": "combined-100",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們這邊有繞流排放，而且也做過必要性評估、新增了要管的項目，這樣會怎麼處理？",
+  "verbatim": 1,
+  "gold": {
+   "bypass_discharge": true,
+   "necessity_assessment": true,
+   "add_pollutant_control": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [
+   {
+    "concept": "bypass_discharge",
+    "value": true,
+    "quote": "有繞流排放"
+   },
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "新增了要管的項目"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "有繞流排放"
+   },
+   {
+    "concept": "necessity_assessment",
+    "value": true,
+    "quote": "做過必要性評估"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "bypass_discharge",
+    "value": true,
+    "quote": "有繞流排放"
+   },
+   {
+    "concept": "add_pollutant_control",
+    "value": true,
+    "quote": "新增了要管的項目"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "有繞流排放"
+   },
+   {
+    "concept": "necessity_assessment",
+    "value": true,
+    "quote": "做過必要性評估"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "350": "compliant",
+   "665": "compliant"
+  },
+  "got_verdicts": {
+   "289": "undetermined",
+   "350": "compliant",
+   "665": "compliant"
+  },
+  "seconds": {
+   "gold": 0.5917,
+   "got": 0.5906
+  }
+ },
+ {
+  "id": "combined-104",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們是工業區裡的事業單位，有排放廢水，而且放流水也有符合標準，這樣會不會還是有問題？",
+  "verbatim": 0,
+  "gold": {
+   "discharge_wastewater": true,
+   "discharge_standard_compliance": true,
+   "industrial_zone_enterprise": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "放流水也有符合標準"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "有排放廢水"
+   },
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "工業區裡的事業單位"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "有排放廢水"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "discharge_standard_compliance",
+    "value": true,
+    "quote": "放流水也有符合標準"
+   },
+   {
+    "concept": "discharge_wastewater",
+    "value": true,
+    "quote": "有排放廢水"
+   },
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "工業區裡的事業單位"
+   },
+   {
+    "concept": "discharge_action",
+    "value": true,
+    "quote": "有排放廢水"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "289": "undetermined",
+   "585": "undetermined"
+  },
+  "got_verdicts": {
+   "289": "compliant",
+   "585": "undetermined"
+  },
+  "seconds": {
+   "gold": 0.5947,
+   "got": 0.6014
+  }
+ },
+ {
+  "id": "combined-106",
+  "variant": "combined",
+  "split": "test",
+  "question": "法院已經判決了，而且這個管制區牽涉到四個直轄市、縣市，這種情況是不是該由中央主管機關劃定公告，判決時也能讓被告機關負擔律師費、監測鑑定費之類的費用？",
+  "verbatim": 0,
+  "gold": {
+   "scope_涉及二直轄巿縣市以上": 4.0,
+   "court_judgement": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "scope_涉及二直轄巿縣市以上",
+    "value": 4.0,
+    "quote": "四個直轄市、縣市"
+   },
+   {
+    "concept": "regulated_zone",
+    "value": 4.0,
+    "quote": "四個直轄市、縣市"
+   },
+   {
+    "concept": "court_judgement",
+    "value": true,
+    "quote": "法院已經判決了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "scope_涉及二直轄巿縣市以上",
+    "value": 4.0,
+    "quote": "四個直轄市、縣市"
+   },
+   {
+    "concept": "regulated_zone",
+    "value": 4.0,
+    "quote": "四個直轄市、縣市"
+   },
+   {
+    "concept": "court_judgement",
+    "value": true,
+    "quote": "法院已經判決了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "scope_涉及二直轄巿縣市以上"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5952,
+   "got": 0.5903
+  }
+ },
+ {
+  "id": "combined-107",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們事業有新設或變更的情形，設備也有可能漏出污染物或廢污水到水裡，雖然已經做了保養和預防措施，也有把防治水污染的計畫和相關文件送去審查，這樣還需要注意什麼？",
+  "verbatim": 0,
+  "gold": {
+   "establishment_or_change": true,
+   "submit_plan": true,
+   "equipment_leakage_risk": true,
+   "maintenance_prevention_measures": true
+  },
+  "candidates": 12,
+  "gold_offered": 2,
+  "raw_facts": [
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "已經做了保養和預防措施"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "設備也有可能漏出污染物或廢污水到水裡"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "maintenance_prevention_measures",
+    "value": true,
+    "quote": "已經做了保養和預防措施"
+   },
+   {
+    "concept": "equipment_leakage_risk",
+    "value": true,
+    "quote": "設備也有可能漏出污染物或廢污水到水裡"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "equipment_leakage_risk"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "339": "undetermined",
+   "401": "compliant",
+   "635": "undetermined"
+  },
+  "got_verdicts": {
+   "401": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6054,
+   "got": 0.6276
+  }
+ },
+ {
+  "id": "combined-108",
+  "variant": "combined",
+  "split": "test",
+  "question": "法院已經判決了，直轄市、縣（市）主管機關也已經把在哪裡採樣、檢驗出什麼、後來做了哪些處理都報給中央主管機關了，我接下來該怎麼辦？",
+  "verbatim": 1,
+  "gold": {
+   "court_judgement": true,
+   "直轄市縣市主管機關": true,
+   "報告義務": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [
+   {
+    "concept": "報告義務",
+    "value": true,
+    "quote": "直轄市、縣（市）主管機關也已經把在哪裡採樣、檢驗出什麼、後來做了哪些處理都報給中央主管機關了"
+   },
+   {
+    "concept": "直轄市縣市主管機關",
+    "value": true,
+    "quote": "直轄市、縣（市）主管機關"
+   },
+   {
+    "concept": "court_judgement",
+    "value": true,
+    "quote": "法院已經判決了"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "報告義務",
+    "value": true,
+    "quote": "直轄市、縣（市）主管機關也已經把在哪裡採樣、檢驗出什麼、後來做了哪些處理都報給中央主管機關了"
+   },
+   {
+    "concept": "直轄市縣市主管機關",
+    "value": true,
+    "quote": "直轄市、縣（市）主管機關"
+   },
+   {
+    "concept": "court_judgement",
+    "value": true,
+    "quote": "法院已經判決了"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "報告義務",
+   "直轄市縣市主管機關"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "233": "compliant"
+  },
+  "got_verdicts": {
+   "233": "compliant"
+  },
+  "seconds": {
+   "gold": 0.6213,
+   "got": 0.6241
+  }
+ },
+ {
+  "id": "combined-111",
+  "variant": "combined",
+  "split": "test",
+  "question": "我手上有飲用水水質標準的證明文件，而且是拿到中央主管機關許可證的環境檢驗測定機構出的檢驗報告，但這件事足以影響水質自淨能力，又沒經過主管機關和目的事業主管機關同意，這樣會怎麼處理？",
+  "verbatim": 1,
+  "gold": {
+   "drinking_water_quality_proof": true,
+   "proof_from_permitted_lab": true,
+   "water_quality_affected": true,
+   "unauthorized_change": true
+  },
+  "candidates": 12,
+  "gold_offered": 4,
+  "raw_facts": [
+   {
+    "concept": "test_report_by_permitted_lab",
+    "value": true,
+    "quote": "拿到中央主管機關許可證的環境檢驗測定機構出的檢驗報告"
+   },
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": true,
+    "quote": "我手上有飲用水水質標準的證明文件"
+   },
+   {
+    "concept": "water_quality_affected",
+    "value": true,
+    "quote": "這件事足以影響水質自淨能力"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "拿到中央主管機關許可證的環境檢驗測定機構出的檢驗報告"
+   },
+   {
+    "concept": "unauthorized_change",
+    "value": true,
+    "quote": "沒經過主管機關和目的事業主管機關同意"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "test_report_by_permitted_lab",
+    "value": true,
+    "quote": "拿到中央主管機關許可證的環境檢驗測定機構出的檢驗報告"
+   },
+   {
+    "concept": "drinking_water_quality_proof",
+    "value": true,
+    "quote": "我手上有飲用水水質標準的證明文件"
+   },
+   {
+    "concept": "water_quality_affected",
+    "value": true,
+    "quote": "這件事足以影響水質自淨能力"
+   },
+   {
+    "concept": "proof_from_permitted_lab",
+    "value": true,
+    "quote": "拿到中央主管機關許可證的環境檢驗測定機構出的檢驗報告"
+   },
+   {
+    "concept": "unauthorized_change",
+    "value": true,
+    "quote": "沒經過主管機關和目的事業主管機關同意"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6272,
+   "got": 0.6036
+  }
+ },
+ {
+  "id": "combined-113",
+  "variant": "combined",
+  "split": "test",
+  "question": "我用毒品、藥品或電流捕殺水生物，另外也申請展延排放許可證，且該由技師簽證的事項都沒有變更，這樣會怎麼處理？",
+  "verbatim": 0,
+  "gold": {
+   "use_toxic_chemicals_to_kill_aquatic_organisms": true,
+   "依第十五條規定申請展延排放許可證": true,
+   "應經技師簽證之事項未變更": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [
+   {
+    "concept": "use_toxic_chemicals_to_kill_aquatic_organisms",
+    "value": true,
+    "quote": "我用毒品、藥品或電流捕殺水生物"
+   },
+   {
+    "concept": "應經技師簽證之事項未變更",
+    "value": true,
+    "quote": "該由技師簽證的事項都沒有變更"
+   },
+   {
+    "concept": "依第十五條規定申請展延排放許可證",
+    "value": true,
+    "quote": "另外也申請展延排放許可證"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "use_toxic_chemicals_to_kill_aquatic_organisms",
+    "value": true,
+    "quote": "我用毒品、藥品或電流捕殺水生物"
+   },
+   {
+    "concept": "應經技師簽證之事項未變更",
+    "value": true,
+    "quote": "該由技師簽證的事項都沒有變更"
+   },
+   {
+    "concept": "依第十五條規定申請展延排放許可證",
+    "value": true,
+    "quote": "另外也申請展延排放許可證"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "依第十五條規定申請展延排放許可證"
+  ],
+  "unsupported_by_all": [
+   "依第十五條規定申請展延排放許可證"
+  ],
+  "gold_verdicts": {
+   "708": "violation"
+  },
+  "got_verdicts": {
+   "708": "violation"
+  },
+  "seconds": {
+   "gold": 0.6118,
+   "got": 0.6825
+  }
+ },
+ {
+  "id": "combined-114",
+  "variant": "combined",
+  "split": "test",
+  "question": "如果建築物污水處理設施沒有照規定做，而且已經在飲用水水源保護區或取水口周邊一定範圍內發生把水源弄髒的行為，會被怎麼處罰？",
+  "verbatim": 0,
+  "gold": {
+   "violation_of_regulations": true,
+   "location_in_protection_zone_or_intake_area": true,
+   "pollution_behavior": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "105": "compliant"
+  },
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6139,
+   "got": 0.6031
+  }
+ },
+ {
+  "id": "combined-117",
+  "variant": "combined",
+  "split": "test",
+  "question": "我們是工業區裡的事業單位，主管機關派人來現場查的時候，我們不讓他們查、也不配合，這樣會怎麼樣？",
+  "verbatim": 0,
+  "gold": {
+   "industrial_zone_enterprise": true,
+   "inspection_site": true,
+   "obstruction_action": true
+  },
+  "candidates": 12,
+  "gold_offered": 3,
+  "raw_facts": [
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "我們是工業區裡的事業單位"
+   },
+   {
+    "concept": "inspection_site",
+    "value": true,
+    "quote": "主管機關派人來現場查"
+   },
+   {
+    "concept": "obstruction_action",
+    "value": true,
+    "quote": "我們不讓他們查、也不配合"
+   }
+  ],
+  "kept_facts": [
+   {
+    "concept": "industrial_zone_enterprise",
+    "value": true,
+    "quote": "我們是工業區裡的事業單位"
+   },
+   {
+    "concept": "inspection_site",
+    "value": true,
+    "quote": "主管機關派人來現場查"
+   },
+   {
+    "concept": "obstruction_action",
+    "value": true,
+    "quote": "我們不讓他們查、也不配合"
+   }
+  ],
+  "rejected": {},
+  "unsupported": [
+   "inspection_site",
+   "obstruction_action"
+  ],
+  "unsupported_by_all": [],
+  "gold_verdicts": {
+   "151": "violation"
+  },
+  "got_verdicts": {
+   "151": "violation"
+  },
+  "seconds": {
+   "gold": 0.6025,
+   "got": 0.6002
+  }
+ },
+ {
+  "id": "none-001",
+  "variant": "none",
+  "split": "test",
+  "question": "請問飲用水水質標準是由哪個機關訂定？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.604,
+   "got": 0.5996
+  }
+ },
+ {
+  "id": "none-002",
+  "variant": "none",
+  "split": "test",
+  "question": "請問環保法規的立法目的通常包含哪些核心理念？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6028,
+   "got": 0.6137
+  }
+ },
+ {
+  "id": "none-003",
+  "variant": "none",
+  "split": "test",
+  "question": "請問在環保法規中，主管機關是誰？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.5999,
+   "got": 0.6067
+  }
+ },
+ {
+  "id": "none-005",
+  "variant": "none",
+  "split": "test",
+  "question": "請問環保法規的適用範圍通常如何界定？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6062,
+   "got": 0.604
+  }
+ },
+ {
+  "id": "none-006",
+  "variant": "none",
+  "split": "test",
+  "question": "請問如何查詢環保法規中某一法條的修正沿革與立法理由？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6132,
+   "got": 0.6125
+  }
+ },
+ {
+  "id": "none-008",
+  "variant": "none",
+  "split": "test",
+  "question": "請問申請許可的一般流程通常包含哪些步驟與審查重點？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6029,
+   "got": 0.6073
+  }
+ },
+ {
+  "id": "none-009",
+  "variant": "none",
+  "split": "test",
+  "question": "請問放流水標準的一般規定是什麼？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6078,
+   "got": 0.6172
+  }
+ },
+ {
+  "id": "none-010",
+  "variant": "none",
+  "split": "test",
+  "question": "請問水污染防治法與其他法律在適用上如何銜接與分工？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6097,
+   "got": 0.6129
+  }
+ },
+ {
+  "id": "none-016",
+  "variant": "none",
+  "split": "test",
+  "question": "請問如何查詢環保法規中某一法條的修正沿革與立法理由？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6083,
+   "got": 0.6099
+  }
+ },
+ {
+  "id": "none-017",
+  "variant": "none",
+  "split": "test",
+  "question": "請問環保法規中，罰則一般而言有哪些種類？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6066,
+   "got": 0.6092
+  }
+ },
+ {
+  "id": "none-019",
+  "variant": "none",
+  "split": "test",
+  "question": "請問放流水標準的一般規定是什麼？",
+  "verbatim": 0,
+  "gold": {},
+  "candidates": 12,
+  "gold_offered": 0,
+  "raw_facts": [],
+  "kept_facts": [],
+  "rejected": {},
+  "unsupported": [],
+  "unsupported_by_all": [],
+  "gold_verdicts": {},
+  "got_verdicts": {},
+  "seconds": {
+   "gold": 0.6092,
+   "got": 0.6094
+  }
+ }
+]
