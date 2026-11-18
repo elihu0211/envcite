@@ -25,6 +25,7 @@ from canon.reasoning.transition import evaluate_across
 from canon.reasoning_codec import disposition as disposition_codec
 from canon.reasoning_codec import outcome as outcome_codec
 from canon.reasoning_codec import request as request_codec
+from canon.reasoning_codec.disposition import DispositionInput
 from canon.store.ports import LawReader, ReadConnections
 from canon.store.records import LANGUAGE
 from canon.telemetry import ReasoningMetrics
@@ -121,6 +122,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         act_groups = request_codec.act_groups(request)
         timeline = request_codec.timeline(request, v)
         scoring_inputs = disposition_codec.scoring_inputs(request, v)
+        disposition = disposition_codec.disposition_input(request, v)
         v.check()
         assert conduct_on is not None and decided_on is not None  # check() 已擋下
 
@@ -147,6 +149,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 act_groups,
                 timeline,
                 scoring_inputs,
+                disposition,
             )
         finally:
             self._metrics.in_flight.add(-1)
@@ -165,6 +168,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         act_groups: dict[str, list[int]],
         timeline: PerOccasionTimeline | None,
         scoring_inputs: list[ScoringInput],
+        disposition: DispositionInput | None,
     ) -> pb.EvaluateResponse:
         try:
             with self._connections.read_connection(timeout=remaining_seconds(context)) as conn:
@@ -199,7 +203,7 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                     guidance = annotation_read.guidance_for(conn, ids, decided_on)
                     decisions = annotation_read.decisions_for(conn, ids, decided_on)
                     audit_res = (
-                        disposition_codec.disposition_audit(request, result.scoring_results)
+                        disposition_codec.disposition_audit(disposition, result.scoring_results)
                         if include_audit
                         else None
                     )
