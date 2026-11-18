@@ -18,12 +18,14 @@
 import argparse
 import hashlib
 import json
+import math
 import random
 import re
 import time
 from collections import Counter
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Literal, NamedTuple
@@ -31,21 +33,20 @@ from typing import Literal, NamedTuple
 import psycopg
 
 from canon.db import Conn, fetch
+from canon.embedding import Embeds
 from canon.reasoning.engine import evaluate
 from canon.settings import DatabaseSettings, load
-from canon.verification.config import load as load_models
-from canon.verification.config import load_judges
+from canon.verification.config import load_declared, load_embedder
 from canon.verification.models import ChatCompletionsModel, ModelError
 
 type Kind = Literal["flag", "number"]
 type Value = bool | float
 
-#: 抽取者與出題者的模型識別；家族必須不同（出題者不得與抽取者同家族）。
-EXTRACTOR_ID = "mistral-small-4"
+#: 預設的抽取模型。抽取要夠強：小模型逐概念判斷會過度解讀，要靠另一個模型逐項過濾才擋得住；
+#: 較強的模型不過濾也勝過小模型加過濾（量測結果見 eval/results/fact-extraction-2026-11-18）。
+EXTRACTOR_ID = "ornith-35b"
+#: 出題者與稽核者；家族都必須不同於抽取者（出題者不得與抽取者同家族，稽核者不得驗自己）。
 ASKER_ID = "muse-spark-open"
-#: 逐項核對抽出的事實是否真被問句陳述的過濾者（產品流程的一步）；家族不同於抽取者與出題者。
-VERIFIER_ID = "nemotron-3.5-super-vl"
-#: 事後稽核最終留下的事實是否真被問句陳述；與過濾者不同模型，才不是自己驗自己。
 AUDITOR_ID = ASKER_ID
 
 _CONTROL_TOPICS = (
@@ -70,7 +71,6 @@ class Concept:
     name: str
     kind: Kind
     unit: str | None
-    laws: frozenset[int] = frozenset()
 
 
 class _Cond(NamedTuple):
@@ -81,7 +81,6 @@ class _Cond(NamedTuple):
     threshold: float | None
     unit: str | None
     text: str
-    law: int
 
 
 _CONDITIONS = """
@@ -92,7 +91,7 @@ WITH conf AS (
          SELECT * FROM annotation.statement_versions_at(lr.id, 'zho', %s) OFFSET 0) AS r
     JOIN annotation.statement AS s ON s.id = r.statement_id)
 SELECT c.statement_id, k.code, k.name, c.comparator::text, c.threshold::float8, c.measure_unit,
-       pv.content, pv.resource_id
+       pv.content
   FROM annotation.statement_condition AS c
   JOIN conf ON conf.id = c.statement_id
   JOIN annotation.statement AS st ON st.id = c.statement_id
@@ -113,12 +112,10 @@ def conditions(conn: Conn, as_of: date) -> list[_Cond]:
 def vocabulary(conds: list[_Cond]) -> dict[str, Concept]:
     """候選概念；比較值為 1 的相等比較視為旗標，其餘為數值。"""
     out: dict[str, Concept] = {}
-    laws: dict[str, set[int]] = {}
     for c in conds:
-        laws.setdefault(c.code, set()).add(c.law)
         flag = c.comparator == "eq" and c.threshold == 1.0 and c.unit is None
         out.setdefault(c.code, Concept(c.code, c.name, "flag" if flag else "number", c.unit))
-    return {k: replace(v, laws=frozenset(laws[k])) for k, v in out.items()}
+    return out
 
 
 def satisfying(c: _Cond) -> Value:
@@ -224,42 +221,20 @@ _EXAMPLES = (
 )
 
 
-def extract_prompt(question: str, cands: dict[str, Concept], variant: str) -> str:
-    """抽取提示。v1 首版；v2 加「詢問規定不是事實」「沒提不填」與示範；v3 逐一判斷每個候選概念。"""
+def extract_prompt(question: str, cands: dict[str, Concept]) -> str:
+    """逐概念判斷：對每個候選概念，問句是有、沒有、還是沒說。"""
     lines = _candidate_lines(cands)
-    if variant == "v3":
-        return (
-            "你是法規諮詢的事實抽取器。逐一檢查下列每個候選概念，判斷問句對它的陳述屬於哪一種：\n"
-            "- 有：問句明確說這件事已經發生或存在（數值概念要填問句裡的數字）\n"
-            "- 沒有：問句明確說這件事沒有發生或不存在\n"
-            "- 沒說：問句沒有明確說，包含只是詢問規定、要求、假設、可能性，或要靠推測才能得出\n"
-            "規則：1. 預設是「沒說」，只有問句字面明確陳述才選有或沒有；"
-            "2. 問句在問「是不是要…」「需不需要…」「能不能…」「如果…」時，被問的內容是「沒說」；"
-            "3. 選有或沒有時附 quote：問句中的原文片段，必須逐字取自問句。\n"
-            f"{_EXAMPLES}候選概念：\n{lines}\n問句：{question}\n"
-            '只輸出 JSON，每個候選概念一項：{"concepts":[{"concept":"代碼","status":"有",'
-            '"value":null,"quote":"原文片段"}]}（沒說的 quote 留空字串，value 只有數值概念要填）'
-        )
-    rules = (
-        "1. 只填問句明確說出的事實；問句沒說的、你推測的、由法規知識推得的，一律不填。\n"
-        "2. concept 只能用候選清單的代碼，不得自創；對不到就不填。\n"
-        "3. 旗標概念的 value 是 true（問句說有發生或成立）或 false（問句明說沒有發生）；"
-        "數值概念的 value 是問句裡的數字。\n"
-        "4. 每個事實附 quote：問句中的原文片段，必須逐字出現在問句裡。\n"
-        "5. 問句沒有任何案件事實（例如只問規定、定義、主管機關）時，facts 回傳空陣列。\n"
-    )
-    if variant == "v2":
-        rules += (
-            "6. 問句是在詢問規定、要求或假設（例如「是不是一定要…」「需不需要…」「能不能…」"
-            "「如果…」）時，"
-            "被詢問的內容不是事實，不填。\n"
-            "7. 只有問句明說「沒有」「未」「並未」才填 false；問句沒提到的概念一律不填，"
-            "不得由「既然 A 所以不是 B」推出 false。\n" + _EXAMPLES
-        )
     return (
-        "你是法規諮詢的事實抽取器。從使用者的問句中找出使用者明確陳述的案件事實，對應到下列候選概念。\n"
-        f"規則：\n{rules}候選概念：\n{lines}\n問句：{question}\n"
-        '只輸出 JSON：{"facts":[{"concept":"代碼","value":true,"quote":"原文片段"}]}'
+        "你是法規諮詢的事實抽取器。逐一檢查下列每個候選概念，判斷問句對它的陳述屬於哪一種：\n"
+        "- 有：問句明確說這件事已經發生或存在（數值概念要填問句裡的數字）\n"
+        "- 沒有：問句明確說這件事沒有發生或不存在\n"
+        "- 沒說：問句沒有明確說，包含只是詢問規定、要求、假設、可能性，或要靠推測才能得出\n"
+        "規則：1. 預設是「沒說」，只有問句字面明確陳述才選有或沒有；"
+        "2. 問句在問「是不是要…」「需不需要…」「能不能…」「如果…」時，被問的內容是「沒說」；"
+        "3. 選有或沒有時附 quote：問句中的原文片段，必須逐字取自問句。\n"
+        f"{_EXAMPLES}候選概念：\n{lines}\n問句：{question}\n"
+        '只輸出 JSON，每個候選概念一項：{"concepts":[{"concept":"代碼","status":"有",'
+        '"value":null,"quote":"原文片段"}]}（沒說的 quote 留空字串，value 只有數值概念要填）'
     )
 
 
@@ -377,50 +352,30 @@ def check(
     return kept, rejected
 
 
-def verify_prompt(question: str, fact: Fact, vocab: dict[str, Concept], variant: str = "v1") -> str:
-    """驗證提示：問句有沒有明確陳述這個事實（不是「能不能推測」）。
-
-    v1 只給概念名稱，要求字面相符；v2 另附抽取者引用的原文，並容許用詞不同但意思相同。
-    """
+def audit_prompt(question: str, fact: Fact, vocab: dict[str, Concept]) -> str:
+    """稽核提示：問句有沒有明確陳述這個事實（只看字面，不是「能不能推測」）。"""
     c = vocab[fact.concept]
     stated = (
         f"「{c.name}」{'成立或有發生' if fact.value else '明說沒有發生'}"
         if c.kind == "flag"
         else f"「{c.name}」為 {fact.value:g}{c.unit or ''}"
     )
-    if variant == "v2":
-        return (
-            "請判斷下列問句有沒有明確陳述指定的事實。抽取者指出問句中支持它的原文片段如下，"
-            "請核對這段原文的意思是否就是該事實。\n"
-            "用詞不同但意思相同算「是」（例如「昨晚施工到半夜」就是「夜間施工」成立）；"
-            "問句沒說、需要靠推測或法規知識才能得出、或只是在詢問規定與假設的，算「否」。\n"
-            f"問句：{question}\n原文片段：「{fact.quote}」\n事實：{stated}\n只回答「是」或「否」。"
-        )
     return (
         "請判斷下列問句有沒有明確陳述指定的事實。只看問句的字面意思；問句沒說、需要靠推測或法規知識才能得出的，都算「否」。\n"
         f"問句：{question}\n事實：{stated}\n只回答「是」或「否」。"
     )
 
 
-def union(first: list[Fact], second: list[Fact]) -> list[Fact]:
-    """兩個抽取者的結果取聯集；同一概念兩邊的值不同時兩邊都丟（不替它們裁決）。"""
-    merged: dict[str, Fact] = {f.concept: f for f in first}
-    conflicted: set[str] = set()
-    for f in second:
-        known = merged.get(f.concept)
-        if known is None:
-            merged[f.concept] = f
-        elif known.value != f.value:
-            conflicted.add(f.concept)
-    return [f for k, f in merged.items() if k not in conflicted]
-
-
 class Cache:
-    """模型回覆快取：同一提示不重複花費。"""
+    """模型回覆與嵌入向量的快取：同一提示或同一段文字不重複花費。"""
 
     def __init__(self, path: Path) -> None:
         self.path = path
+        self.vector_path = path.with_name(path.stem + ".vectors.json")
         self.data: dict[str, str] = json.loads(path.read_text()) if path.exists() else {}
+        self.vectors: dict[str, list[float]] = (
+            json.loads(self.vector_path.read_text()) if self.vector_path.exists() else {}
+        )
 
     def get(self, model: ChatCompletionsModel, prompt: str) -> str:
         key = hashlib.sha256(f"{model.name}\n{prompt}".encode()).hexdigest()
@@ -431,8 +386,33 @@ class Cache:
                 self.data[key] = f"__error__ {exc}"
         return self.data[key]
 
+    def embed(self, embedder: Embeds, texts: Sequence[str]) -> list[list[float]]:
+        """每段文字的向量；沒算過的一次送出。"""
+        keys = [hashlib.sha256(f"{embedder.model}\n{t}".encode()).hexdigest() for t in texts]
+        missing = {k: t for k, t in zip(keys, texts, strict=True) if k not in self.vectors}
+        if missing:
+            for key, vec in zip(missing, embedder.embed(list(missing.values())), strict=True):
+                self.vectors[key] = vec
+        return [self.vectors[k] for k in keys]
+
     def save(self) -> None:
         self.path.write_text(json.dumps(self.data, ensure_ascii=False))
+        self.vector_path.write_text(json.dumps(self.vectors))
+
+
+def cosine(a: Sequence[float], b: Sequence[float]) -> float:
+    """兩個向量的餘弦相似度。"""
+    dot = sum(x * y for x, y in zip(a, b, strict=True))
+    norm = math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(y * y for y in b))
+    return dot / norm if norm else 0.0
+
+
+def nearest(
+    vocab: dict[str, Concept], vectors: dict[str, list[float]], query: Sequence[float], k: int
+) -> list[Concept]:
+    """與查詢最相近的前 k 個概念（比的是概念名稱的向量）；k 為 0 是全部。"""
+    ranked = sorted(vocab.values(), key=lambda c: -cosine(vectors[c.code], query))
+    return ranked[:k] if k else ranked
 
 
 def case_of(facts: dict[str, Value]) -> dict[str, float]:
@@ -453,14 +433,6 @@ def split_of(item: Item) -> str:
     return "dev" if int(hashlib.sha256(key.encode()).hexdigest(), 16) % 2 == 0 else "test"
 
 
-def candidates_for(item: Item, vocab: dict[str, Concept], narrow: bool) -> dict[str, Concept]:
-    """候選概念：限縮時只留標準答案所屬法規的概念，模擬檢索已找到正確的法規；對照組不限縮。"""
-    if not narrow or not item.gold:
-        return vocab
-    laws = frozenset().union(*(vocab[k].laws for k in item.gold))
-    return {k: v for k, v in vocab.items() if v.laws & laws}
-
-
 def is_yes(reply: str) -> bool:
     """驗證者回覆是否為「是」。"""
     text = reply.strip()
@@ -479,17 +451,14 @@ def main() -> None:
     ap.add_argument("--controls", type=int, default=20, help="沒有案件事實的對照題數")
     ap.add_argument("--limit", type=int, default=0, help="只跑前 N 題（試跑用）")
     ap.add_argument("--workers", type=int, default=4)
-    ap.add_argument("--variant", choices=("v1", "v2", "v3"), default="v1", help="抽取提示的版本")
-    ap.add_argument("--narrow", action="store_true", help="候選概念限縮到標準答案所屬法規")
     ap.add_argument(
-        "--filter-verify", action="store_true", help="抽出後由不同家族的模型逐項核對，不通過就丟棄"
+        "--candidates",
+        type=int,
+        default=12,
+        help="每次給模型看的候選概念數，依問句由嵌入檢索；0 是全部（候選不依標準答案挑）",
     )
     ap.add_argument(
-        "--verify", choices=("v1", "v2"), default="v1", help="過濾者的核對提示版本（稽核固定 v1）"
-    )
-    ap.add_argument(
-        "--extra-extractor",
-        help="第二個抽取模型的識別；兩者結果取聯集，同概念值衝突者兩邊都丟",
+        "--extractor", default=EXTRACTOR_ID, help="抽取模型的識別；家族須不同於出題者與稽核者"
     )
     ap.add_argument("--split", choices=("dev", "test", "all"), default="all")
     ap.add_argument(
@@ -497,15 +466,17 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    models = (*load_models(args.models).everyone, *load_judges(args.models).models)
-    pick = {m.model_id: m for m in models if isinstance(m, ChatCompletionsModel)}
-    extractor, asker, filterer = pick[EXTRACTOR_ID], pick[ASKER_ID], pick[VERIFIER_ID]
-    auditor = pick[AUDITOR_ID]
-    extra = pick[args.extra_extractor] if args.extra_extractor else None
-    if len({extractor.family, asker.family, filterer.family}) != 3:
-        raise SystemExit("抽取者、出題者與過濾者必須各屬不同家族")
-    if extra and extra.family in (extractor.family, asker.family, filterer.family):
-        raise SystemExit("第二個抽取者的家族必須不同於抽取者、出題者與過濾者")
+    pick = {
+        m.model_id: m
+        for m in load_declared(args.models).values()
+        if isinstance(m, ChatCompletionsModel)
+    }
+    extractor, asker, auditor = pick[args.extractor], pick[ASKER_ID], pick[AUDITOR_ID]
+    if extractor.family in (asker.family, auditor.family):
+        raise SystemExit("抽取者必須與出題者、稽核者各屬不同家族")
+    embedder = load_embedder(args.models, timeout=60.0)
+    if embedder is None:
+        raise SystemExit("models.toml 沒有 [embedding]，無法檢索候選概念")
     args.out.mkdir(parents=True, exist_ok=True)
     cache = Cache(args.cache or args.out / "model-cache.json")
 
@@ -525,47 +496,31 @@ def main() -> None:
         def questioned(item: Item) -> str:
             return cache.get(asker, ask_prompt(item, vocab, asked_index[item.item_id])).strip()
 
-        cands = [candidates_for(i, vocab, args.narrow) for i in items]
+        concept_vectors = dict(
+            zip(vocab, cache.embed(embedder, [c.name for c in vocab.values()]), strict=True)
+        )
+
+        def extract(question: str) -> tuple[list[Fact], dict[str, Concept]]:
+            """抽出的事實（尚未檢查），與給模型看過的候選概念。"""
+            query = cache.embed(embedder, [question])[0]
+            shown = {c.code: c for c in nearest(vocab, concept_vectors, query, args.candidates)}
+            return parse_facts(cache.get(extractor, extract_prompt(question, shown))), shown
+
         with ThreadPoolExecutor(args.workers) as pool:
             questions = list(pool.map(questioned, items))
-            raws = list(
-                pool.map(
-                    lambda qc: cache.get(extractor, extract_prompt(qc[0], qc[1], args.variant)),
-                    zip(questions, cands, strict=True),
-                )
-            )
-            extra_raws = (
-                list(
-                    pool.map(
-                        lambda qc: cache.get(extra, extract_prompt(qc[0], qc[1], args.variant)),
-                        zip(questions, cands, strict=True),
-                    )
-                )
-                if extra
-                else None
-            )
-        parsed = [parse_facts(raw) for raw in raws]
-        if extra_raws:
-            parsed = [union(a, parse_facts(b)) for a, b in zip(parsed, extra_raws, strict=True)]
+            extracted = list(pool.map(extract, questions))
+        parsed = [facts for facts, _ in extracted]
+        cands = [shown for _, shown in extracted]
         checked = [check(q, f, c) for q, f, c in zip(questions, parsed, cands, strict=True)]
 
-        def audited(model: ChatCompletionsModel, pair: tuple[int, Fact], variant: str) -> bool:
-            prompt = verify_prompt(questions[pair[0]], pair[1], vocab, variant)
-            return is_yes(cache.get(model, prompt))
+        def audited(pair: tuple[int, Fact]) -> bool:
+            prompt = audit_prompt(questions[pair[0]], pair[1], vocab)
+            return is_yes(cache.get(auditor, prompt))
 
-        dropped: dict[int, list[str]] = {}
         kept_by_item = [list(kept) for kept, _ in checked]
-        if args.filter_verify:
-            pairs = [(i, f) for i, kept in enumerate(kept_by_item) for f in kept]
-            with ThreadPoolExecutor(args.workers) as pool:
-                oks = list(pool.map(lambda pr: audited(filterer, pr, args.verify), pairs))
-            for (i, f), ok in zip(pairs, oks, strict=True):
-                if not ok:
-                    dropped.setdefault(i, []).append(f.concept)
-                    kept_by_item[i].remove(f)
         pairs = [(i, f) for i, kept in enumerate(kept_by_item) for f in kept]
         with ThreadPoolExecutor(args.workers) as pool:
-            oks = list(pool.map(lambda pr: audited(auditor, pr, "v1"), pairs))
+            oks = list(pool.map(audited, pairs))
         unsupported: dict[int, list[str]] = {}
         for (i, f), ok in zip(pairs, oks, strict=True):
             if not ok:
@@ -595,10 +550,10 @@ def main() -> None:
                     "verbatim": sum(1 for k in item.gold if vocab[k].name in question),
                     "gold": item.gold,
                     "candidates": len(cands[idx]),
+                    "gold_offered": sum(1 for g in item.gold if g in cands[idx]),
                     "raw_facts": [f._asdict() for f in asked],
                     "kept_facts": [f._asdict() for f in kept],
                     "rejected": dict(rejected),
-                    "filtered_out": dropped.get(idx, []),
                     "unsupported": unsupported.get(idx, []),
                     "gold_verdicts": {str(k): v for k, v in gold_v.items()},
                     "got_verdicts": {str(k): v for k, v in got_v.items()},
@@ -607,14 +562,9 @@ def main() -> None:
             )
     summary = summarize(rows, len(vocab), reasoner)
     summary["config"] = {
-        "variant": args.variant,
-        "narrow": args.narrow,
-        "filter_verify": args.filter_verify,
-        "verify": args.verify,
-        "extra_extractor": extra.name if extra else None,
+        "candidates": args.candidates,
         "split": args.split,
         "extractor": extractor.name,
-        "filterer": filterer.name,
         "auditor": auditor.name,
     }
     (args.out / "rows.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1))
@@ -634,7 +584,8 @@ def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) ->
     wrong_value = extra = unsupported_total = 0
     by_variant: dict[str, Counter[str]] = {}
     same_verdicts = scored = 0
-    decisive_gold = decisive_same = wrong_decisive = 0
+    recovered = contradicted = beyond_gold = gold_decisive = 0
+    gold_total = offered_gold = 0
     for r in rows:
         gold = r["gold"]
         raw = r["raw_facts"]
@@ -659,6 +610,10 @@ def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) ->
         wrong_value += sum(1 for k, v in got.items() if k in gold and gold[k] != v)
         extra += sum(1 for k in got if k not in gold)
         c["items"] += 1
+        gold_offered = r["gold_offered"]
+        assert isinstance(gold_offered, int)
+        gold_total += len(gold)
+        offered_gold += gold_offered
         verbatim = r["verbatim"]
         assert isinstance(verbatim, int)
         c["verbatim_facts"] += verbatim
@@ -671,9 +626,10 @@ def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) ->
             scored += 1
             same_verdicts += int(r["gold_verdicts"] == r["got_verdicts"])
             dg, dgot = _decisive(r["gold_verdicts"]), _decisive(r["got_verdicts"])
-            decisive_gold += int(bool(dg))
-            decisive_same += int(bool(dg) and dg == dgot)
-            wrong_decisive += int(any(dg.get(k) != v for k, v in dgot.items()))
+            gold_decisive += len(dg)
+            recovered += sum(1 for k, v in dg.items() if dgot.get(k) == v)
+            contradicted += sum(1 for k, v in dgot.items() if k in dg and dg[k] != v)
+            beyond_gold += sum(1 for k in dgot if k not in dg)
         else:
             gv = r["got_verdicts"]
             assert isinstance(gv, dict)
@@ -683,6 +639,7 @@ def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) ->
     return {
         "candidate_concepts": vocab_size,
         "items": len(rows),
+        "gold_in_offered_candidates": {"offered": offered_gold, "gold": gold_total},
         "fact_level": {
             "tp": tp,
             "fp": fp,
@@ -699,9 +656,10 @@ def summarize(rows: list[dict[str, object]], vocab_size: int, reasoner: bool) ->
             "reasoner_ran": reasoner,
             "scored": scored,
             "same": same_verdicts,
-            "decisive_gold": decisive_gold,
-            "decisive_same": decisive_same,
-            "wrong_decisive": wrong_decisive,
+            "gold_decisive_statements": gold_decisive,
+            "recovered": recovered,
+            "contradicted": contradicted,
+            "beyond_gold": beyond_gold,
         },
         "by_variant": {k: dict(v) for k, v in sorted(by_variant.items())},
     }

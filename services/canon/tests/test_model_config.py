@@ -12,6 +12,7 @@ from canon.verification.config import (
     ConfigError,
     keychain_lookup,
     load,
+    load_declared,
     load_embedder,
     load_reranker,
     parse,
@@ -78,6 +79,19 @@ def test_the_example_file_loads_and_assigns_every_role() -> None:
         "meta:muse-spark-open",
         "nvidia:nemotron-3.5-super-vl",
     ]
+
+
+def test_every_declared_model_is_available_even_when_no_role_uses_it(tmp_path: Path) -> None:
+    """評估工具要能指名任何宣告過的模型來比較，不限於角色用到的。"""
+    path = tmp_path / "models.toml"
+    path.write_text(
+        MINIMAL + '\n[model.spare]\nendpoint = "e"\nname = "model-spare"\nfamily = "fam-s"\n'
+    )
+
+    declared = load_declared(path, ENV)
+
+    assert sorted(declared) == ["a", "b", "spare"]
+    assert declared["spare"].family == "fam-s"
 
 
 def test_verifiers_are_listed_once_in_the_order_their_roles_come() -> None:

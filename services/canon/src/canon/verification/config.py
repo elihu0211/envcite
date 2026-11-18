@@ -201,6 +201,34 @@ def _model(
     )
 
 
+def _models(
+    doc: Mapping[str, Any],
+    env: Mapping[str, str],
+    keychain: Callable[[str], str | None],
+) -> dict[str, Model]:
+    """`[model.*]` 宣告的全部模型，名稱 → 模型。"""
+    endpoints = {
+        str(n): _endpoint(str(n), t, env, keychain) for n, t in (doc.get("endpoint") or {}).items()
+    }
+    return {str(n): _model(str(n), t, endpoints) for n, t in (doc.get("model") or {}).items()}
+
+
+def load_declared(
+    path: Path,
+    env: Mapping[str, str] | None = None,
+    *,
+    keychain: Callable[[str], str | None] = keychain_lookup,
+) -> dict[str, Model]:
+    """配置檔宣告的全部模型（不論有沒有角色用它），名稱 → 模型；評估工具挑模型比較用。"""
+    env = os.environ if env is None else env
+    try:
+        doc = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"not valid TOML: {e}") from e
+    _only(doc, set(TOP_LEVEL), "top level")
+    return _models(doc, env, keychain)
+
+
 def parse(
     text: str,
     env: Mapping[str, str] | None = None,
@@ -218,10 +246,7 @@ def parse(
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
     _only(doc, set(TOP_LEVEL), "top level")
-    endpoints = {
-        str(n): _endpoint(str(n), t, env, keychain) for n, t in (doc.get("endpoint") or {}).items()
-    }
-    models = {str(n): _model(str(n), t, endpoints) for n, t in (doc.get("model") or {}).items()}
+    models = _models(doc, env, keychain)
     roles = doc.get("roles") or {}
     _only(roles, set(ROLES), "roles")
     missing = [r for r in ROLES if r not in roles]

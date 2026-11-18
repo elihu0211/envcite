@@ -31,13 +31,20 @@ max_tokens = 16384
 #   Mistral-Small-4：mistral-small-4、office、gpt-oss-120b
 #   nemotron-3.5-super-vl：nemotron-3.5-super-vl、vibe、nemotron-3-ultra
 #   Ornith-1.0-35B：ornith-35b、horizon、vibelight
-#   muse-spark-open：muse-spark-open、coder、vibecode
+#   muse-spark-open：muse-spark-open、coder、vibecode（2026-11-13 起後端是 Inkling-2-Small，原 Muse-Spark-Open 已下線）
 # 漏看的別名由判定與管線開跑前的 SameModel 探測擋下。
 [model.ornith]
 endpoint = "llm"
 name = "ornith-35b"
 family = "qwen"
 max_tokens = 4096
+
+# 抽取案件事實的候選（tools/fact_extraction_eval.py 以 --extractor 指名比較；不屬任何角色）。家族依
+# 端點的模型頁宣告。端點的模型清單列了 ornith-15-35b，但呼叫回 400（不認得模型名），所以沒有登記。
+[model.gemma]
+endpoint = "llm"
+name = "gemma-4-31b"
+family = "google"
 
 # 語意檢索臂的嵌入模型（canon serve、canon sync 經 ENVCITE_CANON_MODELS 讀這一段）。
 # 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
