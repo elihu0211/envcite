@@ -251,7 +251,9 @@ def test_a_pdf_with_a_text_layer_is_stored_like_a_text(conn: Conn) -> None:
     assert _scalar(conn, "SELECT status::text FROM judgment.fetch") == "stored"
 
 
-@pytest.mark.parametrize("reason", ["untrusted_url", "too_large", "unreadable", "download_failed"])
+@pytest.mark.parametrize(
+    "reason", ["untrusted_url", "too_large", "unreadable", "download_failed", "ocr_incomplete"]
+)
 def test_a_rejected_pdf_is_file_only_with_the_reason(conn: Conn, reason: str) -> None:
     api = _Api()
     api.changes = [{"date": "2026-11-09", "list": [JID]}]

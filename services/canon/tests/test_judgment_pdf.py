@@ -1,19 +1,25 @@
-"""PDF 全文只信司法院網址，只抽文字層；沒有文字層或不是 PDF 都不當成全文。"""
+"""PDF 全文只信司法院網址；逐頁取文字層，掃描頁才交 OCR；沒有字或不是 PDF 都不當成全文。"""
 
 from pathlib import Path
 
 import pytest
+from PIL import Image
 from pypdf import PdfWriter
 
 from canon.law.judgment_pdf import (
     MIN_CHARS,
     OCR_MAX_PAGES,
     PdfRejected,
-    ocr_text,
+    fetcher,
+    read_text,
     strip_line_numbers,
     text_of,
     trusted,
 )
+from canon.law.judicial_api import EndpointError
+from canon.ocr import OcrError, OcrIncomplete
+
+SENTENCE = "Noise Control Act article two applies to this administrative case. " * 5
 
 
 def _pdf_with_text(text: str) -> bytes:
@@ -59,9 +65,7 @@ def test_only_https_on_the_judicial_domain_is_trusted(url: str, expected: bool) 
 
 
 def test_the_text_layer_is_extracted(tmp_path: Path) -> None:
-    sentence = "Noise Control Act article two applies to this administrative case. " * 5
-    path = tmp_path / "a.pdf"
-    path.write_bytes(_pdf_with_text(sentence.strip()))
+    path = _text_pdf(tmp_path / "a.pdf")
 
     text = text_of(path)
 
@@ -99,10 +103,30 @@ class _Ocr:
         return self.text
 
 
-def _blank_pdf(path: Path, pages: int) -> Path:
+def _scan_pdf(path: Path, pages: int) -> Path:
+    """每頁只有一張圖片、沒有文字層的 PDF（掃描檔）。"""
+    image = Image.new("RGB", (200, 280), "white")
+    image.save(path, "PDF", save_all=True, append_images=[image.copy() for _ in range(pages - 1)])
+    return path
+
+
+def _text_pdf(path: Path) -> Path:
+    path.write_bytes(_pdf_with_text(SENTENCE.strip()))
+    return path
+
+
+def _blank_pdf(path: Path) -> Path:
     writer = PdfWriter()
-    for _ in range(pages):
-        writer.add_blank_page(612, 792)
+    writer.add_blank_page(612, 792)
+    with path.open("wb") as f:
+        writer.write(f)
+    return path
+
+
+def _joined(path: Path, *parts: Path) -> Path:
+    writer = PdfWriter()
+    for part in parts:
+        writer.append(str(part))
     with path.open("wb") as f:
         writer.write(f)
     return path
@@ -110,26 +134,122 @@ def _blank_pdf(path: Path, pages: int) -> Path:
 
 def test_a_scanned_pdf_is_read_page_by_page_by_the_ocr(tmp_path: Path) -> None:
     ocr = _Ocr("本件適用噪音管制法第二條，應處罰鍰。" * 8)
-    path = _blank_pdf(tmp_path / "scan.pdf", 2)
+    path = _scan_pdf(tmp_path / "scan.pdf", 2)
 
-    text = ocr_text(path, ocr)
+    text = read_text(path, ocr)
 
     assert text is not None and text.count("本件適用噪音管制法第二條") == 16
     assert len(ocr.images) == 2 and all(img.startswith(b"\xff\xd8") for img in ocr.images)
 
 
 def test_ocr_that_finds_no_words_is_still_no_body(tmp_path: Path) -> None:
-    assert ocr_text(_blank_pdf(tmp_path / "scan.pdf", 1), _Ocr("")) is None
+    assert read_text(_scan_pdf(tmp_path / "scan.pdf", 1), _Ocr("")) is None
 
 
-def test_too_many_pages_are_not_sent_to_the_ocr(tmp_path: Path) -> None:
+def test_a_text_pdf_is_never_sent_to_the_ocr(tmp_path: Path) -> None:
+    ocr = _Ocr("不該被呼叫")
+
+    text = read_text(_text_pdf(tmp_path / "a.pdf"), ocr)
+
+    assert text is not None and "Noise Control Act" in text and ocr.images == []
+
+
+def test_a_scanned_page_among_text_pages_is_read_by_the_ocr(tmp_path: Path) -> None:
+    """文字頁加掃描頁：只靠文字層會過關，掃描頁的內容就靜默遺失。"""
+    ocr = _Ocr("掃描頁的正文")
+    path = _joined(
+        tmp_path / "mixed.pdf", _text_pdf(tmp_path / "a.pdf"), _scan_pdf(tmp_path / "b.pdf", 1)
+    )
+
+    text = read_text(path, ocr)
+
+    assert text is not None and len(ocr.images) == 1
+    assert text.index("Noise Control Act") < text.index("掃描頁的正文")
+
+
+def test_a_blank_page_without_an_image_is_not_sent_to_the_ocr(tmp_path: Path) -> None:
+    """沒有圖片的空白頁不是掃描頁；送去讀，模型會對空白頁編字。"""
+    ocr = _Ocr("憑空編出來的字")
+    path = _joined(
+        tmp_path / "m.pdf", _text_pdf(tmp_path / "a.pdf"), _blank_pdf(tmp_path / "b.pdf")
+    )
+
+    text = read_text(path, ocr)
+
+    assert text is not None and "憑空" not in text and ocr.images == []
+
+
+def test_without_an_ocr_the_text_layer_is_all_there_is(tmp_path: Path) -> None:
+    path = _joined(
+        tmp_path / "mixed.pdf", _text_pdf(tmp_path / "a.pdf"), _scan_pdf(tmp_path / "b.pdf", 1)
+    )
+
+    assert read_text(path, None) == text_of(path)
+
+
+def test_only_scanned_pages_count_toward_the_ocr_page_limit(tmp_path: Path) -> None:
     ocr = _Ocr("x")
-    path = _blank_pdf(tmp_path / "long.pdf", OCR_MAX_PAGES + 1)
+    scans = _scan_pdf(tmp_path / "s.pdf", OCR_MAX_PAGES)
+    path = _joined(tmp_path / "m.pdf", _text_pdf(tmp_path / "a.pdf"), scans)
+
+    assert read_text(path, ocr) is not None
+    assert len(ocr.images) == OCR_MAX_PAGES
+
+
+def test_too_many_scanned_pages_are_not_sent_to_the_ocr(tmp_path: Path) -> None:
+    ocr = _Ocr("x")
+    path = _scan_pdf(tmp_path / "long.pdf", OCR_MAX_PAGES + 1)
 
     with pytest.raises(PdfRejected, match="too_many_pages"):
-        ocr_text(path, ocr)
+        read_text(path, ocr)
 
     assert ocr.images == []
+
+
+class _Http:
+    """`Http.file` 的替身：把準備好的 PDF 寫到目的地。"""
+
+    def __init__(self, source: Path) -> None:
+        self.source = source
+
+    def file(self, url: str, dest: Path) -> tuple[None, int]:
+        dest.write_bytes(self.source.read_bytes())
+        return None, dest.stat().st_size
+
+
+class _Failing(_Ocr):
+    def __init__(self, error: Exception) -> None:
+        super().__init__("")
+        self.error = error
+
+    def read(self, image: bytes, *, timeout: float | None = None) -> str:
+        raise self.error
+
+
+URL = "https://data.judicial.gov.tw/a.pdf"
+
+
+def test_an_incomplete_ocr_reply_rejects_the_pdf_instead_of_retrying_forever(
+    tmp_path: Path,
+) -> None:
+    """截斷在溫度 0 下每晚重現；當成連線失敗會每晚重讀整份、永遠不終結。"""
+    fetch = fetcher(
+        _Http(_scan_pdf(tmp_path / "s.pdf", 1)),  # type: ignore[arg-type]
+        _Failing(OcrIncomplete("vl: reply stopped at length")),
+    )
+
+    with pytest.raises(PdfRejected, match="ocr_incomplete"):
+        fetch(URL)
+
+
+def test_an_ocr_transport_failure_stays_retryable(tmp_path: Path) -> None:
+    fetch = fetcher(
+        _Http(_scan_pdf(tmp_path / "s.pdf", 1)),  # type: ignore[arg-type]
+        _Failing(OcrError("vl: HTTP 503")),
+    )
+
+    with pytest.raises(EndpointError):
+        fetch(URL)
 
 
 def test_the_printed_line_numbers_are_dropped_from_an_ocr_page() -> None:

@@ -219,6 +219,7 @@ _FILE_REASONS = frozenset(
         "too_many_pages",
         "unreadable",
         "download_failed",
+        "ocr_incomplete",
     }
 )
 

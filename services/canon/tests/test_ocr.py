@@ -5,7 +5,7 @@ import base64
 import pytest
 
 from canon.net import HttpStatus, TransportError
-from canon.ocr import PROMPT, Ocr, OcrError
+from canon.ocr import PROMPT, Ocr, OcrError, OcrIncomplete
 
 
 class _Post:
@@ -48,6 +48,27 @@ def test_the_request_carries_the_image_and_a_zero_temperature() -> None:
 def test_a_reply_without_text_is_an_error(reply: object) -> None:
     with pytest.raises(OcrError):
         _ocr(_Post(reply)).read(b"x")
+
+
+@pytest.mark.parametrize("reason", ["length", "repetition", "content_filter"])
+def test_a_reply_that_did_not_end_normally_is_incomplete(reason: str) -> None:
+    reply = {"choices": [{"message": {"content": "本件適用噪音管"}, "finish_reason": reason}]}
+
+    with pytest.raises(OcrIncomplete, match=reason):
+        _ocr(_Post(reply)).read(b"x")
+
+
+@pytest.mark.parametrize("reason", ["stop", None])
+def test_a_reply_that_ended_normally_or_does_not_say_is_text(reason: str | None) -> None:
+    choice: dict[str, object] = {"message": {"content": "本件適用噪音管制法。"}}
+    if reason is not None:
+        choice["finish_reason"] = reason
+
+    assert _ocr(_Post({"choices": [choice]})).read(b"x") == "本件適用噪音管制法。"
+
+
+def test_an_incomplete_reply_is_also_an_ocr_error() -> None:
+    assert issubclass(OcrIncomplete, OcrError)
 
 
 @pytest.mark.parametrize("error", [HttpStatus(500, b"", {}), TransportError("timeout")])

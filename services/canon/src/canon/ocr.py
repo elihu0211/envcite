@@ -20,8 +20,20 @@ PROMPT = "請逐字辨識圖片中的全部文字，原樣輸出，不要翻譯�
 type Post = Callable[..., object]
 
 
+#: 回應的 `finish_reason` 是這些時，文字不完整（截斷、重複迴圈、被過濾）；沒有這個欄位或是
+#: `stop` 才當成讀完。
+_INCOMPLETE = frozenset({"length", "repetition", "content_filter"})
+
+
 class OcrError(RuntimeError):
     """端點沒有給出可用的文字：連不上、逾時、非 2xx、回應的形狀不對。"""
+
+
+class OcrIncomplete(OcrError):
+    """端點回了文字，但沒有正常結束（截斷、重複迴圈）。
+
+    與連線失敗不同：溫度 0 下同一頁會再次出現，重試不會改變結果，所以呼叫端不該留待下一夜。
+    """
 
 
 class Reads(Protocol):
@@ -93,4 +105,7 @@ class Ocr:
         content = message.get("content") if isinstance(message, dict) else None
         if not isinstance(content, str):
             raise OcrError(f"{self.model}: no text in the reply")
+        reason = first.get("finish_reason") if isinstance(first, dict) else None
+        if reason in _INCOMPLETE:
+            raise OcrIncomplete(f"{self.model}: the reply stopped at {reason}")
         return content.strip()

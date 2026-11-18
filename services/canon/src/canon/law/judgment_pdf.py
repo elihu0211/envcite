@@ -1,8 +1,8 @@
 """裁判書全文是 PDF 時：下載、抽文字層，與 HTML 全文走同一條入庫路徑。
 
 只信司法院的網址（https 且主機在 `judicial.gov.tw`）：網址來自 API 回應，不當成任意下載來源。
-先抽文字層；沒有文字層（掃描檔）且設定了 OCR 模型時，逐頁轉成圖片交給 OCR，頁數有上限。沒有 OCR 或
-OCR 後仍沒有字，回 `None`，由呼叫端記 `file_only`。
+逐頁判斷：文字層夠的頁用文字層；文字層近乎空白且頁面有圖片的是掃描頁，設定了 OCR 模型時轉成圖片
+交給 OCR，掃描頁數有上限。沒有 OCR 或讀完仍沒有字，回 `None`，由呼叫端記 `file_only`。
 下載走 `acquire/web.py` 的 `Http`（循序、禮貌間隔、自報身分），大小與頁數有上限。
 """
 
@@ -13,20 +13,24 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
 from pypdf import PdfReader
 from pypdf.errors import PyPdfError
 
 from canon.acquire.web import Http
 from canon.law.judicial_api import EndpointError
-from canon.ocr import OcrError, Reads
+from canon.ocr import OcrError, OcrIncomplete, Reads
 from envcite_jobkit import EndpointError as TransportFailure
 from envcite_jobkit import ItemError
 
 #: 超過就不抽（一般裁判書遠小於此）。
 MAX_BYTES = 20 << 20
 MAX_PAGES = 400
-#: OCR 逐頁呼叫模型，頁數上限比文字層小得多；超過的不做。
+#: OCR 逐頁呼叫模型，掃描頁數上限比文字層的頁數上限小得多；超過的不做。
 OCR_MAX_PAGES = 60
+#: 一頁的文字層少於此字數且頁面有圖片，視為掃描頁。裁判書最短的一頁（末頁的「以上正本」等）
+#: 也有十餘字以上；掃描檔的文字層通常是空的。沒有圖片的近空白頁不是掃描頁，送去讀只會讓模型編字。
+PAGE_MIN_CHARS = 20
 #: 轉圖片的縮放（72 dpi 的倍數）；2 倍約 144 dpi，足夠辨識一般字級。
 OCR_SCALE = 2.0
 #: 抽出的字少於此視為沒有文字層（掃描檔）。
@@ -52,6 +56,15 @@ def trusted(url: str) -> bool:
 
 def text_of(path: Path) -> str | None:
     """PDF 的文字層，空白正規化；字數不足回 `None`。檔案不是可讀的 PDF 丟 `PdfRejected`。"""
+    return read_text(path, None)
+
+
+def read_text(path: Path, ocr: Reads | None) -> str | None:
+    """PDF 的全文：每頁文字層夠就用，掃描頁且有 `ocr` 才讀圖；字數不足回 `None`。
+
+    不能只看全文字數：文字頁夾著掃描頁的 PDF 光靠文字層就過關，掃描頁的內容會靜默遺失。
+    檔案不是可讀的 PDF 或掃描頁超限丟 `PdfRejected`，OCR 失敗丟 `OcrError`。
+    """
     try:
         reader = PdfReader(path)
         if len(reader.pages) > MAX_PAGES:
@@ -59,6 +72,8 @@ def text_of(path: Path) -> str | None:
         pages = [page.extract_text() or "" for page in reader.pages]
     except PyPdfError, ValueError, OSError, KeyError, TypeError:
         raise PdfRejected("unreadable") from None
+    if ocr is not None:
+        _read_scanned(path, pages, ocr)
     return _enough(pages)
 
 
@@ -94,24 +109,37 @@ def strip_line_numbers(page: str) -> str:
     )
 
 
-def ocr_text(path: Path, ocr: Reads) -> str | None:
-    """沒有文字層的 PDF：逐頁轉成 JPEG 交 OCR。頁數超限丟 `PdfRejected`，OCR 失敗丟 `OcrError`。"""
+def _read_scanned(path: Path, pages: list[str], ocr: Reads) -> None:
+    """掃描頁（文字層近乎空白、頁面有圖片）原地換成 OCR 讀出的字，其餘頁不動。"""
     try:
         pdf = pdfium.PdfDocument(path)
     except pdfium.PdfiumError:
         raise PdfRejected("unreadable") from None
     try:
-        if len(pdf) > OCR_MAX_PAGES:
+        if len(pdf) != len(pages):
+            raise PdfRejected("unreadable")
+        scanned = [
+            index
+            for index, layer in enumerate(pages)
+            if len(layer.strip()) < PAGE_MIN_CHARS and _has_image(pdf[index])
+        ]
+        if len(scanned) > OCR_MAX_PAGES:
             raise PdfRejected("too_many_pages")
-        pages = []
-        for index in range(len(pdf)):
-            image = pdf[index].render(scale=OCR_SCALE).to_pil().convert("RGB")
-            buffer = io.BytesIO()
-            image.save(buffer, "JPEG", quality=85)
-            pages.append(strip_line_numbers(ocr.read(buffer.getvalue())))
+        for index in scanned:
+            pages[index] = strip_line_numbers(ocr.read(_jpeg(pdf[index])))
     finally:
         pdf.close()
-    return _enough(pages)
+
+
+def _has_image(page: pdfium.PdfPage) -> bool:
+    return any(True for _ in page.get_objects(filter=(pdfium_c.FPDF_PAGEOBJ_IMAGE,)))
+
+
+def _jpeg(page: pdfium.PdfPage) -> bytes:
+    image = page.render(scale=OCR_SCALE).to_pil().convert("RGB")
+    buffer = io.BytesIO()
+    image.save(buffer, "JPEG", quality=85)
+    return buffer.getvalue()
 
 
 def fetcher(http: Http, ocr: Reads | None = None) -> FileText:
@@ -130,11 +158,10 @@ def fetcher(http: Http, ocr: Reads | None = None) -> FileText:
                 raise PdfRejected("download_failed") from None
             if size > MAX_BYTES:
                 raise PdfRejected("too_large")
-            found = text_of(dest)
-            if found is not None or ocr is None:
-                return found
             try:
-                return ocr_text(dest, ocr)
+                return read_text(dest, ocr)
+            except OcrIncomplete:
+                raise PdfRejected("ocr_incomplete") from None
             except OcrError:
                 raise EndpointError("ocr") from None
 
