@@ -456,6 +456,7 @@ public sealed class FakeCanonServer : IAsyncDisposable
                     new Problem { Kind = ProblemKind.MeasurementMismatch, ConditionId = 32 },
                     new Problem { Kind = ProblemKind.InvalidatedDelegation, ConditionId = 33 },
                     new Problem { Kind = ProblemKind.UnrootedDelegation, ConditionId = 34 },
+                    new Problem { Kind = ProblemKind.AmbiguousLimit, ConditionId = 35 },
                 },
                 Defeated = { new Defeat { Loser = 1, Winner = 2, Basis = OverrideBasis.LexSpecialis } },
                 Trace =

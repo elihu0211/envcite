@@ -71,7 +71,8 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
             new ProblemDto(ProblemKindDto.UnresolvedDelegation, null, 31),
             new ProblemDto(ProblemKindDto.MeasurementMismatch, null, 32),
             new ProblemDto(ProblemKindDto.InvalidatedDelegation, null, 33),
-            new ProblemDto(ProblemKindDto.UnrootedDelegation, null, 34)], outcome.Problems);
+            new ProblemDto(ProblemKindDto.UnrootedDelegation, null, 34),
+            new ProblemDto(ProblemKindDto.AmbiguousLimit, null, 35)], outcome.Problems);
         Assert.Equal(OverrideBasisDto.LexSpecialis, outcome.Defeated[0].Basis);
         Assert.Equal(new TraceEntryDto(31, 7, "effluent_cod", "120", "100", ConditionRoleDto.Duty), outcome.Trace[0]);
         Assert.Equal([new LimitSourceDto(31, 52)], outcome.LimitSources);

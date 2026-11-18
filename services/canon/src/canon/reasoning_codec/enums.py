@@ -155,4 +155,5 @@ PROBLEM_KIND = {
     "measurement_unlabeled": pb.PROBLEM_KIND_MEASUREMENT_UNLABELED,
     "invalidated_delegation": pb.PROBLEM_KIND_INVALIDATED_DELEGATION,
     "unrooted_delegation": pb.PROBLEM_KIND_UNROOTED_DELEGATION,
+    "ambiguous_limit": pb.PROBLEM_KIND_AMBIGUOUS_LIMIT,
 }

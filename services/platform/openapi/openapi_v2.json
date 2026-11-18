@@ -2526,7 +2526,8 @@
           "MeasurementMismatch",
           "MeasurementUnlabeled",
           "InvalidatedDelegation",
-          "UnrootedDelegation"
+          "UnrootedDelegation",
+          "AmbiguousLimit"
         ]
       },
       "RaisedCapDto": {

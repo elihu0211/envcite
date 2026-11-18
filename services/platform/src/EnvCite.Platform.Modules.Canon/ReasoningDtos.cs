@@ -168,6 +168,8 @@ public enum ProblemKindDto
     InvalidatedDelegation,
     /// <summary>授權的限值出自授權鏈到不了法律的命令而照常比較：結論不變，所依限值的授權依據待查。</summary>
     UnrootedDelegation,
+    /// <summary>同一要件在該日有兩個以上的限值同時適用：不擇一，該要件為未知。</summary>
+    AmbiguousLimit,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<CourtInstanceDto>))]
