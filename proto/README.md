@@ -184,6 +184,7 @@ sequenceDiagram
    - 前置罰則（`Sanction.triggers`）僅於前提成立時列出（`PenaltyCandidate.triggered_by`）。
    - 授權鏈列於 `Outcome.delegation_bases`，`rooted = false` 時相關罰則附條件。
    - 限值出自 `rooted = false` 的命令時照常比較、結論與罰則不變，比較過的要件附 `PROBLEM_KIND_UNROOTED_DELEGATION`（`condition_id`）；以 `Outcome.limit_sources` 由要件找到限值陳述，再到 `delegation_bases` 看它斷在哪一環。
+   - 同一要件在該日有兩個以上的限值同時適用時不擇一，要件為未知並附 `PROBLEM_KIND_AMBIGUOUS_LIMIT`（`condition_id`）。
 5. **行政罰法總則（§18、§26）**：`criminal_offense` 為真且無 `criminal_cleared_on` 時，罰鍰列於 `GeneralPart.unpunished`（`EXCUSE_CRIMINAL_PRIORITY`）；`reduced`、`raised_caps` 與 `criminal_deductions` 只給額度，不代選罰鍰額。
 6. **裁量（§8 但書、§19）**：法律效果層次的「得」，不是阻卻責任，列在 `GeneralPart.discretion`（`PenaltyDiscretion`），系統只列候選，不選：
    - 第 8 條：`ignorance_of_law`（或 `ignorance_unavoidable`）為真且 `ignorance_of_law` 不是明確為假時，罰則照列，並列 `DISCRETION_BASIS_IGNORANCE_OF_LAW`，候選措施為免除，罰鍰另有減輕（額度見 `reduced`，三分之一）。`ignorance_unavoidable` 為真只加 `DISCRETION_NOTE_IGNORANCE_UNAVOIDABLE` 附註，不自動免除。

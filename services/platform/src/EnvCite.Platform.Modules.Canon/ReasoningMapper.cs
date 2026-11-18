@@ -314,6 +314,7 @@ internal static class ReasoningMapper
         ProblemKind.MeasurementUnlabeled => ProblemKindDto.MeasurementUnlabeled,
         ProblemKind.InvalidatedDelegation => ProblemKindDto.InvalidatedDelegation,
         ProblemKind.UnrootedDelegation => ProblemKindDto.UnrootedDelegation,
+        ProblemKind.AmbiguousLimit => ProblemKindDto.AmbiguousLimit,
         _ => throw Unknown(k),
     };
 

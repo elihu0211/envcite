@@ -447,6 +447,10 @@ class _ProblemKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ProblemKi
     以該限值比較，結論不變，但所依的限值授權依據待查。只在該要件確實比較過時列出。限值陳述見
     Outcome.limit_sources，其授權鏈見 Outcome.delegation_bases。
     """
+    PROBLEM_KIND_AMBIGUOUS_LIMIT: _ProblemKind.ValueType  # 9
+    """同一要件在該日有兩個以上的限值同時適用（subject 為要件識別碼）：系統不擇一，要件為未知。
+    要採用哪一個限值，要回到限值陳述的適用條件查。
+    """
 
 class ProblemKind(_ProblemKind, metaclass=_ProblemKindEnumTypeWrapper): ...
 
@@ -472,6 +476,10 @@ PROBLEM_KIND_UNROOTED_DELEGATION: ProblemKind.ValueType  # 8
 """授權的限值出自授權鏈到不了法律的命令（subject 為要件識別碼）：系統不宣告命令無效，照常
 以該限值比較，結論不變，但所依的限值授權依據待查。只在該要件確實比較過時列出。限值陳述見
 Outcome.limit_sources，其授權鏈見 Outcome.delegation_bases。
+"""
+PROBLEM_KIND_AMBIGUOUS_LIMIT: ProblemKind.ValueType  # 9
+"""同一要件在該日有兩個以上的限值同時適用（subject 為要件識別碼）：系統不擇一，要件為未知。
+要採用哪一個限值，要回到限值陳述的適用條件查。
 """
 Global___ProblemKind: _TypeAlias = ProblemKind  # noqa: Y015
 

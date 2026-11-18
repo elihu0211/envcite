@@ -334,6 +334,23 @@ def test_a_call_that_cannot_get_a_slot_in_its_budget_fails_fast(store: CanonStor
     assert aborted.value.status.code == grpc.StatusCode.RESOURCE_EXHAUSTED
 
 
+def test_two_limits_in_force_together_are_reported_as_ambiguous(
+    conn: Conn, tmp_path: Path, reasoning_stub: Stub
+) -> None:
+    """同一要件有兩個限值同時適用：不擇一，要件為未知並附問題；不能讓整個推論失敗。"""
+    _first(conn, tmp_path, _law_v1())
+    duty = load(conn, _doc(_duty(), _limit("乙一", 100), _limit("乙一", 200))).ids["duty"]
+    conn.commit()
+
+    outcome = reasoning_stub.Evaluate(_case(), metadata=call_metadata()).at_decision
+
+    assert [(v.statement_id, v.verdict) for v in outcome.verdicts] == [
+        (duty, reasoning_pb2.VERDICT_UNDETERMINED)
+    ]
+    assert [p.kind for p in outcome.problems] == [reasoning_pb2.PROBLEM_KIND_AMBIGUOUS_LIMIT]
+    assert outcome.problems[0].condition_id > 0
+
+
 def test_permit_limits_and_ways_of_measuring_reach_the_evaluation(
     conn: Conn, tmp_path: Path, reasoning_stub: Stub
 ) -> None:
