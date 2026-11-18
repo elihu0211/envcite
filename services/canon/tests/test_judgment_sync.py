@@ -333,3 +333,17 @@ def test_a_row_with_a_court_still_unknown_stays_unmapped(conn: Conn) -> None:
     _sync(conn, _Api(), 1)
 
     assert _scalar(conn, "SELECT status::text FROM judgment.fetch") == "unmapped"
+
+
+def test_a_malformed_document_stays_pending_and_the_log_names_its_shape(
+    conn: Conn, caplog: pytest.LogCaptureFixture
+) -> None:
+    api = _Api()
+    api.changes = [{"date": "2026-11-09", "list": [JID]}]
+    api.docs[JID] = {"JTITLE": "噪音管制法事件", "JDATE": "20210101"}
+
+    with caplog.at_level("WARNING"):
+        result = _sync(conn, api, 1)
+
+    assert (result.stored, result.pending) == (0, 1)
+    assert "JFULLX=NoneType" in caplog.text and "本件" not in caplog.text
