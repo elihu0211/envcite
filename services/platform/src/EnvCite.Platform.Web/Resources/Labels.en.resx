@@ -70,10 +70,10 @@
   <data name="Role.Developer" xml:space="preserve"><value>Developer</value></data>
   <data name="Role.Billing" xml:space="preserve"><value>Billing</value></data>
   <data name="Role.Viewer" xml:space="preserve"><value>Viewer</value></data>
-  <data name="Role.TenantOwner.abilities" xml:space="preserve"><value>Owner (manages members and billing)</value></data>
-  <data name="Role.TenantAdmin.abilities" xml:space="preserve"><value>Admin (manages members and API keys)</value></data>
-  <data name="Role.Developer.abilities" xml:space="preserve"><value>Developer (manages API keys, views usage)</value></data>
-  <data name="Role.Billing.abilities" xml:space="preserve"><value>Billing (views invoices)</value></data>
+  <data name="Role.TenantOwner.abilities" xml:space="preserve"><value>Owner (manages all members and directory sync)</value></data>
+  <data name="Role.TenantAdmin.abilities" xml:space="preserve"><value>Admin (manages developers, billing and viewers)</value></data>
+  <data name="Role.Developer.abilities" xml:space="preserve"><value>Developer (views API key prefixes)</value></data>
+  <data name="Role.Billing.abilities" xml:space="preserve"><value>Billing (query only)</value></data>
   <data name="Role.Viewer.abilities" xml:space="preserve"><value>Viewer (read only)</value></data>
   <data name="Operator.Status.disabled" xml:space="preserve"><value>Disabled</value></data>
   <data name="Operator.Status.locked" xml:space="preserve"><value>Locked</value></data>
