@@ -62,6 +62,10 @@ public interface IGroundedAnswerer
     /// 前文裡的代號會被剝掉。實際帶進模型的長度由 <see cref="IChatReducer"/> 與設定決定，呼叫端不必先裁。
     /// </param>
     /// <param name="progress">每進到下一步就回報一次（可為 null）；已有結論的回合（拒答、失敗）不會回報後面的步驟。回報不帶問題或證據的內容，只有步驟與條數。</param>
+    /// <param name="reasoning">
+    /// 這個租戶啟用了規範推論模組：問句裡明說的事實會交給推理機，結論以結論區塊放進回答。還要環境設定也開
+    /// （<c>Platform:Answer:Reasoning</c>）才會執行；推論的任何一步失敗都退回沒有結論的回答，不造成拒答。
+    /// </param>
     Task<Outcome<GroundedAnswer>> AnswerAsync(
-        string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken);
+        string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, bool reasoning, CancellationToken cancellationToken);
 }

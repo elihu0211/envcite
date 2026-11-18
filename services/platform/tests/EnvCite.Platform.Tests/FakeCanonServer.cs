@@ -56,6 +56,41 @@ public sealed class FakeCanonServer : IAsyncDisposable
     /// <summary>設為 true 時，GetLawGraph 回 Unimplemented 以驗證平台滾動升級相容性。</summary>
     public bool ReturnUnimplementedGraph { get; set; }
 
+    /// <summary>最近一次 ExtractFacts 收到的請求（測試用）。</summary>
+    public ExtractFactsRequest? LastExtract { get; private set; }
+
+    private StatusCode? _extractFailure;
+    private IReadOnlyList<ExtractedFact> _extractedFacts = DefaultFacts;
+
+    private static readonly IReadOnlyList<ExtractedFact> DefaultFacts =
+    [
+        new ExtractedFact { Concept = "open_burning", Name = "露天燃燒", Value = new FactValue { Flag = true }, Quote = "露天燃燒" },
+        new ExtractedFact
+        {
+            Concept = "burned_area", Name = "燃燒面積", Value = new FactValue { Number = new EnvCite.Canon.V1.Decimal { Value = "12" } }, Quote = "十二公頃",
+        },
+    ];
+
+    /// <summary>
+    /// 讓 ExtractFacts 暫時以指定的狀態碼失敗、或回指定的事實（空清單 = 問句沒有明說的事實），Dispose 還原。
+    /// 問句要能到達 consult 的假服務，只能用它認得的幾句，所以抽取的行為不能靠問句內容切換。
+    /// </summary>
+    public IDisposable ExtractingAs(StatusCode? failure = null, IReadOnlyList<ExtractedFact>? facts = null)
+    {
+        _extractFailure = failure;
+        _extractedFacts = facts ?? DefaultFacts;
+        return new Restore(this);
+    }
+
+    private sealed class Restore(FakeCanonServer server) : IDisposable
+    {
+        public void Dispose()
+        {
+            server._extractFailure = null;
+            server._extractedFacts = DefaultFacts;
+        }
+    }
+
     public async Task StartAsync()
     {
         var builder = WebApplication.CreateSlimBuilder();
@@ -371,6 +406,16 @@ public sealed class FakeCanonServer : IAsyncDisposable
 
     private sealed class Reasoning(FakeCanonServer server) : ReasoningService.ReasoningServiceBase
     {
+        public override Task<ExtractFactsResponse> ExtractFacts(ExtractFactsRequest request, ServerCallContext context)
+        {
+            server.ReceivedMetadata.Enqueue(context.RequestHeaders);
+            server.LastExtract = request;
+            if (server._extractFailure is { } failure)
+                throw new RpcException(new Status(failure, "extract_facts"));
+
+            return Task.FromResult(new ExtractFactsResponse { Facts = { server._extractedFacts }, Candidates = server._extractedFacts.Count });
+        }
+
         public override Task<EvaluateResponse> Evaluate(EvaluateRequest request, ServerCallContext context)
         {
             server.ReceivedMetadata.Enqueue(context.RequestHeaders);

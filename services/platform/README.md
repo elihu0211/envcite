@@ -1,7 +1,7 @@
 <!--
 type: reference
 applies-to: all
-owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync, portal-google-signin, conversation-history]
+owns: [operator-accounts, mail-invitation, reasoning-rest, mcp-endpoint, corpus-scope, brand-name, service-logging, tenant-access-urls, appearance-setting, tenant-directory-sync, portal-google-signin, conversation-history, reasoned-answer]
 -->
 
 # envcite-platform
@@ -149,6 +149,23 @@ flowchart LR
 - **端點**：表單欄位 `appearance`（`system`、`light`、`dark`）與 `returnUrl`；需要 antiforgery，不需要登入。值不合法回 400、不寫 cookie。一般表單送出導回 `returnUrl`（只准留在該面之下）；`Accept: application/json` 的請求（個人設定頁的腳本）回 204。
 - **匿名頁面**（登入、啟用、重設、已登出、無權限）不提供切換，但依 cookie 輸出偏好。
 - 設計規則見 [`AGENTS.md`](AGENTS.md)「設計系統與營運者後台」。
+
+### 案件類問題的結論區塊（`Platform:Answer:Reasoning`）
+
+入口的有依據回答，對問句裡**明說**的案件事實先用規則推論，把候選結論用固定格式放在回答最前面（結論區塊，`kind` 為 `conclusion`），模型只解釋依據與欠缺的事實。
+
+**前提**（缺一個，管線與沒有這個功能時完全一樣）：`Platform:Answer:Reasoning` 開啟（預設值在 `AnswerOptions`）、租戶啟用規範推論模組（`normative-reasoning`）、[`canon`](../canon/README.md) 設定了事實抽取模型。
+
+**順序**：向 consult 取得封閉證據集 → canon `ExtractFacts` 把問句裡明說的事實對到概念 → canon `Evaluate` 推論 → 系統組結論區塊 → 模型寫說明（只看得到結論編號、依據與欠缺的事實）→ 核驗。
+
+- **結論用語由系統輸出**：該當、不該當、附條件該當、附條件不該當、事實不明、但書排除、不適用。「該當」只指構成要件該當，不稱違法、不稱應罰；區塊固定附上「不是行政處分，違法性與有責性不在判斷範圍」的聲明。
+- **只列有出處的結論**：結論所依的條文必須在本次證據內（有證據代號，經得起同一套引用核驗）；不在證據內的與「不適用」的不列，只計入區塊的 `omittedCount`。
+- **日期**：行為日與裁處日是同一天——使用者選的日期，沒選就是今日並標 `asOfAssumed`。
+- **揭露採用的事實**：區塊列出推論用了哪些事實與問句裡的原文片段；沒有確認步驟，使用者自己核對。
+- **說明不得越界**：說明重述或改寫結論用語、提到不存在的結論編號，整段說明丟棄，只留結論區塊；模型自己寫的結論區塊一律丟棄。
+- **失敗一律退回沒有結論的回答，不造成拒答**：沒設定、逾時、容量用盡、canon 還沒有這個呼叫、問句沒有明說的事實、沒有落在證據內的結論。
+- **計量與隱私**：成功的抽取計一次 `reasoning.extract_facts`、推論計一次 `reasoning.evaluate`；問句與事實不進日誌與指標。
+- **文件版本**：含結論區塊的回答文件 `SchemaVersion` 為 2，其餘仍為 1；舊版程式只認 1，滾動更新期間讀到 2 會退回純文字。
 
 ### 對話歷史與接續
 

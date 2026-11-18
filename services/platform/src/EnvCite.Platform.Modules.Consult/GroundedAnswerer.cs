@@ -22,6 +22,8 @@ internal sealed partial class GroundedAnswerer(
     IChatReducer reducer,
     IUsageRecorder usage,
     AnswerMetrics metrics,
+    ICaseReasoner reasoner,
+    TimeProvider time,
     ILogger<GroundedAnswerer> logger) : IGroundedAnswerer
 {
     public const string AnswerOperation = "consult.answer";
@@ -46,6 +48,11 @@ internal sealed partial class GroundedAnswerer(
         + "   - table：用於多條件對照、分級數值、管制標準或罰則比較（每列自帶 citationCodes，columns 不必自建依據欄）。\n"
         + "   - workflow：用於申報、許可、審查、改善期限或處分步驟流程，以 nodes（start/step/decision/end）與 edges 表達，不得手寫圖表語法。";
 
+    /// <summary>有結論區塊時加在系統提示後面的規則：模型只能解釋，不能重述或改寫結論。</summary>
+    internal const string ConclusionRule =
+        "\n7. 提示裡的「結論 N」是系統用規則推論出來的，結論本身與用語由系統另行呈現：你只能解釋它依據的條文與欠缺的事實，"
+        + "以「結論 N」稱呼它；不得寫出結論本身，不得使用「該當」「不該當」「違反」「違法」「應罰」這類詞，不得提到沒有列出的結論編號。";
+
     /// <summary>
     /// 追問的改寫：只把問題補成不看前文也看得懂的一句，不回答。前面回答引用的條號、金額與日期不帶進問句：
     /// 檢索是字面比對，帶進去的條號會把結果拉回上一題的條文（「那罰款多少」不該變成「第 32 條的罰款」，第 32 條是禁止規定，罰則在別條）。
@@ -65,7 +72,7 @@ internal sealed partial class GroundedAnswerer(
     private static partial Regex CodePattern();
 
     public async Task<Outcome<GroundedAnswer>> AnswerAsync(
-        string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, CancellationToken cancellationToken)
+        string? question, string? asOf, IReadOnlyList<ChatMessage> history, IProgress<AnswerProgress>? progress, bool reasoning, CancellationToken cancellationToken)
     {
         if (!options.Value.Enabled)
             return Outcomes.Unavailable<GroundedAnswer>(OutcomeCodes.AnswerNotConfigured);
@@ -83,6 +90,9 @@ internal sealed partial class GroundedAnswerer(
         progress?.Report(new AnswerProgress(AnswerStage.Grounding));
         turn = await GroundAsync(turn, cancellationToken);
 
+        if (turn.Done is null && reasoning && options.Value.Reasoning)
+            turn = await ReasonAsync(turn, cancellationToken);
+
         if (turn.Done is null)
         {
             progress?.Report(new AnswerProgress(AnswerStage.Writing, turn.Sources.Count));
@@ -92,7 +102,7 @@ internal sealed partial class GroundedAnswerer(
         if (turn.Done is null)
         {
             progress?.Report(new AnswerProgress(AnswerStage.Verifying, turn.Sources.Count));
-            turn = turn with { Done = Outcomes.Ok(Verify(turn.ModelOutput, turn.Sources)) };
+            turn = turn with { Done = Outcomes.Ok(Verify(turn.ModelOutput, turn.Sources, turn.Conclusions)) };
         }
 
         var outcome = turn.Done ?? throw new InvalidOperationException("The answer pipeline finished without a conclusion.");
@@ -123,6 +133,26 @@ internal sealed partial class GroundedAnswerer(
         return turn with { Sources = [.. grounded.Evidence.Citations.Select(c => new AnswerSource(c.Code, c.Iri, c.Label, c.Text))] };
     }
 
+    /// <summary>
+    /// 問句裡明說的事實交給推理機，結論對到證據集後放進回合。這一步的任何失敗（沒有事實、抽取或推論不可用、
+    /// 沒有落在證據內的結論）都原樣放行：回答照舊，只是沒有結論區塊。推論失敗不造成拒答。
+    /// 行為時與裁處時同為一天：使用者選了日期就是那天，沒選就是今日，區塊上標明是假設。
+    /// </summary>
+    private async Task<AnswerTurn> ReasonAsync(AnswerTurn turn, CancellationToken cancellationToken)
+    {
+        var extracted = await reasoner.ExtractFactsAsync(turn.Question, cancellationToken);
+        if (!extracted.IsOk || extracted.Value is not { Count: > 0 } facts)
+            return turn;
+
+        var asOf = turn.AsOf ?? time.GetLocalNow().ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        var evaluated = await reasoner.EvaluateAsync(facts, asOf, cancellationToken);
+        if (!evaluated.IsOk)
+            return turn;
+
+        var block = ConclusionAssembly.Assemble(evaluated.Value!, facts, turn.Sources, asOf, asOfAssumed: turn.AsOf is null);
+        return block is null ? turn : turn with { Conclusions = block };
+    }
+
     /// <summary>讓模型以強型別結構只根據證據作答，並記模型的用量。</summary>
     private async Task<AnswerTurn> WriteAsync(AnswerTurn turn, CancellationToken cancellationToken)
     {
@@ -133,7 +163,7 @@ internal sealed partial class GroundedAnswerer(
         UsageDetails? tokens;
         try
         {
-            (output, tokens) = await GenerateStructuredAsync(turn.Question, turn.Sources, turn.History, cancellationToken);
+            (output, tokens) = await GenerateStructuredAsync(turn.Question, turn.Sources, turn.History, turn.Conclusions, cancellationToken);
         }
         catch (Exception ex) when (ex is ClientResultException or HttpRequestException or OperationCanceledException && !cancellationToken.IsCancellationRequested)
         {
@@ -232,7 +262,8 @@ internal sealed partial class GroundedAnswerer(
     }
 
     private async Task<(ModelAnswerOutput? Output, UsageDetails? Usage)> GenerateStructuredAsync(
-        string question, IReadOnlyList<AnswerSource> sources, IReadOnlyList<ChatMessage> history, CancellationToken cancellationToken)
+        string question, IReadOnlyList<AnswerSource> sources, IReadOnlyList<ChatMessage> history, ConclusionBlock? conclusions,
+        CancellationToken cancellationToken)
     {
         var evidence = new StringBuilder();
         foreach (var source in sources)
@@ -241,11 +272,12 @@ internal sealed partial class GroundedAnswerer(
         using var timeout = CreateTimeout(cancellationToken);
 
         // 前文只出現在證據之前、以對話的角色帶入；證據與本輪的問題是最後一則使用者訊息。
+        var conclusionSection = conclusions is null ? string.Empty : $"\n{ConclusionAssembly.PromptSection(conclusions)}";
         ChatMessage[] messages =
         [
-            new ChatMessage(ChatRole.System, SystemPrompt),
+            new ChatMessage(ChatRole.System, conclusions is null ? SystemPrompt : SystemPrompt + ConclusionRule),
             .. history,
-            new ChatMessage(ChatRole.User, $"證據：\n{evidence}\n問題：{TaskOf(question)}"),
+            new ChatMessage(ChatRole.User, $"證據：\n{evidence}{conclusionSection}\n問題：{TaskOf(question)}"),
         ];
 
         var response = await model.Value.GetResponseAsync<ModelAnswerOutput>(
@@ -299,7 +331,24 @@ internal sealed partial class GroundedAnswerer(
     /// 不信任模型守規矩：結構必須合法、必須至少引用一個證據裡的代號、而且每個區塊／項目引用的每個代號都必須在證據裡；
     /// 否則整個回答作廢，改成拒答（呼叫端看到的是拒答，不是未經核驗的結構或話語）。
     /// </summary>
-    internal static GroundedAnswer Verify(ModelAnswerOutput? output, IReadOnlyList<AnswerSource> sources)
+    internal static GroundedAnswer Verify(ModelAnswerOutput? output, IReadOnlyList<AnswerSource> sources, ConclusionBlock? conclusions = null)
+    {
+        // 有結論區塊時，模型這一段失敗不丟掉回答：結論是系統填的、所依條文都在證據內，單獨呈現仍有出處。
+        var verified = VerifyModel(output, sources, conclusions);
+        if (conclusions is null)
+            return verified;
+
+        var known = sources.ToDictionary(s => s.Code, StringComparer.Ordinal);
+        List<AnswerBlock> blocks = [conclusions];
+        var explained = verified.Document is { } document && !ConclusionAssembly.Oversteps(document.Blocks.SelectMany(ConclusionAssembly.TextOf), conclusions);
+        if (explained)
+            blocks.AddRange(verified.Document!.Blocks);
+
+        var cited = AnswerDocumentFormatter.CollectCitationCodes(new AnswerDocument(blocks));
+        return new GroundedAnswer(new AnswerDocument(blocks), [.. cited.Select(code => known[code])]);
+    }
+
+    private static GroundedAnswer VerifyModel(ModelAnswerOutput? output, IReadOnlyList<AnswerSource> sources, ConclusionBlock? conclusions)
     {
         if (output is null)
             return Refuse("empty_answer", "模型沒有產生有效的結構化回答。");
@@ -451,6 +500,10 @@ internal sealed partial class GroundedAnswerer(
                     }
 
                     normalized.Add(new WorkflowBlock(CleanOptionalText(workflow.Title), workflow.Direction, nodes, edges));
+                    break;
+
+                case ConclusionBlock:
+                    // 結論只由系統填寫：模型自己寫的結論區塊一律丟掉，不採用也不算回答作廢。
                     break;
 
                 default:
