@@ -183,6 +183,8 @@ def _one(conn: Conn, client: Client, jid: str, now: Clock, files: FileText | Non
     built = _decision(jid, payload)
     if built == "file":
         built = _from_file(jid, payload, files)
+    if built == "malformed":
+        log.warning("裁判 %s 的 JDoc 形狀不合：%s", jid, _shape(payload))
     if isinstance(built, str):
         status, error = _unfinished(built)
         _mark(conn, jid, status, error)
@@ -249,6 +251,15 @@ def _from_file(
     if text is None:
         return "no_text_layer"
     return _decision(jid, {**payload, "JFULLX": {"JFULLTYPE": "text", "JFULLCONTENT": text}})
+
+
+def _shape(payload: object) -> str:
+    """JDoc 回應的鍵與 JFULLX 的型別，不含任何內容；供查 `malformed` 的原因。"""
+    if not isinstance(payload, dict):
+        return type(payload).__name__
+    full = payload.get("JFULLX")
+    inner = sorted(full) if isinstance(full, dict) else type(full).__name__
+    return f"keys={sorted(payload)} JFULLX={inner} JTITLE={type(payload.get('JTITLE')).__name__}"
 
 
 def _decision(jid: str, payload: object) -> tuple[date, dict[str, object]] | str:
