@@ -186,7 +186,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
     }
 
     // 首頁就是法規諮詢的新對話：側欄只有「新增對話」這一個入口指向它，導覽裡不再列第二個「法規諮詢」；
-    // 功能名稱改成對話清單的標題（「新增對話」開的就是這一區的對話），頂欄在首頁也寫同一個詞。
+    // 對話清單的標題是「全部」，頂欄在首頁寫它所屬的功能「法規諮詢」。
     [Fact]
     public async Task TheHomeIsTheNewChatActionAndTheHistoryIsTitledByTheFeatureItBelongsTo()
     {
@@ -203,7 +203,7 @@ public sealed partial class PortalShellTests(PlatformFactory factory)
         Assert.Equal(1, Regex.Count(side, $"href=\"{Regex.Escape(prefix)}\""));
         Assert.Contains($"<a class=\"ep-side-new-chat\" href=\"{prefix}\"", side, StringComparison.Ordinal);
         Assert.DoesNotContain(SideNavHrefs(home.Html), href => href == prefix);
-        Assert.Matches("<summary class=\"ep-history-heading ep-history-summary\">\\s*<span>法規諮詢</span>", side);
+        Assert.Matches("<summary class=\"ep-history-heading ep-history-summary\">\\s*<span>全部</span>", side);
 
         var stageStart = home.Html.IndexOf("class=\"ep-portal-stage\"", StringComparison.Ordinal);
         var stageTop = Regex.Match(home.Html[stageStart..], "<header class=\"ep-shell-top\".*?</header>", RegexOptions.Singleline).Value;

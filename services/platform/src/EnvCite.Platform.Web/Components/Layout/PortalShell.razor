@@ -65,14 +65,14 @@
                         }
                     </div>
 
-                    @* 最近的對話：標題是它所屬的功能（法規諮詢）的可摺疊清單（沒有日期分組；釘選的排最前、帶圖釘），占去側欄剩下的高度，只有它自己捲動。
+                    @* 最近的對話：標題「全部」的可摺疊清單（沒有日期分組；釘選的排最前、帶圖釘），占去側欄剩下的高度，只有它自己捲動。
                        「新增對話」開的就是這一區的對話。還沒有對話時畫引導提示（ep-history-empty）。 *@
                     @if (Recent.Count > 0 || !string.IsNullOrEmpty(HistoryHref))
                     {
                         <section class="@(Recent.Count > 0 ? "ep-recent" : "ep-history-empty")" aria-label="@L["最近的對話"]">
                             <details class="ep-history-details" open>
                                 <summary class="ep-history-heading ep-history-summary">
-                                    <span>@L["法規諮詢"]</span>
+                                    <span>@L["全部"]</span>
                                     <NavIcon Path="@Icons.Material.Outlined.ChevronRight" />
                                 </summary>
                                 @if (Recent.Count > 0)
