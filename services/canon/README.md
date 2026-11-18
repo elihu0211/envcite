@@ -237,6 +237,7 @@ uv run --env-file .env canon pipeline --models models.toml --check   # 探測模
 | 端到端與彙總 | `tools/grounding_check_eval.py` → `tools/natural_answer_eval.py --input …` | 量測實際拒答與引用表現，並重新彙總拒答分類 |
 | 事實抽取 | `tools/fact_extraction_eval.py --out eval/results/fact-extraction-<日期> [--candidates K] [--extractor <模型>] [--seed N] [--split dev\|test]`（需資料庫、嵌入與模型端點） | 量模型能否把問句裡明說的事實對到概念代碼、不憑空填值：標準答案由已確認陳述的要件結構產生，問句由另一家族的模型改寫，候選概念依問句由嵌入檢索（不依標準答案挑），另一家族的模型事後稽核，全程無人工標註；資料庫綱要落後於程式時只量抽取，不跑推理機 |
 | 概念沿用 | `tools/concept_reuse_eval.py --out eval/results/concept-reuse-<日期> [--units N] [--seed N]`（需資料庫、嵌入與模型端點） | 量抽取者宣告概念前先看到既有概念，是否少產生意思重複的新概念：取已有標註的法規裡還沒有陳述的單元，用不給與給既有概念兩種提示各抽一次（不寫入），宣告的概念分沿用、意思重複（另一個家族的模型判斷）與真正新的；全程無人工標註 |
+| 概念重複 | `tools/concept_twins.py --out eval/results/concept-twins-<日期>`（需資料庫、嵌入與模型端點） | 量方案裡「意思相同、名稱不同」的既有概念有多少、牽動多少陳述：被陳述用到的概念各取名稱最相近的幾個，兩位不同家族的模型都判為同一個法律上的事實或要件才算；只量、不改資料庫 |
 | 效能基準 | `tools/load_bench.py run <golden.yaml> --split … (--pg-container … \| --skip-cold)` | 以 [k6](https://grafana.com/docs/k6/) 量測 `search`／`ground`／`evaluate` 延遲與吞吐階梯 |
 
 #### 原生題庫
