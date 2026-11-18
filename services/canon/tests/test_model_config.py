@@ -29,6 +29,7 @@ from canon.verification.model_gates.panel import PanelGate
 from canon.verification.model_gates.roundtrip import RoundtripGate
 from canon.verification.models import ChatCompletionsModel, Model
 from canon.verification.run import main
+from canon.verification.serving_models import load_fact_extractor, parse_fact_extractor
 from tests.test_chat_adapter import Endpoint
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "models.toml"
@@ -92,6 +93,28 @@ def test_every_declared_model_is_available_even_when_no_role_uses_it(tmp_path: P
 
     assert sorted(declared) == ["a", "b", "spare"]
     assert declared["spare"].family == "fam-s"
+
+
+def test_the_fact_extractor_is_the_model_the_section_names() -> None:
+    model = load_fact_extractor(EXAMPLE, ENV)
+
+    assert model is not None
+    assert model.name == "qwen:ornith-35b"
+    assert (model.timeout, model.max_retries) == (30.0, 1)
+
+
+def test_no_fact_extractor_section_means_no_extraction() -> None:
+    assert parse_fact_extractor(MINIMAL, ENV) is None
+
+
+def test_the_fact_extractor_must_name_a_declared_model() -> None:
+    with pytest.raises(ConfigError, match="not defined"):
+        parse_fact_extractor(MINIMAL + '\n[fact_extractor]\nmodel = "nope"\n', ENV)
+
+
+def test_the_fact_extractor_section_takes_only_a_model() -> None:
+    with pytest.raises(ConfigError, match="unknown"):
+        parse_fact_extractor(MINIMAL + '\n[fact_extractor]\nmodel = "a"\nextra = 1\n', ENV)
 
 
 def test_verifiers_are_listed_once_in_the_order_their_roles_come() -> None:

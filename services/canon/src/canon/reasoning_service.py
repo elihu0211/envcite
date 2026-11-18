@@ -15,7 +15,9 @@ import psycopg.errors
 from opentelemetry.metrics import Meter
 
 from canon import annotation_read, errors, identifiers
+from canon.case_facts import CaseFactExtractor, Unavailable
 from canon.clock import Today
+from canon.embedding import EmbeddingError
 from canon.endpoints.common import log_call
 from canon.identifiers import law_key
 from canon.reasoning.engine import Result
@@ -29,6 +31,7 @@ from canon.reasoning_codec.disposition import DispositionInput
 from canon.store.ports import LawReader, ReadConnections
 from canon.store.records import LANGUAGE
 from canon.telemetry import ReasoningMetrics
+from canon.verification.models import ModelError
 from envcite.canon.v1 import reasoning_pb2 as pb
 from envcite.canon.v1 import reasoning_pb2_grpc
 from envcite_grpc import remaining_seconds
@@ -40,12 +43,18 @@ _OUTCOMES = {
     errors.INVALID_REQUEST: "invalid",
     errors.BUSY: "busy",
     errors.EVALUATION_TIMEOUT: "deadline",
+    errors.EXTRACTOR_NOT_CONFIGURED: "unconfigured",
+    errors.EXTRACTION_UNAVAILABLE: "unavailable",
 }
 
 #: 同時進行的 `Evaluate` 數。
 EVALUATE_SLOTS = 2
 #: 呼叫沒有期限時，等名額的上限（秒）。
 SLOT_WAIT_SECONDS = 5.0
+#: 同時進行的 `ExtractFacts` 數：每個占一次模型呼叫（數秒），上限讓排隊有界；要小於工作執行緒數。
+EXTRACT_SLOTS = 3
+#: 問句字數上限。
+MAX_QUESTION_CHARS = 2000
 
 
 class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
@@ -58,12 +67,16 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
         evaluate_slots: int = EVALUATE_SLOTS,
         meter: Meter | None = None,
         today: Today = date.today,
+        extractor: CaseFactExtractor | None = None,
+        extract_slots: int = EXTRACT_SLOTS,
     ) -> None:
         self._today = today
         self._connections = connections
         self._laws = laws
         self._metrics = ReasoningMetrics(meter)
         self._slots = threading.BoundedSemaphore(evaluate_slots)
+        self._extractor = extractor
+        self._extract_slots = threading.BoundedSemaphore(extract_slots)
 
     @errors.maps_errors
     def ListStatements(
@@ -99,6 +112,84 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
             raise
         finally:
             self._metrics.duration.record(time.monotonic() - started, {"outcome": outcome})
+
+    @errors.maps_errors
+    def ExtractFacts(
+        self, request: pb.ExtractFactsRequest, context: grpc.ServicerContext
+    ) -> pb.ExtractFactsResponse:
+        """把問句裡明說的事實對到概念代碼；有自己的並行名額與期限，失敗讓呼叫端退回現行做法。"""
+        started = time.monotonic()
+        outcome = "error"
+        try:
+            response = self._extract_call(request, context)
+            outcome = "ok"
+            self._metrics.extracted_facts.record(len(response.facts))
+            return response
+        except errors.ServiceError as error:
+            outcome = _OUTCOMES.get(error.reason, "error")
+            raise
+        finally:
+            self._metrics.extract_duration.record(time.monotonic() - started, {"outcome": outcome})
+
+    def _extract_call(
+        self, request: pb.ExtractFactsRequest, context: grpc.ServicerContext
+    ) -> pb.ExtractFactsResponse:
+        # 問句是客戶的案件內容：日誌只記字數。
+        log_call(log, context, "ExtractFacts", f"chars={len(request.question)}")
+        if self._extractor is None:
+            raise errors.ServiceError(
+                grpc.StatusCode.FAILED_PRECONDITION,
+                errors.EXTRACTOR_NOT_CONFIGURED,
+                "no fact extraction model is configured",
+            )
+        v = errors.Validator()
+        if not request.question.strip():
+            v.add("question", errors.EMPTY, "question must not be empty")
+        elif len(request.question) > MAX_QUESTION_CHARS:
+            v.add(
+                "question",
+                errors.OUT_OF_RANGE,
+                f"question must not exceed {MAX_QUESTION_CHARS} characters",
+            )
+        v.check()
+
+        budget = remaining_seconds(context)
+        if not self._extract_slots.acquire(timeout=SLOT_WAIT_SECONDS if budget is None else budget):
+            raise errors.ServiceError(
+                grpc.StatusCode.RESOURCE_EXHAUSTED, errors.BUSY, "extraction capacity is in use"
+            )
+        try:
+            if not context.is_active():  # 等名額的時候呼叫端已經走了
+                raise errors.ServiceError(
+                    grpc.StatusCode.CANCELLED, errors.EVALUATION_TIMEOUT, "call is no longer active"
+                )
+            try:
+                extraction = self._extractor.extract(
+                    lambda: self._connections.read_connection(timeout=remaining_seconds(context)),
+                    request.question,
+                    self._today(),
+                )
+            except (ModelError, EmbeddingError, Unavailable) as error:
+                log.warning("ExtractFacts unavailable: %s", type(error).__name__)
+                raise errors.ServiceError(
+                    grpc.StatusCode.UNAVAILABLE,
+                    errors.EXTRACTION_UNAVAILABLE,
+                    "the extraction or embedding endpoint did not answer",
+                ) from error
+        finally:
+            self._extract_slots.release()
+        return pb.ExtractFactsResponse(
+            facts=[
+                pb.ExtractedFact(
+                    concept=f.concept,
+                    name=extraction.names[f.concept],
+                    value=_fact_value(f.value),
+                    quote=f.quote,
+                )
+                for f in extraction.facts
+            ],
+            candidates=extraction.candidates,
+        )
 
     def _evaluate_call(
         self, request: pb.EvaluateRequest, context: grpc.ServicerContext
@@ -232,3 +323,11 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                 errors.EVALUATION_TIMEOUT,
                 "evaluation did not finish within the deadline",
             ) from error
+
+
+def _fact_value(value: bool | float) -> pb.FactValue:
+    """旗標或數字；數字以十進位文字表示（同契約的 `Decimal`），不用浮點的科學記號。"""
+    if isinstance(value, bool):
+        return pb.FactValue(flag=value)
+    text = f"{value:f}".rstrip("0").rstrip(".")
+    return pb.FactValue(number=pb.Decimal(value=text or "0"))

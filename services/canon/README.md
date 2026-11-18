@@ -165,7 +165,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 
 ### 模型配置（`models.toml`）
 
-端點、角色、嵌入模型與相關性判定者集中於 [`models.toml`](models.toml)（標註管線以 `--models` 指定，伺服器與同步由 `ENVCITE_CANON_MODELS` 指定）。金鑰不入檔，由端點名推導（`ENVCITE_<端點名大寫>_API_KEY`），依序自環境變數與系統鑰匙圈解析，規則見 [`CONFIGURATION.md`](../../CONFIGURATION.md)。
+端點、角色、嵌入模型、相關性判定者與問答的案件事實抽取模型（`[fact_extractor]`，指名一個 `[model.*]`；沒有這一段就沒有 `ExtractFacts`）集中於 [`models.toml`](models.toml)（標註管線以 `--models` 指定，伺服器與同步由 `ENVCITE_CANON_MODELS` 指定）。金鑰不入檔，由端點名推導（`ENVCITE_<端點名大寫>_API_KEY`），依序自環境變數與系統鑰匙圈解析，規則見 [`CONFIGURATION.md`](../../CONFIGURATION.md)。
 
 ```bash
 uv run --env-file .env canon pipeline --models models.toml --check   # 探測模型設定，不連資料庫

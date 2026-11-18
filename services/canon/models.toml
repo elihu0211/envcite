@@ -46,6 +46,21 @@ endpoint = "llm"
 name = "gemma-4-31b"
 family = "google"
 
+# 問答的案件事實抽取（canon serve 讀）：指名一個 [model.*]。沒有這一段就沒有 ExtractFacts。選模型的
+# 依據是 eval/results/fact-extraction-honest-2026-11-18。
+[fact_extractor]
+model = "ornith_serving"
+
+# 與 ornith 是同一個模型。另開一個宣告，是因為案件事實抽取在請求路徑上呼叫它：逾時要短、重試要少；
+# 相關性判定者用的 ornith 不能被這兩個值拖累。它不屬任何角色，不進標註管線。
+[model.ornith_serving]
+endpoint = "llm"
+name = "ornith-35b"
+family = "qwen"
+max_tokens = 4096
+timeout = 30
+max_retries = 1
+
 # 語意檢索臂的嵌入模型（canon serve、canon sync 經 ENVCITE_CANON_MODELS 讀這一段）。
 # 沿用上面的端點；沒有這一段時只用字面臂。換維度不是 1024 的模型要配一支遷移。
 [embedding]

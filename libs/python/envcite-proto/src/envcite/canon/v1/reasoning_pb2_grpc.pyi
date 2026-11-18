@@ -51,6 +51,17 @@ class ReasoningServiceStub:
     """依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
     期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
     """
+    ExtractFacts: _grpc.UnaryUnaryMultiCallable[_reasoning_pb2.ExtractFactsRequest, _reasoning_pb2.ExtractFactsResponse]
+    """把問句裡明說的事實對到概念代碼，輸出可直接放進 EvaluateRequest.facts。唯讀，可安全重試。
+
+    抽取要呼叫語言模型，比一般查詢慢（數秒）。期限是預算，並行名額滿則回
+    RESOURCE_EXHAUSTED（BUSY）。沒有設定抽取模型回 FAILED_PRECONDITION
+    （EXTRACTOR_NOT_CONFIGURED）；模型或嵌入端點失敗、逾時回 UNAVAILABLE
+    （EXTRACTION_UNAVAILABLE）：呼叫端退回沒有案件事實的做法。
+
+    問句是客戶的案件內容：日誌與指標都不記它。模型的輸出不被信任：只有通過程式檢查的事實出去，
+    即概念在候選集、型別相符，原文片段與數字確實在問句裡；沒通過的丟掉，不補值。
+    """
 
 @_typing.type_check_only
 class ReasoningServiceAsyncStub(ReasoningServiceStub):
@@ -74,6 +85,17 @@ class ReasoningServiceAsyncStub(ReasoningServiceStub):
     Evaluate: _aio.UnaryUnaryMultiCallable[_reasoning_pb2.EvaluateRequest, _reasoning_pb2.EvaluateResponse]  # type: ignore[assignment]
     """依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
     期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
+    """
+    ExtractFacts: _aio.UnaryUnaryMultiCallable[_reasoning_pb2.ExtractFactsRequest, _reasoning_pb2.ExtractFactsResponse]  # type: ignore[assignment]
+    """把問句裡明說的事實對到概念代碼，輸出可直接放進 EvaluateRequest.facts。唯讀，可安全重試。
+
+    抽取要呼叫語言模型，比一般查詢慢（數秒）。期限是預算，並行名額滿則回
+    RESOURCE_EXHAUSTED（BUSY）。沒有設定抽取模型回 FAILED_PRECONDITION
+    （EXTRACTOR_NOT_CONFIGURED）；模型或嵌入端點失敗、逾時回 UNAVAILABLE
+    （EXTRACTION_UNAVAILABLE）：呼叫端退回沒有案件事實的做法。
+
+    問句是客戶的案件內容：日誌與指標都不記它。模型的輸出不被信任：只有通過程式檢查的事實出去，
+    即概念在候選集、型別相符，原文片段與數字確實在問句裡；沒通過的丟掉，不補值。
     """
 
 class ReasoningServiceServicer(metaclass=_abc_1.ABCMeta):
@@ -107,6 +129,23 @@ class ReasoningServiceServicer(metaclass=_abc_1.ABCMeta):
     ) -> _typing.Union[_reasoning_pb2.EvaluateResponse, _abc.Awaitable[_reasoning_pb2.EvaluateResponse]]:
         """依有效的陳述評估一個案件。唯讀，可安全重試。期限是預算：評估受其約束，
         期限內拿不到執行名額則回 RESOURCE_EXHAUSTED（BUSY）。
+        """
+
+    @_abc_1.abstractmethod
+    def ExtractFacts(
+        self,
+        request: _reasoning_pb2.ExtractFactsRequest,
+        context: _ServicerContext,
+    ) -> _typing.Union[_reasoning_pb2.ExtractFactsResponse, _abc.Awaitable[_reasoning_pb2.ExtractFactsResponse]]:
+        """把問句裡明說的事實對到概念代碼，輸出可直接放進 EvaluateRequest.facts。唯讀，可安全重試。
+
+        抽取要呼叫語言模型，比一般查詢慢（數秒）。期限是預算，並行名額滿則回
+        RESOURCE_EXHAUSTED（BUSY）。沒有設定抽取模型回 FAILED_PRECONDITION
+        （EXTRACTOR_NOT_CONFIGURED）；模型或嵌入端點失敗、逾時回 UNAVAILABLE
+        （EXTRACTION_UNAVAILABLE）：呼叫端退回沒有案件事實的做法。
+
+        問句是客戶的案件內容：日誌與指標都不記它。模型的輸出不被信任：只有通過程式檢查的事實出去，
+        即概念在候選集、型別相符，原文片段與數字確實在問句裡；沒通過的丟掉，不補值。
         """
 
 def add_ReasoningServiceServicer_to_server(servicer: ReasoningServiceServicer, server: _typing.Union[_grpc.Server, _aio.Server]) -> None: ...

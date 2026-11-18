@@ -29,7 +29,16 @@ from canon.settings import ModelsSettings
 from canon.verification.models import AnthropicModel, ChatCompletionsModel, Model
 
 ROLES = ("extractor", "roundtrip", "independent_test", "panel")
-TOP_LEVEL = ("endpoint", "model", "roles", "embedding", "reranker", "ocr", "relevance")
+TOP_LEVEL = (
+    "endpoint",
+    "model",
+    "roles",
+    "embedding",
+    "reranker",
+    "ocr",
+    "relevance",
+    "fact_extractor",
+)
 
 
 class ConfigError(ValueError):
@@ -59,7 +68,8 @@ class ModelSet:
         return (self.extractor, *self.verifiers)
 
 
-def _only(table: Mapping[str, object], allowed: set[str], where: str) -> None:
+def check_keys(table: Mapping[str, object], allowed: set[str], where: str) -> None:
+    """表裡有不認得的鍵就 `ConfigError`（`where` 是表在檔裡的位置）。"""
     extra = set(table) - allowed
     if extra:
         raise ConfigError(f"{where}: unknown keys {sorted(extra)}")
@@ -133,15 +143,16 @@ def secret_name(endpoint: str) -> str:
     return f"ENVCITE_{endpoint.upper()}_API_KEY"
 
 
-def _endpoint(
+def resolve_endpoint(
     name: str,
     table: Mapping[str, Any],
     env: Mapping[str, str],
     keychain: Callable[[str], str | None],
 ) -> tuple[str, str]:
+    """一個端點表的（網址，金鑰）；金鑰依端點名推導，解不出來是 `ConfigError`。"""
     where = f"endpoint.{name}"
     secret = secret_name(name)
-    _only(table, {"base_url"}, where)
+    check_keys(table, {"base_url"}, where)
     base = table.get("base_url")
     if not isinstance(base, str) or not base:
         raise ConfigError(f"{where}: base_url is required")
@@ -151,13 +162,14 @@ def _endpoint(
         raise ConfigError(f"{where}: {e}") from None
 
 
-def _model(
+def build_model(
     name: str,
     table: Mapping[str, Any],
     endpoints: Mapping[str, tuple[str, str]],
 ) -> Model:
+    """一個 `[model.*]` 表建成的模型；端點須已解析。"""
     where = f"model.{name}"
-    _only(
+    check_keys(
         table,
         {
             "provider",
@@ -166,6 +178,7 @@ def _model(
             "family",
             "max_tokens",
             "max_retries",
+            "timeout",
             "constrained_extraction",
         },
         where,
@@ -188,6 +201,8 @@ def _model(
         raise ConfigError(f"{where}: family is required (it is what independence is judged on)")
     base, key = endpoints[endpoint]
     extra: dict[str, Any] = {k: int(table[k]) for k in ("max_tokens", "max_retries") if k in table}
+    if "timeout" in table:
+        extra["timeout"] = float(table["timeout"])
     constrained = table.get("constrained_extraction", False)
     if not isinstance(constrained, bool):
         raise ConfigError(f"{where}: constrained_extraction must be true or false")
@@ -208,9 +223,10 @@ def _models(
 ) -> dict[str, Model]:
     """`[model.*]` 宣告的全部模型，名稱 → 模型。"""
     endpoints = {
-        str(n): _endpoint(str(n), t, env, keychain) for n, t in (doc.get("endpoint") or {}).items()
+        str(n): resolve_endpoint(str(n), t, env, keychain)
+        for n, t in (doc.get("endpoint") or {}).items()
     }
-    return {str(n): _model(str(n), t, endpoints) for n, t in (doc.get("model") or {}).items()}
+    return {str(n): build_model(str(n), t, endpoints) for n, t in (doc.get("model") or {}).items()}
 
 
 def load_declared(
@@ -225,7 +241,7 @@ def load_declared(
         doc = tomllib.loads(path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, set(TOP_LEVEL), "top level")
+    check_keys(doc, set(TOP_LEVEL), "top level")
     return _models(doc, env, keychain)
 
 
@@ -245,10 +261,10 @@ def parse(
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, set(TOP_LEVEL), "top level")
+    check_keys(doc, set(TOP_LEVEL), "top level")
     models = _models(doc, env, keychain)
     roles = doc.get("roles") or {}
-    _only(roles, set(ROLES), "roles")
+    check_keys(roles, set(ROLES), "roles")
     missing = [r for r in ROLES if r not in roles]
     if missing:
         raise ConfigError(f"roles: missing {missing}")
@@ -294,11 +310,11 @@ def _declared(
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, set(TOP_LEVEL), "top level")
+    check_keys(doc, set(TOP_LEVEL), "top level")
     table = doc.get(section)
     if table is None:
         return None
-    _only(table, {"endpoint", "name"}, section)
+    check_keys(table, {"endpoint", "name"}, section)
     name = table.get("name")
     if not isinstance(name, str) or not name:
         raise ConfigError(f"{section}: name is required")
@@ -306,7 +322,7 @@ def _declared(
     endpoints = doc.get("endpoint") or {}
     if endpoint not in endpoints:
         raise ConfigError(f"{section}: endpoint {endpoint!r} is not defined")
-    base, key = _endpoint(endpoint, endpoints[endpoint], env, keychain)
+    base, key = resolve_endpoint(endpoint, endpoints[endpoint], env, keychain)
     return name, base, key
 
 
@@ -427,11 +443,11 @@ def parse_judges(
         doc = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"not valid TOML: {e}") from e
-    _only(doc, set(TOP_LEVEL), "top level")
+    check_keys(doc, set(TOP_LEVEL), "top level")
     table = doc.get("relevance")
     if table is None:
         raise ConfigError("relevance: no judges declared")
-    _only(table, {"judges", "system_families"}, "relevance")
+    check_keys(table, {"judges", "system_families"}, "relevance")
     names = table.get("judges")
     if not isinstance(names, list) or len(names) < 2:
         raise ConfigError("relevance.judges: at least two model names")
@@ -442,14 +458,14 @@ def parse_judges(
     endpoints_doc = doc.get("endpoint") or {}
     wanted = {str(tables[n].get("endpoint")) for n in names if n in tables}
     endpoints = {
-        str(n): _endpoint(str(n), t, env, keychain)
+        str(n): resolve_endpoint(str(n), t, env, keychain)
         for n, t in endpoints_doc.items()
         if str(n) in wanted
     }
     for n in names:
         if n not in tables:
             raise ConfigError(f"relevance.judges: model {n!r} is not defined")
-    judges = tuple(_model(str(n), tables[n], endpoints) for n in names)
+    judges = tuple(build_model(str(n), tables[n], endpoints) for n in names)
     system = set(declared)
     families = [j.family for j in judges]
     if len(set(families)) != len(families):
