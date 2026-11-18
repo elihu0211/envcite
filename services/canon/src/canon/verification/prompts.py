@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from jinja2 import Environment, PackageLoader, StrictUndefined
 
 from canon.claims.enums import LEGAL_EFFECTS, TRIGGER_KINDS
+from canon.verification.context import KnownConcept
 
 _env = Environment(
     loader=PackageLoader("canon.verification", "templates"),
@@ -50,8 +51,10 @@ def extract(
     defined: Mapping[str, str] | None,
     punished_by: Sequence[str],
     review: Sequence[str],
+    known: Sequence[KnownConcept] = (),
 ) -> str:
-    """抽取一個條文單元的提示；`context` 是上層條文，`review` 是重抽時審查者的意見。"""
+    """抽取一個條文單元的提示；`context` 是上層條文，`review` 是重抽時審查者的意見，
+    `known` 是方案裡與這個單元相關的既有概念。"""
     return _render(
         "extract.j2",
         law=law,
@@ -59,6 +62,7 @@ def extract(
         text=text,
         context=context,
         defined=defined,
+        known_concepts=known,
         punished_by=punished_by,
         notes=review,
         effects=LEGAL_EFFECTS,

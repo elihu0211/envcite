@@ -34,7 +34,7 @@ from canon.verification.checks.shape import (
     statements_of,
     tidy,
 )
-from canon.verification.context import ancestors_text
+from canon.verification.context import ancestors_text, known_concepts
 from canon.verification.jsonutil import object_from
 from canon.verification.models import Model, ModelError
 from canon.verification.statements_format import complete
@@ -270,6 +270,7 @@ def extract_unit(
         defined=defined,
         punished_by=punished_by,
         review=review,
+        known=known_concepts(conn, scheme[0], f"{context}\n{text}"),
     )
     try:
         raw = complete(model, prompt)

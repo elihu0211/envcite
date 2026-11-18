@@ -34,3 +34,13 @@
 
 {% endif %}
 {% endmacro %}
+
+{% macro known(concepts) %}
+{% if concepts %}
+本方案已有的概念（代碼｜名稱）。條文裡的意思與其中一個相同，就用它的代碼與名稱宣告（用到仍要列在 concepts，代碼與名稱照清單抄），不要另取新代碼或換個名稱；清單裡沒有的意思才宣告新概念，新概念的意思也要與清單裡任何一個都不同：
+{% for c in concepts %}
+- {{ c.code }}｜{{ c.name }}
+{% endfor %}
+
+{% endif %}
+{% endmacro %}

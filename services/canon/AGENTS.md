@@ -132,6 +132,7 @@ uv run --env-file .env canon serve
 - **形狀與語意邊界**：
   - 抽取者輸出不可信，形狀問題（如規範句引文缺助動詞、引文停在並列行為前）送修復迴圈，修不好只丟該陳述，不連累同單元其餘陳述；義務引文漏涵蓋期限／對象／限定語或借用本法泛稱（約定 G）送修復但不丟棄。新增檢查須放進 `verification/checks/` 並接進修復迴圈。
   - **主體與上位條件由程式決定**（`verification/subject.py`、`carry.py`）：主體非原文行為人時記為 `statement_slot.unstated`；上位條件子句未涵蓋則補為 `statement_condition.carried`（概念代碼 `ctx_` 加原文雜湊）。兩者形狀由 DB CHECK 與觸發器強制，模型擅自標記的旗標於 `tidy` 清除。
+  - **宣告概念前先看既有的**：抽取提示附上方案裡與單元文字相關的既有概念（`verification/context.py` 的 `known_concepts`：名稱的字雙連多半在單元文字裡，字面比對、不用嵌入，同一段文字永遠得到同一份清單，上限 40），請抽取者意思相同就沿用、清單沒有才宣告新概念；同名由載入器再保證一次（§3 概念的身分）。沿用是否用對沒有量，靠後面的閘門與評審。
   - **提示詞**：統一由 `verification/templates/*.j2` 透過 `prompts.py` 渲染，領域約定集中於 `conventions.j2`。
 - **重抽**：待重抽單元由視圖 `annotation.reextraction_due` 依資料推得，輪數上限由 `extraction_attempt.round` 的 CHECK 強制，中斷重跑可自動收斂。
 - **管線執行**：每個陳述獨立 commit，以 PostgreSQL 諮詢鎖保證同時只跑一個。保留樣本評估只計第一次看到的法規，不報準確度。

@@ -1,0 +1,15 @@
+{
+ "units": 26,
+ "without": {
+  "declared": 90,
+  "duplicate": 9,
+  "reused": 37,
+  "new": 44
+ },
+ "with": {
+  "declared": 112,
+  "new": 13,
+  "reused": 98,
+  "duplicate": 1
+ }
+}
