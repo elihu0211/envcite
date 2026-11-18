@@ -85,6 +85,13 @@ _SOURCES = """
 """
 
 
+_CONCEPT_NAMES = """
+    SELECT DISTINCT ON (concept_code) concept_code, concept_name
+      FROM annotation.conditions_of(%(ids)s::bigint[])
+     WHERE concept_code = ANY(%(codes)s)
+     ORDER BY concept_code, concept_name
+"""
+
 _DEFINITION_SOURCES = """
     SELECT t.id, corpus.version_iri(r.version_id), tk.name,
            coalesce((SELECT array_agg(mk.name ORDER BY mk.name)
@@ -203,6 +210,11 @@ class _DefinitionRow(NamedTuple):
     members: list[str]
 
 
+class _ConceptNameRow(NamedTuple):
+    code: str
+    name: str
+
+
 class _GuidanceRow(NamedTuple):
     issuer: str
     document_no: str
@@ -235,6 +247,19 @@ def definition_sources(
         r.id: (r.version_iri, r.term, r.members)
         for r in fetch(conn, _DEFINITION_SOURCES, params, _DefinitionRow)
     }
+
+
+def concept_names(
+    conn: Conn, statement_ids: Collection[int], codes: Collection[str]
+) -> dict[str, str]:
+    """要件用到的概念的名稱（給人看）：取自陳述的要件本身，所以與推論讀的是同一個概念。
+
+    不在這些陳述的要件裡的代碼（推論自己用的名稱）沒有名稱，呼叫端退回用代碼。
+    """
+    if not statement_ids or not codes:
+        return {}
+    params = {"ids": sorted(statement_ids), "codes": sorted(codes)}
+    return {r.code: r.name for r in fetch(conn, _CONCEPT_NAMES, params, _ConceptNameRow)}
 
 
 def list_statements(conn: Conn, resource_id: int, on: date) -> pb.ListStatementsResponse:

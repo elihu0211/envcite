@@ -90,16 +90,16 @@ public sealed class ConclusionViewTests
     {
         var (html, _, clicked) = await RenderAsync(Block(
         [
-            Item(1, ConclusionVerdict.Undetermined, missing: ["effluent_cod"], assessment: ["serious_harm"]),
+            Item(1, ConclusionVerdict.Undetermined, missing: ["化學需氧量"], assessment: ["情節重大"]),
             Item(2, ConclusionVerdict.Satisfied, codes: ["L1", "L9"]),
         ]));
 
         Assert.Contains("結論 1", html, StringComparison.Ordinal);
         Assert.Contains("結論 2", html, StringComparison.Ordinal);
         Assert.Contains("欠缺的事實", html, StringComparison.Ordinal);
-        Assert.Contains("<code class=\"ep-ans-concept\">effluent_cod</code>", html, StringComparison.Ordinal);
+        Assert.Contains("<span class=\"ep-ans-concept\">化學需氧量</span>", html, StringComparison.Ordinal);
         Assert.Contains("有待主管機關判斷的要件", html, StringComparison.Ordinal);
-        Assert.Contains("<code class=\"ep-ans-concept\">serious_harm</code>", html, StringComparison.Ordinal);
+        Assert.Contains("<span class=\"ep-ans-concept\">情節重大</span>", html, StringComparison.Ordinal);
         Assert.Contains("<button type=\"button\" class=\"ep-cite-inline\"", html, StringComparison.Ordinal);
         Assert.Contains("<span class=\"ep-cite-inline ep-cite-static\">L9</span>", html, StringComparison.Ordinal);
         Assert.Empty(clicked);

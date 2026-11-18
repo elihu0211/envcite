@@ -298,8 +298,11 @@ class ReasoningServicer(reasoning_pb2_grpc.ReasoningServiceServicer):
                         if include_audit
                         else None
                     )
+                    gap_names = annotation_read.concept_names(
+                        conn, ids, outcome_codec.gap_codes(result)
+                    )
                     return outcome_codec.outcome(
-                        result, where, uncovered, used, guidance, decisions, audit_res
+                        result, where, uncovered, used, guidance, decisions, audit_res, gap_names
                     )
 
                 return pb.EvaluateResponse(

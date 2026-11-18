@@ -90,12 +90,15 @@ public sealed record ConclusionBlock(
 /// <summary>問句抽出、通過檢查的一項事實。</summary>
 public sealed record CaseFact(string Concept, string Name, bool? Flag, string? Number, string Quote);
 
-/// <summary>某則陳述的推論結果，連同它所讀條文版本的網址（供對到證據集）。</summary>
+/// <summary>
+/// 某則陳述的推論結果，連同它所讀條文版本的網址（供對到證據集）。欠缺的事實與待判斷的要件是概念的名稱（給人看）；
+/// 概念不在詞彙表裡、沒有名稱時用代碼。
+/// </summary>
 public sealed record StatementConclusion(
     string SourceUri,
     ConclusionVerdict Verdict,
-    IReadOnlyList<string> MissingConcepts,
-    IReadOnlyList<string> NeedsAssessmentConcepts,
+    IReadOnlyList<string> MissingFacts,
+    IReadOnlyList<string> NeedsAssessment,
     IReadOnlyList<PenaltyRange> Penalties);
 
 public sealed record CaseConclusions(IReadOnlyList<StatementConclusion> Items);

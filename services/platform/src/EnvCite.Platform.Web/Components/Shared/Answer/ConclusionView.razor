@@ -26,7 +26,7 @@
                         <span class="ep-ans-sources-label">@L["欠缺的事實"]</span>
                         @foreach (var concept in item.MissingFacts)
                         {
-                            <code class="ep-ans-concept">@concept</code>
+                            <span class="ep-ans-concept">@concept</span>
                         }
                     </p>
                 }
@@ -36,7 +36,7 @@
                         <span class="ep-ans-sources-label">@L["有待主管機關判斷的要件"]</span>
                         @foreach (var concept in item.NeedsAssessment)
                         {
-                            <code class="ep-ans-concept">@concept</code>
+                            <span class="ep-ans-concept">@concept</span>
                         }
                     </p>
                 }

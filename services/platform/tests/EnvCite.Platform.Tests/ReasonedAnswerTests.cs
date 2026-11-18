@@ -73,7 +73,7 @@ public sealed class ReasonedAnswerTests(PlatformFactory factory)
         var item = Assert.Single(conclusion.Items);
         Assert.Equal((1, ConclusionVerdict.Satisfied), (item.No, item.Verdict));
         Assert.Equal(["L1"], item.CitationCodes);
-        Assert.Equal(["effluent_cod"], item.MissingFacts);
+        Assert.Equal(["排放水之化學需氧量"], item.MissingFacts);
         Assert.Equal(
             ["Disgorgement", "Fine", "Order", "Warning"],
             item.Penalties.Select(p => p.Effect).Order(StringComparer.Ordinal));
@@ -97,7 +97,7 @@ public sealed class ReasonedAnswerTests(PlatformFactory factory)
         // 模型看得到結論的編號、依據與欠缺的事實，看不到結論用語；系統提示多一條只准解釋的規則。
         var call = Assert.Single(chat.Calls);
         var user = Assert.Single(call, m => m.Role == ChatRole.User).Text;
-        Assert.Contains("結論 1：依據 [L1]；欠缺事實 effluent_cod", user, StringComparison.Ordinal);
+        Assert.Contains("結論 1：依據 [L1]；欠缺事實 排放水之化學需氧量", user, StringComparison.Ordinal);
         Assert.All(ConclusionTerms.Forbidden, word => Assert.DoesNotContain(word, user.Split("問題：")[0], StringComparison.Ordinal));
         Assert.Contains(call, m => m.Role == ChatRole.System && m.Text.Contains("不得寫出結論本身", StringComparison.Ordinal));
 

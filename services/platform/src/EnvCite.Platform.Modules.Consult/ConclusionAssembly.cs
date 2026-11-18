@@ -39,7 +39,7 @@ internal static partial class ConclusionAssembly
             .Select((k, i) => (k.Conclusion, k.Codes, Position: i))
             .OrderBy(k => order[k.Codes[0]])
             .ThenBy(k => k.Position)
-            .Select((k, i) => new Conclusion(i + 1, k.Conclusion.Verdict, k.Codes, k.Conclusion.MissingConcepts, k.Conclusion.NeedsAssessmentConcepts, k.Conclusion.Penalties))
+            .Select((k, i) => new Conclusion(i + 1, k.Conclusion.Verdict, k.Codes, k.Conclusion.MissingFacts, k.Conclusion.NeedsAssessment, k.Conclusion.Penalties))
             .ToList();
         IReadOnlyList<UsedFact> used = [.. facts.Select(f => new UsedFact(f.Concept, f.Name, f.Flag, f.Number, f.Quote))];
         return new ConclusionBlock(items, used, asOf, asOfAssumed, omitted);

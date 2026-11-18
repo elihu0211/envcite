@@ -311,7 +311,8 @@ public sealed record PermitGapDto(long StatementId, string Permit, string Concep
 public sealed record FineIntervalDto(long MinAmount, long MaxAmount);
 
 /// <summary>陳述需要的一個概念。</summary>
-public sealed record GapDto(long StatementId, string Concept);
+/// <param name="Name">概念的名稱，給人看；概念不在詞彙表裡（推論自己用的名稱）時是 <c>null</c>，這時用 <paramref name="Concept"/>。</param>
+public sealed record GapDto(long StatementId, string Concept, string? Name = null);
 
 /// <param name="Concept">矛盾事實所涉的概念，或矛盾的許可種類。</param>
 /// <param name="ConditionId">授權解析失敗或認定方式有問題的要件。</param>

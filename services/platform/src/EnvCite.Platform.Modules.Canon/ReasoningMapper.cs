@@ -167,9 +167,9 @@ internal static class ReasoningMapper
             [.. p.TriggeredBy.Select(t => new SanctionTriggerDto(t.StatementId, Map(t.Kind)))],
             [.. p.SubjectBases.Select(Map)]))],
         o.OneAct is { } one ? new FineIntervalDto(one.MinAmount, one.MaxAmount) : null,
-        [.. o.Missing.Select(g => new GapDto(g.StatementId, g.Concept))],
-        [.. o.NeedsAssessment.Select(g => new GapDto(g.StatementId, g.Concept))],
-        [.. o.AssessmentUsed.Select(g => new GapDto(g.StatementId, g.Concept))],
+        [.. o.Missing.Select(Map)],
+        [.. o.NeedsAssessment.Select(Map)],
+        [.. o.AssessmentUsed.Select(Map)],
         [.. o.Problems.Select(p => new ProblemDto(
             Map(p.Kind), p.SubjectCase == Problem.SubjectOneofCase.Concept ? p.Concept : null,
             p.SubjectCase == Problem.SubjectOneofCase.ConditionId ? p.ConditionId : null))],
@@ -235,6 +235,8 @@ internal static class ReasoningMapper
         LawIdentifiers.ToDto(l.CommandIdentifier), NullIfEmpty(l.CitedLawName), NullIfEmpty(l.CitedPath),
         l.Identifier is null ? null : LawIdentifiers.ToDto(l.Identifier),
         NullIfEmpty(l.VersionIri), l.Gap == DelegationGap.Unspecified ? null : Map(l.Gap));
+
+    private static GapDto Map(Gap g) => new(g.StatementId, g.Concept, NullIfEmpty(g.Name));
 
     private static string? NullIfEmpty(string value) => value.Length > 0 ? value : null;
 

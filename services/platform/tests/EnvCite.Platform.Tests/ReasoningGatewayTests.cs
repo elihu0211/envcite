@@ -62,6 +62,7 @@ public sealed class ReasoningGatewayTests(PlatformFactory factory)
         Assert.Equal([new SanctionTriggerDto(8, TriggerKindDto.SanctionImposed)], outcome.Penalties[2].TriggeredBy);
         Assert.Equal(LegalEffectDto.Disgorgement, outcome.Penalties[3].Effect);
         Assert.Equal([new PermitGapDto(7, "operating_permit", "effluent_cod")], outcome.MissingPermitLimits);
+        Assert.Equal([new GapDto(7, "effluent_cod", "排放水之化學需氧量")], outcome.Missing);
         Assert.Equal([9L], outcome.SubjectMismatch);
         Assert.Equal(LegalEffectDto.Order, outcome.Penalties[1].Effect);
         Assert.Null(outcome.Penalties[1].MinAmount); // 沒寫額度 = 省略，不是 0
