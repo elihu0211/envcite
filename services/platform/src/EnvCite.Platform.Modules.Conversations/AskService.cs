@@ -41,7 +41,8 @@ internal sealed class AskService(
 
             if (capabilities.AiAnswer)
             {
-                var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(question, asOf, history, progress, cancellationToken);
+                var answered = await scope.Get<IGroundedAnswerer>().AnswerAsync(
+                    question, asOf, history, progress, capabilities.HasModule(ModuleKeys.NormativeReasoning), cancellationToken);
                 return Outcomes.Ok(new AskResult(AskMode.Answer, StatusOf(answered.Status), answered.IsOk ? answered.Value : null));
             }
 

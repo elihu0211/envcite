@@ -43,7 +43,7 @@ internal sealed class ConversationHistory(
             Role = ConversationMessage.AssistantRole,
             Content = turn.Text,
             Document = turn.Document,
-            SchemaVersion = turn.Document is not null ? AnswerJson.CurrentSchemaVersion : null,
+            SchemaVersion = turn.Document is not null ? AnswerJson.SchemaVersionOf(turn.Document) : null,
             // 資料庫只存到微秒：差一個 tick（100 奈秒）會存成同一個時間，讀回來的先後就不確定，接續對話時問答會對調。
             CreatedAt = now.AddMicroseconds(1),
             Outcome = turn.Outcome,
@@ -132,7 +132,7 @@ internal sealed class ConversationHistory(
                 m.Role,
                 m.CreatedAt,
                 m.Content,
-                m.SchemaVersion == AnswerJson.CurrentSchemaVersion ? m.Document : null,
+                AnswerJson.IsReadable(m.SchemaVersion) ? m.Document : null,
                 [.. m.Citations.Select(c => new ConversationCitation(c.Code, c.Label, c.Uri))],
                 m.AsOf,
                 m.Outcome))

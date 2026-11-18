@@ -10,6 +10,9 @@ public sealed class CanonOptions : InternalGrpcClientOptions, ISectionOptions
 
     /// <summary>推論的逾時：要把某日全部有效的陳述 ground 並求解，比查一條法規久得多。</summary>
     public TimeSpan ReasoningTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>問句抽事實的逾時：包一次語言模型呼叫，canon 端另有逾時與名額。</summary>
+    public TimeSpan ExtractTimeout { get; set; } = TimeSpan.FromSeconds(35);
 }
 
 public static class CanonModule
@@ -23,6 +26,7 @@ public static class CanonModule
         services.AddMemoryCache();
         services.AddScoped<ILawSearch, LawSearch>();
         services.AddScoped<CanonGateway>();
+        services.AddScoped<ICaseReasoner, CaseReasoner>();
         services.AddSingleton<ILawCorpusService, LawCorpusService>();
         services.AddSingleton<ICitationArticleService, CitationArticleService>();
         services.AddSingleton<INormativeReasoningService, NormativeReasoningService>();

@@ -11,7 +11,18 @@ namespace EnvCite.Platform.SharedKernel;
 /// <summary>強型別回答文件與 LLM 結構化輸出的共用 JSON 序列化設定。</summary>
 public static class AnswerJson
 {
-    public const short CurrentSchemaVersion = 1;
+    /// <summary>目前寫出的最高版本。版本 2 加了 <see cref="ConclusionBlock"/>；其餘區塊的形狀與版本 1 相同。</summary>
+    public const short CurrentSchemaVersion = 2;
+
+    /// <summary>
+    /// 文件寫入時的版本：含結論區塊的是 2，其餘是 1。舊版程式（滾動更新期間）只認 1，讀到 2 會退回純文字，不會讀壞；
+    /// 沒有新區塊的文件仍寫 1，所以停用推論的環境不產生任何舊程式讀不懂的資料。
+    /// </summary>
+    public static short SchemaVersionOf(AnswerDocument document) =>
+        document.Blocks.Any(b => b is ConclusionBlock) ? CurrentSchemaVersion : (short)1;
+
+    /// <summary>這個版本的文件讀得懂：歷史的 1 與目前的 2。</summary>
+    public static bool IsReadable(short? version) => version is >= 1 and <= CurrentSchemaVersion;
 
     public static JsonSerializerOptions Options { get; } = CreateOptions();
 
@@ -45,6 +56,7 @@ public sealed record AnswerDocument(IReadOnlyList<AnswerBlock> Blocks);
 [JsonDerivedType(typeof(ChecklistBlock), "checklist")]
 [JsonDerivedType(typeof(ComparisonTableBlock), "table")]
 [JsonDerivedType(typeof(WorkflowBlock), "workflow")]
+[JsonDerivedType(typeof(ConclusionBlock), "conclusion")]
 public abstract record AnswerBlock;
 
 public enum CalloutTone
@@ -195,6 +207,10 @@ public static class AnswerDocumentFormatter
                     foreach (var node in workflow.Nodes)
                         AddRange(node.CitationCodes);
                     break;
+                case ConclusionBlock conclusion:
+                    foreach (var item in conclusion.Items)
+                        AddRange(item.CitationCodes);
+                    break;
             }
         }
 
@@ -312,6 +328,16 @@ public static class AnswerDocumentFormatter
                         AppendSuffix(sb, formatCitations(node.CitationCodes));
                     }
 
+                    break;
+                case ConclusionBlock conclusion:
+                    sb.Append(ConclusionTerms.Heading);
+                    foreach (var item in conclusion.Items)
+                    {
+                        sb.Append('\n').Append(CultureInfo.InvariantCulture, $"結論 {item.No}：").Append(ConclusionTerms.Of(item.Verdict));
+                        AppendSuffix(sb, formatCitations(item.CitationCodes));
+                    }
+
+                    sb.Append('\n').Append(ConclusionTerms.Disclaimer);
                     break;
             }
         }

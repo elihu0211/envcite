@@ -44,6 +44,12 @@ public sealed class AnswerOptions : ISectionOptions
 
     /// <summary>前文每則訊息最多幾個字（超過截斷）；答案是長文，不需要整篇帶回去。</summary>
     public int HistoryChars { get; set; } = 600;
+
+    /// <summary>
+    /// 回答案件類問題時，把問句裡明說的事實抽出來、交給推理機，結論以結論區塊呈現（<c>Platform:Answer:Reasoning</c>）。
+    /// 預設關閉；租戶另需啟用規範推論模組。關閉時管線與沒有這個功能時完全一樣。
+    /// </summary>
+    public bool Reasoning { get; set; }
 }
 
 internal sealed class AnswerOptionsValidator : IValidateOptions<AnswerOptions>
@@ -112,6 +118,7 @@ public static class ConsultModule
 #pragma warning restore MEAI001
         services.AddSingleton<AnswerMetrics>();
         services.AddScoped<ConsultGateway>();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IGroundedAnswerer, GroundedAnswerer>();
         return services;
     }
