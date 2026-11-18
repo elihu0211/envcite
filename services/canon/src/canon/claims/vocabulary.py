@@ -25,6 +25,11 @@ class _ConceptRow(NamedTuple):
     id: int
 
 
+class _NamedRow(NamedTuple):
+    id: int
+    code: str
+
+
 class _ExternalRow(NamedTuple):
     external_id: str
 
@@ -65,19 +70,13 @@ def write_concepts(
     )
     if existing is not None and existing.scope_resource_id != scope:
         raise AnnotationError(f"詞彙方案「{scheme.code}」已存在，且適用範圍與文件不同")
+    declared: dict[str, int] = {}
     for c in concepts:
         if "broader" in c.model_fields_set:
             # 詞彙沒有上下位：「甲屬於乙」寫成用語定義（`definitions`），不寫在概念上。
             raise AnnotationError(f"概念「{c.code}」帶了 broader；上下位請寫成用語定義")
-        cid = one(
-            conn,
-            "INSERT INTO vocab.concept (scheme_id, code, name) VALUES (%s, %s, %s)"
-            " ON CONFLICT (scheme_id, code) DO UPDATE SET name = EXCLUDED.name"
-            " RETURNING id",
-            scheme_id,
-            c.code,
-            c.label,
-        )
+        cid = _declare(conn, scheme_id, c.code, c.label)
+        declared[c.code] = cid
         for alt in c.aliases:
             conn.execute(
                 "INSERT INTO vocab.concept_label (concept_id, label, label_kind)"
@@ -85,7 +84,7 @@ def write_concepts(
                 (cid, alt),
             )
         _matches(conn, cid, c.code, c.matches or {})
-    return {
+    known = {
         r.code: r.id
         for r in fetch(
             conn,
@@ -94,6 +93,40 @@ def write_concepts(
             _ConceptRow,
         )
     }
+    return known | declared
+
+
+def _declare(conn: Conn, scheme_id: int, code: str, label: str) -> int:
+    """宣告一個概念，回傳它的 id。概念的身分是（方案, 名稱）：已有同名的概念就沿用，宣告的代碼
+    只是這份文件對它的稱呼；沒有同名的才新建，或把同代碼的既有概念改成這個名稱。"""
+    named = fetch_one(
+        conn,
+        "SELECT id, code FROM vocab.concept WHERE scheme_id = %s AND name = %s",
+        (scheme_id, label),
+        _NamedRow,
+    )
+    coded = fetch_one(
+        conn,
+        "SELECT id FROM vocab.concept WHERE scheme_id = %s AND code = %s",
+        (scheme_id, code),
+        _IdRow,
+    )
+    if named is not None:
+        if coded is not None and coded.id != named.id:
+            raise AnnotationError(
+                f"概念「{code}」要改名為「{label}」，但這個名稱已是概念「{named.code}」"
+            )
+        return named.id
+    if coded is not None:
+        conn.execute("UPDATE vocab.concept SET name = %s WHERE id = %s", (label, coded.id))
+        return coded.id
+    return one(
+        conn,
+        "INSERT INTO vocab.concept (scheme_id, code, name) VALUES (%s, %s, %s) RETURNING id",
+        scheme_id,
+        code,
+        label,
+    )
 
 
 def _matches(conn: Conn, concept_id: int, code: object, matches: Mapping[str, str]) -> None:
