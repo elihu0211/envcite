@@ -1643,6 +1643,12 @@
           },
           "concept": {
             "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

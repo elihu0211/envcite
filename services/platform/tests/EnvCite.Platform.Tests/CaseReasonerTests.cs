@@ -30,12 +30,12 @@ public sealed class CaseReasonerTests
             },
             Missing =
             {
-                new V1.Gap { StatementId = 8, Concept = "burned_area" },
-                new V1.Gap { StatementId = 8, Concept = "burned_area" },
-                new V1.Gap { StatementId = 8, Concept = "open_burning" },
-                new V1.Gap { StatementId = 7, Concept = "other" },
+                new V1.Gap { StatementId = 8, Concept = "burned_area", Name = "燃燒面積" },
+                new V1.Gap { StatementId = 8, Concept = "burned_area", Name = "燃燒面積" },
+                new V1.Gap { StatementId = 8, Concept = "open_burning", Name = "露天燃燒" },
+                new V1.Gap { StatementId = 7, Concept = "liability_basis" },
             },
-            NeedsAssessment = { new V1.Gap { StatementId = 8, Concept = "serious_harm" } },
+            NeedsAssessment = { new V1.Gap { StatementId = 8, Concept = "serious_harm", Name = "情節重大" } },
             Penalties =
             {
                 new V1.PenaltyCandidate
@@ -52,17 +52,30 @@ public sealed class CaseReasonerTests
         Assert.Equal(2, conclusions.Items.Count);
         var violation = conclusions.Items[0];
         Assert.Equal((Art32, ConclusionVerdict.Satisfied), (violation.SourceUri, violation.Verdict));
-        Assert.Equal(["other"], violation.MissingConcepts);
-        Assert.Empty(violation.NeedsAssessmentConcepts);
+        Assert.Equal(["liability_basis"], violation.MissingFacts); // 沒有名稱的概念退回用代碼
+        Assert.Empty(violation.NeedsAssessment);
         Assert.Equal(
             [new PenaltyRange("Fine", 60000, 1000000, Conditional: true, Discretionary: false), new PenaltyRange("Order", null, null, Conditional: false, Discretionary: true)],
             violation.Penalties);
 
         var undetermined = conclusions.Items[1];
         Assert.Equal((Art33, ConclusionVerdict.Undetermined), (undetermined.SourceUri, undetermined.Verdict));
-        Assert.Equal(["burned_area", "open_burning"], undetermined.MissingConcepts);
-        Assert.Equal(["serious_harm"], undetermined.NeedsAssessmentConcepts);
+        Assert.Equal(["燃燒面積", "露天燃燒"], undetermined.MissingFacts);
+        Assert.Equal(["情節重大"], undetermined.NeedsAssessment);
         Assert.Empty(undetermined.Penalties);
+    }
+
+    // 空字串是 proto3 的「沒有」：對外是 null，不是空名稱。
+    [Fact]
+    public void AGapWithoutANameHasNoNameOnTheRestContract()
+    {
+        var outcome = Dto(new V1.Outcome
+        {
+            Missing = { new V1.Gap { StatementId = 7, Concept = "liability_basis" }, new V1.Gap { StatementId = 7, Concept = "cod", Name = "化學需氧量" } },
+        });
+
+        Assert.Equal([new GapDto(7, "liability_basis"), new GapDto(7, "cod", "化學需氧量")], outcome.Missing);
+        Assert.Null(outcome.Missing[0].Name);
     }
 
     [Fact]

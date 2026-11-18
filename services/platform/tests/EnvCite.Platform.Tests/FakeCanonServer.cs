@@ -448,7 +448,7 @@ public sealed class FakeCanonServer : IAsyncDisposable
                 SubjectMismatch = { 9 },
                 MissingPermitLimits = { new PermitGap { StatementId = 7, Permit = "operating_permit", Concept = "effluent_cod" } },
                 OneAct = new FineInterval { MinAmount = 60000, MaxAmount = 1000000 },
-                Missing = { new Gap { StatementId = 7, Concept = "effluent_cod" } },
+                Missing = { new Gap { StatementId = 7, Concept = "effluent_cod", Name = "排放水之化學需氧量" } },
                 Problems =
                 {
                     new Problem { Kind = ProblemKind.ContradictoryFact, Concept = "ph" },

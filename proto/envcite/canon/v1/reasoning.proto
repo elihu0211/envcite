@@ -845,6 +845,10 @@ message FineInterval {
 message Gap {
   int64 statement_id = 1;
   string concept = 2;
+
+  // 概念的名稱，給人看。概念不在詞彙表裡（例如 `liability_basis` 這類推論自己用的名稱）時是空的，
+  // 呼叫端要退回用代碼。
+  string name = 3;
 }
 
 enum ProblemKind {

@@ -2267,17 +2267,23 @@ class Gap(_message.Message):
 
     STATEMENT_ID_FIELD_NUMBER: _builtins.int
     CONCEPT_FIELD_NUMBER: _builtins.int
+    NAME_FIELD_NUMBER: _builtins.int
     statement_id: _builtins.int
     concept: _builtins.str
+    name: _builtins.str
+    """概念的名稱，給人看。概念不在詞彙表裡（例如 `liability_basis` 這類推論自己用的名稱）時是空的，
+    呼叫端要退回用代碼。
+    """
     def __init__(
         self,
         *,
         statement_id: _builtins.int = ...,
         concept: _builtins.str = ...,
+        name: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["concept", b"concept", "statement_id", b"statement_id"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["concept", b"concept", "name", b"name", "statement_id", b"statement_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

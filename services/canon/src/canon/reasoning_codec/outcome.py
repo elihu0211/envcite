@@ -167,8 +167,17 @@ def _penalty(p: Penalty) -> pb.PenaltyCandidate:
     return out
 
 
-def _gaps(rows: Iterable[tuple[int, str]]) -> list[pb.Gap]:
-    return [pb.Gap(statement_id=s, concept=c) for s, c in rows]
+def _gaps(rows: Iterable[tuple[int, str]], names: Mapping[str, str]) -> list[pb.Gap]:
+    return [pb.Gap(statement_id=s, concept=c, name=names.get(c, "")) for s, c in rows]
+
+
+def gap_codes(result: Result) -> set[str]:
+    """推論報缺或需判斷的概念代碼，用來查名稱。"""
+    return {
+        c
+        for gaps in (result.missing, result.needs_judgement, result.judgement_used)
+        for _, c in gaps
+    }
 
 
 def _problem(kind: str, subject: int | str) -> pb.Problem:
@@ -199,20 +208,23 @@ def outcome(
     guidance: Iterable[GuidanceRef] = (),
     decisions: Iterable[DecisionRef] = (),
     audit_result: DispositionAuditResult | None = None,
+    concept_names: Mapping[str, str] | None = None,
 ) -> pb.Outcome:
     """一組推論結果轉成 `Outcome` 訊息。
 
-    陳述的來源版本只列 `sources` 有的；用語定義只列 `definitions` 查得到的。
+    陳述的來源版本只列 `sources` 有的；用語定義只列 `definitions` 查得到的；
+    缺口的概念名稱只填 `concept_names` 有的。
     """
+    gap_names = concept_names or {}
     out = pb.Outcome(
         verdicts=[
             pb.StatementVerdict(statement_id=s, verdict=VERDICT[v])
             for s, v in sorted(result.verdicts.items())
         ],
         penalties=[_penalty(p) for p in result.penalties],
-        missing=_gaps(result.missing),
-        needs_assessment=_gaps(result.needs_judgement),
-        assessment_used=_gaps(result.judgement_used),
+        missing=_gaps(result.missing, gap_names),
+        needs_assessment=_gaps(result.needs_judgement, gap_names),
+        assessment_used=_gaps(result.judgement_used, gap_names),
         problems=[_problem(k, v) for k, v in result.problems],
         unresolved_conflicts=[
             pb.StatementPair(first=a, second=b) for a, b in result.unresolved_conflicts

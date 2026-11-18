@@ -74,8 +74,8 @@ internal sealed class CaseReasoner(
     internal static CaseConclusions Conclusions(OutcomeDto outcome)
     {
         var uri = outcome.Sources.ToDictionary(s => s.StatementId, s => s.Uri);
-        var missing = outcome.Missing.ToLookup(g => g.StatementId, g => g.Concept);
-        var assessment = outcome.NeedsAssessment.ToLookup(g => g.StatementId, g => g.Concept);
+        var missing = outcome.Missing.ToLookup(g => g.StatementId, NameOf);
+        var assessment = outcome.NeedsAssessment.ToLookup(g => g.StatementId, NameOf);
         var penalties = outcome.Penalties.ToLookup(
             p => p.Punishes,
             p => new PenaltyRange(p.Effect.ToString(), p.MinAmount, p.MaxAmount, p.Conditional, p.Discretionary));
@@ -91,6 +91,9 @@ internal sealed class CaseReasoner(
                     [.. penalties[v.StatementId]])),
         ]);
     }
+
+    /// <summary>給人看的名稱；詞彙表裡沒有的概念（推論自己用的名稱）用代碼。</summary>
+    private static string NameOf(GapDto gap) => gap.Name is { Length: > 0 } name ? name : gap.Concept;
 
     internal static ConclusionVerdict Map(VerdictDto verdict) => verdict switch
     {
