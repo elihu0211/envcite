@@ -1,0 +1,88 @@
+{
+ "candidate_concepts": 51,
+ "items": 63,
+ "gold_in_offered_candidates": {
+  "offered": 103,
+  "gold": 109
+ },
+ "fact_level": {
+  "tp": 97,
+  "fp": 20,
+  "fn": 12,
+  "precision": 0.8290598290598291,
+  "recall": 0.8899082568807339,
+  "wrong_value": 0,
+  "extra_concept_vs_gold": 20,
+  "raw_facts": 117,
+  "ungrounded_quote_rejected": 0,
+  "unsupported_by_any_audit": 16,
+  "unsupported_by_all_audits": 3
+ },
+ "downstream_same_verdicts": {
+  "reasoner_ran": true,
+  "scored": 54,
+  "same": 40,
+  "gold_decisive_statements": 35,
+  "recovered": 32,
+  "contradicted": 0,
+  "beyond_gold": 7
+ },
+ "by_variant": {
+  "combined": {
+   "unsupported_facts": 6,
+   "items_with_unsupported": 6,
+   "items": 17,
+   "verbatim_facts": 9,
+   "gold_facts": 54,
+   "with_any_fact": 16,
+   "exact": 4
+  },
+  "full": {
+   "unsupported_facts": 7,
+   "items_with_unsupported": 7,
+   "items": 15,
+   "verbatim_facts": 4,
+   "gold_facts": 24,
+   "with_any_fact": 14,
+   "exact": 10
+  },
+  "negated": {
+   "unsupported_facts": 2,
+   "items_with_unsupported": 2,
+   "items": 14,
+   "verbatim_facts": 5,
+   "gold_facts": 23,
+   "with_any_fact": 13,
+   "exact": 11
+  },
+  "none": {
+   "unsupported_facts": 0,
+   "items_with_unsupported": 0,
+   "items": 9,
+   "verbatim_facts": 0,
+   "gold_facts": 0,
+   "with_any_fact": 0,
+   "exact": 9,
+   "verdict_entries_if_run_anyway": 0
+  },
+  "partial": {
+   "unsupported_facts": 1,
+   "items_with_unsupported": 1,
+   "items": 8,
+   "verbatim_facts": 2,
+   "gold_facts": 8,
+   "with_any_fact": 8,
+   "exact": 7
+  }
+ },
+ "config": {
+  "candidates": 12,
+  "split": "dev",
+  "extractor": "qwen:ornith-35b",
+  "auditors": [
+   "meta:muse-spark-open",
+   "nvidia:nemotron-3.5-super-vl"
+  ]
+ },
+ "reasoner_code_commit": "c7f3cc70"
+}
