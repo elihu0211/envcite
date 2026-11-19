@@ -21,6 +21,14 @@ internal static class PlatformServices
     {
         var services = builder.Services;
 
+        // 框架只在 Development 預設開這兩項；服務圖各環境相同，其餘環境不開，「缺註冊、單例抓住 scoped」
+        // 就留到第一個請求才在執行中失敗。全環境開啟，錯誤改在啟動時以明確的訊息讓 pod 起不來。
+        builder.Host.UseDefaultServiceProvider(options =>
+        {
+            options.ValidateScopes = true;
+            options.ValidateOnBuild = true;
+        });
+
         // 設定只在各模組的 Options 類別讀取（ISectionOptions，啟動時驗證），這裡不碰 IConfiguration。
         services.AddSectionOptions<PlatformHostOptions>();
         builder.AddPlatformObservability();

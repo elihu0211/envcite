@@ -16,7 +16,8 @@
   1. **專案參考邊界**：`SharedKernel` 不參考任何平台專案；`Web` 只參考 `SharedKernel`。
   2. **禁用服務定位器**：除組合根（`Api`、`WebModule.cs`）與 `IServiceProvider` 自身實作外，不注入 `IServiceProvider`；惰性依賴一律注入 `Lazy<T>`。
   3. **禁用 `IHttpContextAccessor`**：元件與 `Web` 透過 `AuthenticationState` 取身分、路由參數取租戶。
-  4. **禁用可處置 Transient**：不將實作 `IDisposable`／`IAsyncDisposable` 的自有型別註冊為 transient（測試主機啟用 `ValidateScopes` 與 `ValidateOnBuild`）。
+  4. **禁用可處置 Transient**：不將實作 `IDisposable`／`IAsyncDisposable` 的自有型別註冊為 transient。
+  - **服務圖驗證全環境開啟**：主機在 `AddPlatform` 設 `ValidateScopes` 與 `ValidateOnBuild`（框架只在 Development 預設開），缺註冊或單例抓住 scoped 在啟動時就失敗；由 `ConfigurationTests.ProductionValidatesScopesToo` 守門。
   5. **元件的「現在」經 `TimeProvider`**：`Web` 不直接讀 `DateTime(Offset).UtcNow`，才能以 `FakeTimeProvider` 固定時間。gRPC 期限不在此限：grpc-dotnet 以系統時鐘比對期限，換成假時鐘會立刻逾時。
 - **入口導覽擴充**：功能模組實作 `IPortalNavContributor`（`Components/Layout/Navigation/`，以 `AddPortalNavContributor<T>()` 註冊為 scoped），宣告位置 `Slot`、群組與 `Order`；文字須經 `L` 以便資源檔掃描。
   - **側欄只放業務模塊**（`Slot = Sidebar`，服務群組 `Order` 10–29）；租戶的系統設定（成員、目錄同步、帳號與組織）放頭像的帳號選單（`Slot = AccountMenu`，系統設定群組 `Order` 30–59），排在個人項目之後。
