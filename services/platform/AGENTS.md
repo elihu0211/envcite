@@ -68,6 +68,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 
 - **統一註冊**：經 `SharedKernel.PlatformGrpcClient.AddPlatformGrpcClient` 註冊，自動附加租戶（取自 Finbuckle context，不讀 `HttpContext`）與請求 metadata。
 - **逾時與重試**：預設逾時於 `AddInternalGrpcClient` 統一設定（僅推論 `ReasoningTimeout` 等特殊需求自帶 deadline）。僅重試 `UNAVAILABLE`；`DEADLINE_EXCEEDED` 與 `RESOURCE_EXHAUSTED` 不重試。連線選項須與 `envcite_grpc.connection` 對齊。
+- **`/v2` 兜底請求逾時**：`PlatformRequestTimeouts` 對 `/v2` 群組掛一道逾時（各上游期限中最長的加 10 秒緩衝，逾時回 `504`），罩住期限之外的工作；上游期限先發生，所以 gRPC 失敗仍對映成 `503`。新增或調長上游期限不必另改，由 `RequestTimeoutTests` 守門。
 - **錯誤對映**：gRPC `InvalidArgument` → 400，`NotFound` → 404，`Unavailable`／`DeadlineExceeded`／`ResourceExhausted` → 503。
 - **未捕捉例外**：非 Development 環境由 `UseExceptionHandler()` 回 500 `problem+json`（`code = "internal.error"`，附 `traceId`，不洩漏訊息與堆疊）；僅接受 HTML 則回空本文 500。
 

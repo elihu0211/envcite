@@ -26,6 +26,7 @@ internal static class PlatformServices
         builder.AddPlatformObservability();
         services.AddPlatformOpenApi();
         services.AddPlatformProblemDetails();
+        services.AddPlatformRequestTimeouts();
         services.AddTenancyModule();
         if (!generatingOpenApi)
         {
