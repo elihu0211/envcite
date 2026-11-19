@@ -62,9 +62,16 @@ def is_deleted(content: str) -> bool:
     return _DELETED.match(content.strip()) is not None
 
 
+#: 附表排序鍵的第一個數字：比任何條號都大。
+ANNEX_SORT_BASE = 1_000_000
+
+
 def sort_key(path: str) -> list[int]:
     """閱讀順序的整數陣列（`corpus.provision.sort_key`）：下層單元為上層的鍵加 0 再加序位。"""
     head, *rest = path.split("/")
+    if head.startswith("annex_"):
+        # 附表排在所有條之後（與 SQL 的 `corpus.path_sort_key` 一致）。
+        return [ANNEX_SORT_BASE, *(int(n) for n in head.removeprefix("annex_").split("-"))]
     key = [int(n) for n in head.removeprefix("art_").split("-")]
     for segment in rest:
         key += [0, int(segment.rsplit("_", 1)[1])]

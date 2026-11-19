@@ -297,7 +297,8 @@ def _close_previous(conn: Conn, previous: int, units: list[ParsedUnit]) -> None:
         conn,
         "SELECT v.id, p.path, v.force_period FROM corpus.provision_version AS v"
         " JOIN corpus.provision AS p ON p.id = v.provision_id"
-        " WHERE v.expression_id = %s AND v.superseded_at IS NULL AND v.force_period IS NOT NULL",
+        " WHERE v.expression_id = %s AND v.superseded_at IS NULL AND v.force_period IS NOT NULL"
+        "   AND p.provision_type <> 'annex'",
         (previous,),
         _InForceRow,
     )
@@ -344,6 +345,8 @@ class _IdRow(NamedTuple):
 
 
 def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) -> Applied:
+    # 附表不在全國法規資料庫的快照裡，由 `law/annex.py` 另外寫入：這裡讀的現行版本不含它，
+    # 否則每次匯入都會把附表當成「已不在」而結束。
     current = {
         r.path: r
         for r in fetch(
@@ -351,7 +354,8 @@ def _sync_current(conn: Conn, resource: int, expression: int, law: ParsedLaw) ->
             "SELECT v.id, p.path, v.content_sha256, v.force_period, v.commencement_rule::text"
             "  FROM corpus.provision_version AS v"
             "  JOIN corpus.provision AS p ON p.id = v.provision_id"
-            " WHERE v.expression_id = %s AND v.superseded_at IS NULL",
+            " WHERE v.expression_id = %s AND v.superseded_at IS NULL"
+            "   AND p.provision_type <> 'annex'",
             (expression,),
             _VersionRow,
         )

@@ -25,6 +25,7 @@ SUBCOMMANDS: dict[str, tuple[str, str]] = {
     "guidance": ("canon.law.guidance_sync.cli", "行政規則：函釋與公報（排程、載入）"),
     "ruling": ("canon.law.ruling_sync", "違憲失效的裁判（取得、載入）"),
     "judgment": ("canon.law.judgment_sync", "行政法院裁判：異動清單與全文（每日 0 時至 6 時）"),
+    "annexes": ("canon.law.annex_sync", "環境部命令的附表：下載、抽字、寫成附表單元（排程）"),
     "pipeline": ("canon.verification.run", "標註管線：抽取、驗證、接受（排程）"),
     "annotate": ("canon.annotate", "載入一份人寫的標註 JSON"),
     "verify": ("canon.verification.cli", "只跑確定性閘門的驗證"),
