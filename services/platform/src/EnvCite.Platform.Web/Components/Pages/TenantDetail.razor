@@ -233,7 +233,7 @@
     [
         new(L["呼叫次數"], TotalUsageCalls.ToString("N0"), UsageRangeLabel),
         new(L["計量單位"], TotalUsageUnits.ToString("N0"), UsageRangeLabel),
-        new(L["有效 API keys"], _keys.Count(k => k.RevokedAt is null && (k.ExpiresAt is not { } e || e > DateTimeOffset.UtcNow)).ToString(CultureInfo.CurrentCulture),
+        new(L["有效 API keys"], _keys.Count(k => k.RevokedAt is null && (k.ExpiresAt is not { } e || e > Now)).ToString(CultureInfo.CurrentCulture),
             L["共 {0} 把", _keys.Count]),
         new(L["成員"], _members.Count(m => !m.Disabled).ToString(CultureInfo.CurrentCulture),
             _members.Count(m => m.MustChangePassword && !m.Disabled) is var pending && pending > 0 ? L["{0} 位待改密碼", pending] : L["都已啟用"]),
@@ -282,7 +282,7 @@
                 {
                     <StatusBadge>@L["已撤銷"]</StatusBadge>
                 }
-                else if (key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow)
+                else if (key.ExpiresAt is { } expires && expires <= Now)
                 {
                     <StatusBadge Tone="warning">@L["已過期"]</StatusBadge>
                 }

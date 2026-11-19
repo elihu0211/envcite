@@ -4,7 +4,7 @@ using EnvCite.Platform.Web.Presentation;
 
 namespace EnvCite.Platform.Web.Components.Portal;
 
-public sealed partial class NormativeReasoning(ITenantModules modules, INormativeReasoningService reasoningService)
+public sealed partial class NormativeReasoning(ITenantModules modules, INormativeReasoningService reasoningService, TimeProvider time)
 {
     private PortalReasoningOutcome? _outcome;
 
@@ -50,7 +50,7 @@ public sealed partial class NormativeReasoning(ITenantModules modules, INormativ
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var today = TaipeiTime.Date(time.GetUtcNow());
         if (string.IsNullOrEmpty(Input.ConductOn))
         {
             Input.ConductOn = today;
