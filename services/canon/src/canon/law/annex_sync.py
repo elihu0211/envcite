@@ -18,7 +18,7 @@ from canon.acquire.web import Http
 from canon.db import Conn
 from canon.law import annex, moenv_law
 from canon.law.history_sources import Moenv, Target, Web
-from canon.settings import SnapshotSettings, load
+from canon.settings import DatabaseSettings, load
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ def main() -> None:
     parser.add_argument("--law", action="append", default=[], help="只處理這個 pcode，可重複")
     parser.add_argument("--dry-run", action="store_true", help="只下載與抽字，不寫入")
     args = parser.parse_args()
-    settings = load(SnapshotSettings)
+    settings = load(DatabaseSettings)
     web = Http(Moenv.pause)
     with psycopg.connect(settings.dsn) as conn:
         raise SystemExit(sync(conn, web, only=set(args.law) or None, dry_run=args.dry_run))
