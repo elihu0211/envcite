@@ -1,5 +1,7 @@
 """閘門三：跨家族評審團，取多數。"""
 
+from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any
 
@@ -10,6 +12,20 @@ from canon.verification.jsonutil import object_from
 from canon.verification.model_gates.common import eligible, extractor_of
 from canon.verification.model_gates.render import render_annotation
 from canon.verification.models import Model
+
+
+def _ask_all(judges: Sequence[Model], prompt: str) -> list[str]:
+    """評審同時作答，回覆順序與 `judges` 相同，票的順序因此不隨完成先後而變。
+
+    評審之間互不相依，序列呼叫的耗時是各家延遲的總和，同時作答只剩最慢的一家。
+    任一評審丟 `ModelError` 時等全部結束，再丟排在最前面的那個：其餘評審的執行緒不會被遺棄，
+    丟出的例外也不取決於誰先失敗。
+    """
+    if len(judges) < 2:
+        return [j.complete(prompt) for j in judges]
+    with ThreadPoolExecutor(len(judges)) as pool:
+        pending = [pool.submit(j.complete, prompt) for j in judges]
+    return [f.result() for f in pending]
 
 
 @dataclass(frozen=True)
@@ -52,8 +68,8 @@ class PanelGate:
             description=render_annotation(conn, statement_id, for_reader=True),
         )
         votes: list[dict[str, Any]] = []
-        for judge in ok:
-            answer = object_from(judge.complete(prompt))
+        for judge, reply in zip(ok, _ask_all(ok, prompt), strict=True):
+            answer = object_from(reply)
             if answer is not None and isinstance(answer.get("faithful"), bool):
                 votes.append(
                     {
