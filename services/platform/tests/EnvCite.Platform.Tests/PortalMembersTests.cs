@@ -102,9 +102,9 @@ public sealed partial class PortalMembersTests(PlatformFactory factory)
         using var admin = adminBrowser;
 
         var page = await admin.GetAsync(MembersPage(team.Tenant.Identifier));
-        Assert.DoesNotContain("擁有者（管理成員與帳務）", page.Html, StringComparison.Ordinal);
-        Assert.DoesNotContain("管理員（管理成員與 API key）", page.Html, StringComparison.Ordinal);
-        Assert.Contains("開發者（管理 API key、看用量）", page.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("擁有者（管理所有成員與目錄同步）", page.Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("管理員（管理開發者、帳務、唯讀成員）", page.Html, StringComparison.Ordinal);
+        Assert.Contains("開發者（查看 API key 前綴）", page.Html, StringComparison.Ordinal);
 
         var ok = await admin.SubmitAsync(MembersPage(team.Tenant.Identifier), Add(NewEmail(), CustomerRoles.Developer));
         Assert.Contains("新成員已建立", ok.Html, StringComparison.Ordinal);

@@ -70,10 +70,10 @@
   <data name="Role.Developer" xml:space="preserve"><value>開發者</value></data>
   <data name="Role.Billing" xml:space="preserve"><value>帳務</value></data>
   <data name="Role.Viewer" xml:space="preserve"><value>唯讀</value></data>
-  <data name="Role.TenantOwner.abilities" xml:space="preserve"><value>擁有者（管理成員與帳務）</value></data>
-  <data name="Role.TenantAdmin.abilities" xml:space="preserve"><value>管理員（管理成員與 API key）</value></data>
-  <data name="Role.Developer.abilities" xml:space="preserve"><value>開發者（管理 API key、看用量）</value></data>
-  <data name="Role.Billing.abilities" xml:space="preserve"><value>帳務（看發票）</value></data>
+  <data name="Role.TenantOwner.abilities" xml:space="preserve"><value>擁有者（管理所有成員與目錄同步）</value></data>
+  <data name="Role.TenantAdmin.abilities" xml:space="preserve"><value>管理員（管理開發者、帳務、唯讀成員）</value></data>
+  <data name="Role.Developer.abilities" xml:space="preserve"><value>開發者（查看 API key 前綴）</value></data>
+  <data name="Role.Billing.abilities" xml:space="preserve"><value>帳務（僅查詢）</value></data>
   <data name="Role.Viewer.abilities" xml:space="preserve"><value>唯讀</value></data>
   <data name="Operator.Status.disabled" xml:space="preserve"><value>已停用</value></data>
   <data name="Operator.Status.locked" xml:space="preserve"><value>已鎖定</value></data>
