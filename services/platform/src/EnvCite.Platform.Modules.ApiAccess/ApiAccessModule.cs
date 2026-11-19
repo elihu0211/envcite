@@ -5,6 +5,7 @@ using EnvCite.ServiceDefaults;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
@@ -44,14 +45,14 @@ public static class ApiAccessModule
             // 資料端點另外要求租戶有方案（完全付費制）；與 TenantPolicy 疊加，兩者都要過。
             .AddPolicy(PlatformAuth.PaidPolicy, p => p.AddRequirements(new PlanRequirement()));
 
-        services.AddRateLimiter(limiter =>
+        services.AddRateLimiter(limiter => limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests);
+        // 政策要用 PlanCatalog：以選項的相依注入取得，不在每個請求裡向 RequestServices 解析。
+        services.AddOptions<RateLimiterOptions>().Configure<PlanCatalog>((limiter, plans) =>
         {
-            limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             // 以已驗證的租戶 claim 分區，絕不使用原始 request header。
             limiter.AddPolicy(PlatformAuth.PerTenantRateLimit, context =>
             {
                 var tenant = context.User.FindFirst(PlatformClaimTypes.TenantIdentifier)?.Value ?? "anonymous";
-                var plans = context.RequestServices.GetRequiredService<PlanCatalog>();
                 // 分區鍵含方案名稱：換方案就是新的分區、新的額度，立即生效（不然舊的限流器會一直沿用舊額度）。
                 return RateLimitPartition.GetFixedWindowLimiter($"{tenant}|{plans.NameFor(tenant)}", _ =>
                 {

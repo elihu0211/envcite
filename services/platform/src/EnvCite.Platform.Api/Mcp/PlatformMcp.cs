@@ -75,12 +75,15 @@ public static class PlatformMcp
     /// 檢查 <c>Origin</c>（MCP 規範要求，防 DNS rebinding）：帶了 <c>Origin</c> 而不在允許清單裡就 403。
     /// 接在驗證之前：沒有通過來源檢查的請求，連身分都不必查。
     /// </summary>
-    public static IApplicationBuilder UsePlatformMcpOriginCheck(this IApplicationBuilder app) =>
-        app.Use(async (context, next) =>
+    public static IApplicationBuilder UsePlatformMcpOriginCheck(this IApplicationBuilder app)
+    {
+        // 組合根：建管線時取一次，不在每個請求裡向 RequestServices 解析。
+        var options = app.ApplicationServices.GetRequiredService<IOptions<McpOptions>>();
+        return app.Use(async (context, next) =>
         {
             if (context.Request.Path.StartsWithSegments($"{ApiPaths.V2}/{Path}")
                 && context.Request.Headers.Origin.ToString() is { Length: > 0 } origin
-                && !context.RequestServices.GetRequiredService<IOptions<McpOptions>>().Value.AllowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                && !options.Value.AllowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return;
@@ -88,6 +91,7 @@ public static class PlatformMcp
 
             await next(context);
         });
+    }
 
     /// <summary>掛在 <c>/v2</c> 的資料群組（API key、方案、限流）裡；沒開就不掛。不進 OpenAPI 規格：它是另一個協定，不是 REST 端點。</summary>
     public static RouteGroupBuilder MapPlatformMcp(this RouteGroupBuilder paid, bool enabled)
