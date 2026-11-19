@@ -16,7 +16,7 @@ public static class ModuleEndpointFilterExtensions
             var modules = context.HttpContext.RequestServices.GetRequiredService<ITenantModules>();
             if (string.IsNullOrEmpty(tenant) || !modules.IsEnabled(tenant, moduleKey))
             {
-                return Results.Problem(
+                return TypedResults.Problem(
                     statusCode: StatusCodes.Status403Forbidden,
                     title: "Module disabled",
                     detail: OutcomeCodes.Describe(OutcomeCodes.ModuleDisabled, [moduleKey]),

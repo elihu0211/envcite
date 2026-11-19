@@ -12,10 +12,10 @@ public static class OutcomeResults
         outcome.Code is null ? null : new Dictionary<string, object?> { ["code"] = outcome.Code };
 
     public static IResult ValidationProblem<T>(this Outcome<T> outcome, string field = "request") =>
-        Results.ValidationProblem(
+        TypedResults.ValidationProblem(
             new Dictionary<string, string[]> { [field] = [outcome.Message ?? "Invalid request."] },
             extensions: CodeOf(outcome));
 
     public static IResult Problem<T>(this Outcome<T> outcome, int statusCode, string? fallback = null) =>
-        Results.Problem(outcome.Message ?? fallback, statusCode: statusCode, extensions: CodeOf(outcome));
+        TypedResults.Problem(outcome.Message ?? fallback, statusCode: statusCode, extensions: CodeOf(outcome));
 }

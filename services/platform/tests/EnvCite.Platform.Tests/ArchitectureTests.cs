@@ -117,6 +117,22 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
         Assert.Empty(violations);
     }
 
+    // 對外 REST 的端點回傳 TypedResults：回傳型別在編譯期可見，測試能斷言實際的結果型別，單純的端點可宣告 Results<…> 讓 OpenAPI 從型別推導。
+    // 只管模組與核心：入口與後台的表單端點（Web）回的是轉址，不是 REST 契約。
+    [Fact]
+    public void ApiEndpointsReturnTypedResults()
+    {
+        var violations = Directory.EnumerateDirectories(Src)
+            .Select(Path.GetFileName)
+            .Where(project => project!.StartsWith("EnvCite.Platform.Modules.", StringComparison.Ordinal) || project == "EnvCite.Platform.SharedKernel")
+            .SelectMany(project => Sources(project!, ".cs"))
+            .Where(f => UntypedResultsToken().IsMatch(WithoutComments(File.ReadAllText(f))))
+            .Select(Relative)
+            .ToList();
+
+        Assert.Empty(violations);
+    }
+
     // 客戶入口只有工作區（Components/Portal/Workspace）是互動式；其餘頁面都是靜態渲染，要明說 [ExcludeFromInteractiveRouting]。
     // 漏標的頁面會被路由到互動模式，在 circuit 裡跑著靜態頁才有的假設（HttpContext、表單 POST、Cookie）。
     [Fact]
@@ -192,6 +208,9 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
 
     [GeneratedRegex(@"\bIServiceProvider\b", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ServiceProviderToken();
+
+    [GeneratedRegex(@"(?<![\w.])Results\.[A-Z]", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex UntypedResultsToken();
 
     [GeneratedRegex(@"\bDateTime(Offset)?\.(Utc)?Now\b", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ClockToken();

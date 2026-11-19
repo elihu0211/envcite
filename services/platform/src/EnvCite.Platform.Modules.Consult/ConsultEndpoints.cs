@@ -84,7 +84,7 @@ public static partial class ConsultEndpoints
         {
             if (!ValidKey().IsMatch(idempotencyKey))
             {
-                return Results.Problem(
+                return TypedResults.Problem(
                     $"{IdempotencyKeyHeader} must be 1-{IIdempotencyStore.KeyLength} characters from A-Z, a-z, 0-9 and -_.:~.",
                     statusCode: StatusCodes.Status400BadRequest);
             }
@@ -108,13 +108,13 @@ public static partial class ConsultEndpoints
         if (idempotencyKey is null)
         {
             await usage.RecordAsync(GroundOperation, 1, ct);
-            return Results.Ok(dto);
+            return TypedResults.Ok(dto);
         }
 
         // 第一次與回放都送同一份文字，位元組相同。
         var text = JsonSerializer.Serialize(dto, json.Value.SerializerOptions);
         var stored = await idempotency.CompleteAsync(GroundOperation, idempotencyKey, fingerprint!, text, GroundOperation, 1, ct);
-        return stored.State == IdempotencyState.Fresh ? Results.Content(text, "application/json") : Seen(http, stored);
+        return stored.State == IdempotencyState.Fresh ? TypedResults.Content(text, "application/json") : Seen(http, stored);
     }
 
     /// <summary>key 已出現過：內容相同就回放第一次的回應，不同就 422。</summary>
@@ -122,13 +122,13 @@ public static partial class ConsultEndpoints
     {
         if (seen.State == IdempotencyState.Mismatch)
         {
-            return Results.Problem(
+            return TypedResults.Problem(
                 $"This {IdempotencyKeyHeader} was already used with a different request.",
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
         http.Response.Headers[ReplayedHeader] = "true";
-        return Results.Content(seen.Response, "application/json");
+        return TypedResults.Content(seen.Response, "application/json");
     }
 
     /// <summary>請求內容的雜湊（只放會影響結果的欄位；省略與空字串同義，與送給 consult 的一致）。</summary>

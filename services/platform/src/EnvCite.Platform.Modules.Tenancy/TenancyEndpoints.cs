@@ -3,6 +3,7 @@ using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 
 namespace EnvCite.Platform.Modules.Tenancy;
@@ -17,10 +18,10 @@ public static class TenancyEndpoints
     /// <summary><c>/v1</c> 之下以租戶為範圍的端點。</summary>
     public static RouteGroupBuilder MapTenancyEndpoints(this RouteGroupBuilder v1)
     {
-        v1.MapGet("/me", (HttpContext context) =>
+        v1.MapGet("/me", Results<Ok<TenantResponse>, UnauthorizedHttpResult> (HttpContext context) =>
             context.GetMultiTenantContext<TenantInfo>().TenantInfo is { } tenant
-                ? Results.Ok(TenantResponse.From(tenant))
-                : Results.Unauthorized())
+                ? TypedResults.Ok(TenantResponse.From(tenant))
+                : TypedResults.Unauthorized())
             .WithName("GetCurrentTenant")
             .WithTags("租戶")
             .WithSummary("目前的租戶")
