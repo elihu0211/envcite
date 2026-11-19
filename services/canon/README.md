@@ -47,6 +47,7 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
 | `canon guidance load <檔>` | 一次性 | 載入人寫的行政規則 JSON；格式見 [`law/guidance.py`](src/canon/law/guidance.py) |
 | `canon ruling fetch`、`load <檔>` | 一次性 | 取得或載入違憲失效裁判 |
 | `canon judgment sync` | 排程 | 取行政法院裁判異動；全文是 PDF 時抽文字層入庫；掃描頁在宣告 `[ocr]` 時逐頁 OCR（文字層夠的頁不送），否則只記 `file_only`。帳密見[裁判書帳密](#裁判書帳密) |
+| `canon annexes [--law <pcode>]… [--dry-run]` | 排程 | 環境部主管的命令的附表：下載 PDF、抽文字層、寫成附表單元（`annex_<號>`） |
 | `canon pipeline` | 排程 | 標註：抽取、驗證、接受 |
 | `canon annotate <檔>` | 一次性 | 載入一份人寫的標註 JSON |
 | `canon verify` | 一次性 | 只跑確定性閘門的驗證；`--require <方法,…>` |
@@ -75,6 +76,16 @@ owns: [canon-entrypoints, sync-exit-codes, models-config, norm-relations, compet
    - 更換來源時以新來源文字取代同日版本列；已寫入版本日不在新目標內則整部不寫（`history_reshaped`）；寫入遭 DB 約束擋下記 `history_write_rejected` 並略過該部。
 3. **讀取**：不另立介面，由 `corpus.provisions_at` 與依日檢索沿同一條時間軸逐條解析。
 4. **結束碼**：`0` 成功；`1` 暫時性錯誤（含隔離超過 1%）；`2` 資料不合預期、比例越線或寫入被拒超限；`75` 斷路器開啟。問題記於 `source.import_problem`。
+
+### 附表
+
+排放標準的限值寫在附表，條文只說「適用附表三」。附表是法規底下的**單元**，類型 `annex`、路徑 `annex_<號>`（附表十二之一是 `annex_12-1`），和條一樣是根，沒有項款目；排序在所有條之後。路徑形狀、類型與排序由 [`migrations/0011_annex_provision.sql`](migrations/0011_annex_provision.sql) 強制。
+
+- **來源只有環境部**：全國法規資料庫的 API 只給附件的檔名與網址，其網站 `robots.txt` 禁止抓檔；環境部主管法規查詢系統（[`law/moenv_law.py`](src/canon/law/moenv_law.py)）以 CC BY 4.0 授權、沒有 `robots.txt`，現行頁列出每部命令的附表連結。所以只收環境部主管的**命令**，對不到（現名加種類）或同名數部的略過並記下。
+- **取得**：`canon annexes`（[`law/annex_sync.py`](src/canon/law/annex_sync.py)）逐部抓現行頁，下載檔名以「附表」開頭的 PDF，抽文字層；沒有文字層（掃描檔）或不是 PDF 這一版不收，該部法規這次不結束已有的附表。
+- **文字照抽出的樣子存**：不改字、不重組表格。數字常是中文數字與 0 的混寫（「一00」是 100）、巢狀的條件被拆行，這些的語意是標註管線的事，不在這裡處理。
+- **寫入**（[`law/annex.py`](src/canon/law/annex.py)）：全國法規資料庫的快照不含附表，所以條文的匯入不碰附表單元，附表單獨寫入。附表的效力區間與版本跟隨該法規最新版本的第一個條文單元；文字或法規版本變了就結束舊版本，舊版本的效力止於新版本的起點。
+- **出處**：附表取自環境部主管法規查詢系統，使用時須註明出處（`moenv_law.ATTRIBUTION`）。
 
 ### 停止與恢復適用
 

@@ -241,7 +241,7 @@ class Moenv:
             raise Skip
         current = moenv_law.parse_version(bundle.current)
         # 同名的數部（廢止後另立同名法規）以現行版本日分辨。
-        named = self._named(conn).get((current.title, bundle.kind), [])
+        named = self.named(conn).get((current.title, bundle.kind), [])
         pcodes = [c for c, d in named if d == current.version_date] if len(named) > 1 else []
         pcodes = pcodes or [c for c, _ in named]
         if len(pcodes) != 1:
@@ -250,7 +250,7 @@ class Moenv:
         past = [moenv_law.parse_version(p) for p in bundle.versions.values()]
         return Reading(pcodes[0], current, past)
 
-    def _named(self, conn: Conn) -> dict[tuple[str, str], list[tuple[str, date]]]:
+    def named(self, conn: Conn) -> dict[tuple[str, str], list[tuple[str, date]]]:
         """（最新版本的標題，種類）→（pcode，最新版本日）；歷來改過名的法規只以現名對。"""
         if self._titles is None:
             self._titles = {}
