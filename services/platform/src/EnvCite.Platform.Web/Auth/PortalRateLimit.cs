@@ -20,13 +20,13 @@ internal static class PortalRateLimit
 {
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
 
-    public static void Configure(RateLimiterOptions limiter)
+    public static void Configure(RateLimiterOptions limiter, IOptions<PortalOptions> portal, IOptions<UiOptions> ui)
     {
         limiter.AddPolicy(PlatformAuth.PortalSignInRateLimit, context =>
-            Partition(context, context.RequestServices.GetRequiredService<IOptions<PortalOptions>>().Value.SignInAttemptsPerMinute));
+            Partition(context, portal.Value.SignInAttemptsPerMinute));
 
         limiter.AddPolicy(PlatformAuth.UiSignInRateLimit, context =>
-            Partition(context, context.RequestServices.GetRequiredService<IOptions<UiOptions>>().Value.SignInAttemptsPerMinute));
+            Partition(context, ui.Value.SignInAttemptsPerMinute));
 
         // 被限制時告訴對方多久後再試（所有被限流的回應都加；/v2 的 429 本來就沒有這個標頭，加了不破壞）。
         // 入口是給人看的頁面，回一句人話；API 維持空的 429。

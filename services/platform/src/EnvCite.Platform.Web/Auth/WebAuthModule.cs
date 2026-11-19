@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EnvCite.Platform.Web.Auth;
 
@@ -18,7 +19,8 @@ internal static class WebAuthModule
     {
         services.AddSectionOptions<UiOptions, UiOptionsValidator>();
         services.AddSectionOptions<PortalOptions, PortalOptionsValidator>();
-        services.AddRateLimiter(PortalRateLimit.Configure);
+        services.AddRateLimiter(_ => { });
+        services.AddOptions<RateLimiterOptions>().Configure<IOptions<PortalOptions>, IOptions<UiOptions>>(PortalRateLimit.Configure);
         services.AddSingleton<IAuthorizationHandler, OperatorHandler>();
 
         services.AddAuthentication()
