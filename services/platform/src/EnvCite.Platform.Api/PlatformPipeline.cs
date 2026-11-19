@@ -39,6 +39,8 @@ internal static class PlatformPipeline
         app.UsePlatformPortalAuthentication();
         app.UseAuthorization();
         app.UseRateLimiter();
+        // 兜底的請求逾時（只有掛了政策的端點，即 /v2）；要在路由之後才看得到端點的政策。
+        app.UseRequestTimeouts();
         app.UseAntiforgery();
         return app;
     }
@@ -50,6 +52,7 @@ internal static class PlatformPipeline
         var v2 = app.MapGroup(ApiPaths.V2)
             .RequireAuthorization(PlatformAuth.TenantPolicy)
             .RequireRateLimiting(PlatformAuth.PerTenantRateLimit);
+        v2.WithRequestTimeout(PlatformRequestTimeouts.ApiPolicy);
 
         // 管理端點：沒有方案的租戶也要能看自己是誰、看用量、撤銷被盜的 key。
         v2.MapTenancyEndpoints()
