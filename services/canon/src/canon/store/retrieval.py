@@ -27,6 +27,8 @@ _LAW_TITLES = """
      GROUP BY e.title
 """
 
+# 搜尋結果只收有條號的單元：附表（`annex_<號>`）進了索引，但回應的 `number` 是條號，附表還沒有
+# 對外的呈現與引用方式，所以不出現在搜尋結果裡；附表的用途是標註與推論。
 _SEARCH = """
     SELECT corpus.version_iri(s.version_id), r.jurisdiction, r.id_scheme, r.local_id, e.title,
            corpus.article_number(s.path), corpus.article_text(s.version_id),
@@ -44,6 +46,7 @@ _SEARCH = """
       JOIN corpus.legal_expression AS e ON e.id = v.expression_id
      WHERE (%(jurisdiction)s::corpus.jurisdiction IS NULL
             OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
+       AND corpus.article_number(s.path) IS NOT NULL
      ORDER BY s.rank
 """
 
@@ -61,6 +64,7 @@ _GUIDANCE = """
       JOIN corpus.legal_expression AS e ON e.id = v.expression_id
      WHERE (%(jurisdiction)s::corpus.jurisdiction IS NULL
             OR r.jurisdiction = %(jurisdiction)s::corpus.jurisdiction)
+       AND corpus.article_number(g.path) IS NOT NULL
      ORDER BY g.ord
 """
 
