@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Net;
 
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
@@ -24,6 +26,17 @@ public sealed class ObservabilityTests(PlatformFactory factory)
         using var response = await client.GetAsync(new Uri(path, UriKind.Relative), TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // 沒有逾時的檢查會一直等到探針自己逾時；就緒檢查必須自己先回答（見 Observability.ReadyCheckTimeout）。
+    [Fact]
+    public void TheReadinessCheckGivesUpBeforeTheProbeDoes()
+    {
+        var registration = Assert.Single(
+            factory.Services.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value.Registrations,
+            r => r.Tags.Contains(EnvCite.Platform.Api.Observability.ReadyTag));
+
+        Assert.Equal(EnvCite.Platform.Api.Observability.ReadyCheckTimeout, registration.Timeout);
     }
 
     // 部署後驗證靠它確認執行中的版本：沒登入就讀得到、不能被快取留住，欄位固定叫 revision（測試環境沒有建置參數，值為 null）。

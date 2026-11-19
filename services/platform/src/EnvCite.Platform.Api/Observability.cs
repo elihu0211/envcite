@@ -5,6 +5,8 @@ using EnvCite.Platform.Modules.Members.DirectorySync;
 using EnvCite.Platform.Modules.Tenancy;
 using EnvCite.ServiceDefaults;
 
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+
 using Npgsql;
 
 namespace EnvCite.Platform.Api;
@@ -18,6 +20,12 @@ internal static class Observability
     /// <summary>就緒探針的標籤：只有會影響「能不能接流量」的檢查才加。</summary>
     public const string ReadyTag = "ready";
 
+    /// <summary>
+    /// 就緒檢查自己的逾時：要比 k8s 探針的 <c>timeoutSeconds</c> 短。資料庫卡住時由檢查先回「不健康」，
+    /// 而不是整個探針請求逾時；兩者的差距讓探針收到的是明確的 503，不是連線被切斷。
+    /// </summary>
+    public static readonly TimeSpan ReadyCheckTimeout = TimeSpan.FromSeconds(2);
+
     public static WebApplicationBuilder AddPlatformObservability(this WebApplicationBuilder builder)
     {
         // 共用的追蹤、指標與匯出約定在 ServiceDefaults；platform 另加資料庫的追蹤。
@@ -29,6 +37,13 @@ internal static class Observability
         // 租戶資料庫不屬於任何租戶，租戶解析之前也能建立（PlatformDbContext 不行）。
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<TenancyDbContext>("database", tags: [ReadyTag]);
+
+        // AddDbContextCheck 沒有逾時參數，註冊的 Timeout 屬性預設 30 秒，比探針長；在這裡收短。
+        builder.Services.Configure<HealthCheckServiceOptions>(options =>
+        {
+            foreach (var registration in options.Registrations.Where(r => r.Tags.Contains(ReadyTag)))
+                registration.Timeout = ReadyCheckTimeout;
+        });
 
         return builder;
     }

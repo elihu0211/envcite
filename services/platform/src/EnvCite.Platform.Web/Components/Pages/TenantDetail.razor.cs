@@ -9,9 +9,12 @@ namespace EnvCite.Platform.Web.Components.Pages;
 
 public partial class TenantDetail(
     ITenantDirectory directory, IApiKeyAdmin keys, IPlanAdmin plans, IModuleAdmin moduleAdmin, IMemberAdmin members, IUsageAdmin usage, IAuditQuery audit, IMailSender mail,
-    IDirectoryAdmin directorySync, IDirectoryAvailability directoryFeature, IAnswerAvailability availability)
+    IDirectoryAdmin directorySync, IDirectoryAvailability directoryFeature, IAnswerAvailability availability,
+    TimeProvider time)
 {
     private IAnswerAvailability Availability => availability;
+
+    private DateTimeOffset Now => time.GetUtcNow();
 
     [Parameter] public string TenantId { get; set; } = string.Empty;
 
@@ -105,8 +108,8 @@ public partial class TenantDetail(
     {
         DateTimeOffset? since = _usageDays switch
         {
-            7 => DateTimeOffset.UtcNow.AddDays(-7),
-            30 => DateTimeOffset.UtcNow.AddDays(-30),
+            7 => Now.AddDays(-7),
+            30 => Now.AddDays(-30),
             _ => null,
         };
         var usageResult = await usage.GetTenantUsageAsync(TenantId, since, CancellationToken.None);

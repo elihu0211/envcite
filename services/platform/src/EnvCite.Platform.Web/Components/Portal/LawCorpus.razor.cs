@@ -10,7 +10,8 @@ namespace EnvCite.Platform.Web.Components.Portal;
 public sealed partial class LawCorpus(
     ITenantModules modules,
     ILawCorpusService lawCorpusService,
-    INormativeReasoningService reasoningService)
+    INormativeReasoningService reasoningService,
+    TimeProvider time)
 {
     private const int MaxVisibleTreeRoots = 250;
 
@@ -160,7 +161,7 @@ public sealed partial class LawCorpus(
     protected override async Task OnInitializedAsync()
     {
         base.OnInitialized();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var today = TaipeiTime.Date(time.GetUtcNow());
         if (string.IsNullOrEmpty(Input.ConductOn))
         {
             Input.ConductOn = today;

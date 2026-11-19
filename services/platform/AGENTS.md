@@ -17,6 +17,7 @@
   2. **禁用服務定位器**：除組合根（`Api`、`WebModule.cs`）與 `IServiceProvider` 自身實作外，不注入 `IServiceProvider`；惰性依賴一律注入 `Lazy<T>`。
   3. **禁用 `IHttpContextAccessor`**：元件與 `Web` 透過 `AuthenticationState` 取身分、路由參數取租戶。
   4. **禁用可處置 Transient**：不將實作 `IDisposable`／`IAsyncDisposable` 的自有型別註冊為 transient（測試主機啟用 `ValidateScopes` 與 `ValidateOnBuild`）。
+  5. **元件的「現在」經 `TimeProvider`**：`Web` 不直接讀 `DateTime(Offset).UtcNow`，才能以 `FakeTimeProvider` 固定時間。gRPC 期限不在此限：grpc-dotnet 以系統時鐘比對期限，換成假時鐘會立刻逾時。
 - **入口導覽擴充**：功能模組實作 `IPortalNavContributor`（`Components/Layout/Navigation/`，以 `AddPortalNavContributor<T>()` 註冊為 scoped），宣告位置 `Slot`、群組與 `Order`；文字須經 `L` 以便資源檔掃描。
   - **側欄只放業務模塊**（`Slot = Sidebar`，服務群組 `Order` 10–29）；租戶的系統設定（成員、目錄同步、帳號與組織）放頭像的帳號選單（`Slot = AccountMenu`，系統設定群組 `Order` 30–59），排在個人項目之後。
   - **首頁不是導覽項目**：首頁就是法規諮詢的新對話，由外殼畫成側欄頂端唯一的主要動作「新增對話」；項目不得指向首頁（目前頁以路徑前綴比對，列了它就會一直亮著；同一個目的地也不在導覽再列一次）。功能名稱「法規諮詢」是對話清單的標題與首頁的頂欄標題（由 `PortalNavigationTests`、`PortalShellTests` 守門）。
@@ -93,7 +94,7 @@ docker build -f Dockerfile ../..   # 映像（context = 倉庫根）
 ## Observability
 
 - **追蹤與租戶標籤**：已認證租戶僅標於追蹤 `tenant.id`，不進指標。
-- **RED 指標與探針**：HTTP 用標準伺服器指標（探針設 `DisableHttpMetrics()` 排除）；gRPC 用戶端由 `GrpcClientMetrics` 量測。`/health/live` 不檢查依賴；`/health/ready` 檢查 `TenancyDbContext`（故障回 `503`），探針不追蹤。`/health/version` 回 `{"revision": "<commit SHA>"}`（`no-store`，未登入可讀，不是探針）：映像建置時由 `SOURCE_REVISION` 帶入，沒帶（本機建置）為 `null`；部署後驗證靠它確認執行中的版本就是清單裡的 tag，因為滾動卡住時舊 pod 照常服務、探針都綠。
+- **RED 指標與探針**：HTTP 用標準伺服器指標（探針設 `DisableHttpMetrics()` 排除）；gRPC 用戶端由 `GrpcClientMetrics` 量測。`/health/live` 不檢查依賴；`/health/ready` 檢查 `TenancyDbContext`（故障回 `503`），檢查自帶逾時（`Observability.ReadyCheckTimeout`，須短於探針的 `timeoutSeconds`，由 `ObservabilityTests` 守門），探針不追蹤。`/health/version` 回 `{"revision": "<commit SHA>"}`（`no-store`，未登入可讀，不是探針）：映像建置時由 `SOURCE_REVISION` 帶入，沒帶（本機建置）為 `null`；部署後驗證靠它確認執行中的版本就是清單裡的 tag，因為滾動卡住時舊 pod 照常服務、探針都綠。
 - **模型呼叫遙測**：`IChatClient` 一律經 `AnswerTelemetry.Wrap` 包裝並**明確關閉 `EnableSensitiveData`**（由 `AnswerTelemetryTests` 守門，僅留模型、token 數、延遲與結束原因）。
 - **作答結果計數**：`envcite.platform.answer.outcomes`（`AnswerMetrics`）於每次作答得出結果時遞增，標籤僅限 `outcome` 與 `bare_topic`（由 `AskServiceTests` 守門）。
 

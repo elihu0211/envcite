@@ -104,6 +104,19 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
         Assert.Empty(violations);
     }
 
+    // 元件的「現在」一律經 TimeProvider：直接讀系統時鐘的頁面，測試無法用 FakeTimeProvider 固定時間。
+    // 只管 Web：gRPC 的期限由 grpc-dotnet 以系統時鐘比對，換成 TimeProvider 反而會在假時鐘下立刻逾時。
+    [Fact]
+    public void ComponentsReadTheClockOnlyThroughTheTimeProvider()
+    {
+        var violations = Sources("EnvCite.Platform.Web", ".cs", ".razor")
+            .Where(f => ClockToken().IsMatch(File.ReadAllText(f)))
+            .Select(Relative)
+            .ToList();
+
+        Assert.Empty(violations);
+    }
+
     // 客戶入口只有工作區（Components/Portal/Workspace）是互動式；其餘頁面都是靜態渲染，要明說 [ExcludeFromInteractiveRouting]。
     // 漏標的頁面會被路由到互動模式，在 circuit 裡跑著靜態頁才有的假設（HttpContext、表單 POST、Cookie）。
     [Fact]
@@ -179,4 +192,7 @@ public sealed partial class ArchitectureTests(PlatformFactory factory)
 
     [GeneratedRegex(@"\bIServiceProvider\b", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
     private static partial Regex ServiceProviderToken();
+
+    [GeneratedRegex(@"\bDateTime(Offset)?\.(Utc)?Now\b", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex ClockToken();
 }

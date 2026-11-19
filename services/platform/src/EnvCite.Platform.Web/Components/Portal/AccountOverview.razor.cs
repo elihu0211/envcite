@@ -13,7 +13,8 @@ public partial class AccountOverview(
     ITenantSelfService tenantSelfService,
     IApiKeyAdmin keys,
     IPortalTwoFactor twoFactor,
-    ITenantModules modules)
+    ITenantModules modules,
+    TimeProvider time)
 {
     [SupplyParameterFromForm(FormName = "portal-tenant-rename")]
     private RenameForm RenameInput { get; set; } = default!;
@@ -27,6 +28,8 @@ public partial class AccountOverview(
     private string? _message;
 
     private ITenantModules Modules => modules;
+
+    private DateTimeOffset Now => time.GetUtcNow();
 
     private string? GivenName => User.FindFirst(ClaimTypes.GivenName)?.Value;
 
@@ -85,13 +88,13 @@ public partial class AccountOverview(
         public string? Name { get; set; }
     }
 
-    private static string StatusTone(ApiKeyInfo key) =>
+    private string StatusTone(ApiKeyInfo key) =>
         key.RevokedAt is not null ? "neutral"
-        : key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow ? "warning"
+        : key.ExpiresAt is { } expires && expires <= Now ? "warning"
         : "success";
 
     private string Status(ApiKeyInfo key) =>
         key.RevokedAt is not null ? L["已撤銷"]
-        : key.ExpiresAt is { } expires && expires <= DateTimeOffset.UtcNow ? L["已過期"]
+        : key.ExpiresAt is { } expires && expires <= Now ? L["已過期"]
         : L["有效"];
 }
