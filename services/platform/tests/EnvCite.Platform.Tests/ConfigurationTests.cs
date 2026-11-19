@@ -147,6 +147,16 @@ public sealed class ConfigurationTests(PlatformFactory factory)
         Assert.Equal(System.Net.HttpStatusCode.NotFound, root.StatusCode);
     }
 
+    // 框架只在 Development 預設驗證服務圖；Production 也要：從根容器解析 scoped 服務（單例抓住 scoped 的樣子）必須被擋下。
+    // 建圖的驗證（ValidateOnBuild）由上面幾個 Production 主機能順利啟動來證明：圖有問題，它們起不來。
+    [Fact]
+    public void ProductionValidatesScopesToo()
+    {
+        using var host = factory.WithWebHostBuilder(b => b.UseEnvironment("Production"));
+
+        Assert.Throws<InvalidOperationException>(() => host.Services.GetRequiredService<EnvCite.Platform.Data.PlatformDbContext>());
+    }
+
     // 與入口對稱：什麼都不設就是關。
     [Fact]
     public void TheUiAndThePortalAreOffUnlessEnabled()
