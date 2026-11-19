@@ -40,7 +40,7 @@ internal sealed class PaymentRequiredResultHandler : IAuthorizationMiddlewareRes
         if (authorizeResult.Forbidden
             && authorizeResult.AuthorizationFailure?.FailureReasons.Any(r => r.Handler is PlanHandler) == true)
         {
-            await Results.Problem(
+            await TypedResults.Problem(
                 statusCode: StatusCodes.Status402PaymentRequired,
                 title: "Payment required",
                 detail: "This tenant has no active plan. Contact your account manager to activate one.")

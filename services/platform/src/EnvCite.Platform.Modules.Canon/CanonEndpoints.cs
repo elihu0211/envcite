@@ -113,7 +113,7 @@ public static class CanonEndpoints
                 var result = await search.SearchAsync(request.Query, request.AsOf, request.Limit, ct);
                 return result.Status switch
                 {
-                    OutcomeStatus.Ok => Results.Ok(result.Value!.Select(h =>
+                    OutcomeStatus.Ok => TypedResults.Ok(result.Value!.Select(h =>
                         new SearchHitDto(h.Uri, h.Identifier, h.LawTitle, h.Number, h.Content, h.Score, h.GuidanceDocuments))),
                     OutcomeStatus.Invalid => result.ValidationProblem(),
                     _ => result.Problem(StatusCodes.Status503ServiceUnavailable, "Canon service unavailable."),
@@ -137,8 +137,8 @@ public static class CanonEndpoints
     /// <summary>結果轉成 HTTP：找不到是 404（沒有本文），輸入錯誤是 400，內部服務暫時不可用是 503。</summary>
     internal static IResult Present<T>(Outcome<T> outcome) => outcome.Status switch
     {
-        OutcomeStatus.Ok => Results.Ok(outcome.Value),
-        OutcomeStatus.NotFound => Results.NotFound(),
+        OutcomeStatus.Ok => TypedResults.Ok(outcome.Value),
+        OutcomeStatus.NotFound => TypedResults.NotFound(),
         OutcomeStatus.Invalid => outcome.ValidationProblem(),
         _ => outcome.Problem(StatusCodes.Status503ServiceUnavailable, "Canon service unavailable."),
     };

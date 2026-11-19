@@ -5,6 +5,7 @@ using Finbuckle.MultiTenant.AspNetCore.Extensions;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 
 namespace EnvCite.Platform.Modules.ApiAccess;
@@ -30,12 +31,12 @@ public static class ApiAccessEndpoints
             .WithSummary("列出本租戶的 API key")
             .WithDescription("依建立時間排序；只回傳前綴，不回傳 key 本身。");
 
-        v1.MapDelete("/api-keys/{id:guid}", async (
+        v1.MapDelete("/api-keys/{id:guid}", async Task<Results<NotFound, NoContent>> (
             Guid id, PlatformDbContext db, TimeProvider time, HttpContext context, ClaimsPrincipal user, CancellationToken ct) =>
         {
             var key = await db.ApiKeys.SingleOrDefaultAsync(k => k.Id == id, ct);
             if (key is null)
-                return Results.NotFound();
+                return TypedResults.NotFound();
 
             // 重複撤銷不改變原撤銷時間，也不重複記錄。
             if (key.RevokedAt is null)
@@ -47,7 +48,7 @@ public static class ApiAccessEndpoints
             }
 
             await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            return TypedResults.NoContent();
         })
             .WithName("RevokeApiKey")
             .WithTags("租戶")
